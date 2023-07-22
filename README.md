@@ -25,10 +25,15 @@ by [`PEP 518`](https://peps.python.org/pep-0518/).
    HOST="https://elabftw-dev.uni-heidelberg.de/api/v2"
    ```
    **Important:** `.env` file support will soon be deprecated in favor of more Linux-conventional configuration files.
-7. Restart virtual environment for the changes to take effect.
+7. Optional: This is only needed if you are interested in trying out `elabftw-get`. Soft link `elabftw-get`
+   to `./local/bin`:
+   ```bash
+   $ ln -s <path to project directory>/cli/elabftw-get.py  ~/.local/bin/elabftw-get
+   ```
+8. Restart virtual environment for the changes to take effect.
    ```bash
    $ exit
    $ poetry shell
    Spawning shell within ./elabftw/.venv ...
    ```
-   
+9. Test `elabftw-get`. Run `elabftw-get --help`. It should show the help prompt of `elabftw-get`.
