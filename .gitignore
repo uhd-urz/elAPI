@@ -3,6 +3,7 @@
 .config
 .keys
 notes.md
+poetry.lock
 
 # Python .gitignore
 # Byte-compiled / optimized / DLL files
