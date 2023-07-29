@@ -12,8 +12,8 @@ API endpoints as the arguments.
     With elabftw-get you can do the following:
         $ elabftw-get users <id>
 """
+from src.defaults import HOST, API_TOKEN, TOKEN_BEARER
 import httpx
-from src.defaults import API_KEY, TOKEN_BEARER, HOST
 from httpx_auth import HeaderApiKey
 from rich import pretty
 from rich.console import Console
@@ -51,7 +51,7 @@ def main(endpoint: Annotated[str, typer.Argument(
     `$ elabftw-get users <id>`
     """
 
-    with httpx.Client(auth=HeaderApiKey(api_key=f'{API_KEY}', header_name=TOKEN_BEARER),
+    with httpx.Client(auth=HeaderApiKey(api_key=f'{API_TOKEN}', header_name=TOKEN_BEARER),
                       verify=True) as client:
         response = client.get(f'{HOST}/{endpoint}/{entity_id}', headers={"Accept": "application/json"})
         # pretty_response = Syntax(response.text, "json")  # this only prints the first line!! Likely a rich bug.
@@ -61,6 +61,4 @@ def main(endpoint: Annotated[str, typer.Argument(
 
 
 if __name__ == '__main__':
-    # elabftw_apis(endpoint="users", entity_id=12)
-    # app.main()
     app()
