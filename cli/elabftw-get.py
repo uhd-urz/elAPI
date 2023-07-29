@@ -37,7 +37,8 @@ typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.
 def main(endpoint: Annotated[str, typer.Argument(
     help=docs["endpoint"], show_default=False)],
          entity_id: Annotated[int, typer.Argument(help=docs["entity_id"])] = None,
-         plaintext: Annotated[bool, typer.Option(help=docs["plaintext"], show_default=False)] = False) -> None:
+         plaintext: Annotated[
+             bool, typer.Option("--plaintext", "-p", help=docs["plaintext"], show_default=False)] = False) -> None:
     """
     Make HTTP API requests to elabftw's endpoints as documented in https://doc.elabftw.net/api/v2/.
 
