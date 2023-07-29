@@ -15,7 +15,7 @@ CONV_CONFIG_DIR = os.getenv('HOME') + '/.config'  # In case, $XDG_CONFIG_HOME is
 ASSUMED_LOCAL_CONFIG_LOC = Path(LOCAL_CONFIG_DIR) / CONFIG_FILE_NAME if LOCAL_CONFIG_DIR else (
         Path(CONV_CONFIG_DIR) / CONFIG_FILE_NAME)
 
-PROJECT_CONFIG_LOC = Path.cwd().parent / Path(f"{CONFIG_FILE_NAME}")
+PROJECT_CONFIG_LOC = Path.cwd() / Path(f"{CONFIG_FILE_NAME}")
 
 settings = Dynaconf(
     envar_prefix="ELABFTW-GET",
@@ -25,7 +25,7 @@ settings = Dynaconf(
     # loaders=['conf'],  # will not work without properly defining a custom loader for .conf first
     yaml_loader='safe_load',  # safe load doesn't execute arbitrary Python code in YAML files
     settings_files=[SYSTEM_CONFIG_LOC, ASSUMED_LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC]
-    # the order of settings_files list is the overwrite priority order
+    # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
 try:
