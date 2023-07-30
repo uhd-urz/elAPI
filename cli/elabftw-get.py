@@ -36,7 +36,7 @@ typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.
 @app.command()
 def main(endpoint: Annotated[str, typer.Argument(
     help=docs["endpoint"], show_default=False)],
-         entity_id: Annotated[int, typer.Argument(help=docs["entity_id"])] = None,
+         unit_id: Annotated[int, typer.Argument(help=docs["unit_id"])] = None,
          plaintext: Annotated[
              bool, typer.Option("--plaintext", "-p", help=docs["plaintext"], show_default=False)] = False) -> None:
     """
@@ -54,7 +54,7 @@ def main(endpoint: Annotated[str, typer.Argument(
 
     with httpx.Client(auth=HeaderApiKey(api_key=f'{API_TOKEN}', header_name=TOKEN_BEARER),
                       verify=True) as client:
-        response = client.get(f'{HOST}/{endpoint}/{entity_id}', headers={"Accept": "application/json"})
+        response = client.get(f'{HOST}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
         # pretty_response = Syntax(response.text, "json")  # this only prints the first line!! Likely a rich bug.
         # rich.print_json(data)
         # alternative of console.print(). console.print() allows a little more customization through Console()
