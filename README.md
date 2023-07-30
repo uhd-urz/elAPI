@@ -1,7 +1,7 @@
 # elabftw API client extension
 
-This package adds functionalities we need to manage our researchers' at the heidelberg
-University [`elabftw`](https://github.com/elabftw/elabftw/) usage.
+This package adds functionalities we need to manage [`elabftw`](https://github.com/elabftw/elabftw/) usage at the Heidelberg
+University.
 
 ## Development environment
 
