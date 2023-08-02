@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-elabapi-python = "^0.2.4"
+elabapi-python = "^0.3.0"
 dynaconf = "^3.2.0"
 httpx = "^0.24.1"
 httpx-auth = "^0.17.0"
