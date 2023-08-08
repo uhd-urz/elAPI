@@ -20,8 +20,7 @@ class Information:
     def __init__(self, information_type: str, unit_data_export_dir: Union[str, Path] = None):
         self.information_type = information_type
         self.unit = Information.__INFORMATION_TYPE[information_type](api_client)
-        self.unit_data_export_dir = unit_data_export_dir if unit_data_export_dir else DATA_DOWNLOAD_DIR if (
-            DATA_DOWNLOAD_DIR) else Path.home() / 'Downloads'
+        self.unit_data_export_dir = unit_data_export_dir if unit_data_export_dir else DATA_DOWNLOAD_DIR
 
     def _read_unit(self, unit_id: int = None):
         if self.information_type == "users":
