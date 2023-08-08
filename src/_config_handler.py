@@ -3,19 +3,20 @@ import os
 from pathlib import Path
 from src.loggers import logger
 from src._unsafe_api_token_handler import inspect_api_token_location
+from src._app_data_handler import USER_HOME, DOWNLOAD_DIR
 
 CONFIG_FILE_NAME = "elabftw-get.yaml"
 
-SYSTEM_CONFIG_LOC = Path("/etc") / Path(f"{CONFIG_FILE_NAME}")
+SYSTEM_CONFIG_LOC = Path("/etc") / CONFIG_FILE_NAME
 
 # reference for the following directory conventions:
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-LOCAL_CONFIG_DIR = os.getenv('XDG_CONFIG_HOME')
-CONV_CONFIG_DIR = os.getenv('HOME') + '/.config'  # In case, $XDG_CONFIG_HOME isn't defined in the machine
-ASSUMED_LOCAL_CONFIG_LOC = Path(LOCAL_CONFIG_DIR) / CONFIG_FILE_NAME if LOCAL_CONFIG_DIR else (
-        Path(CONV_CONFIG_DIR) / CONFIG_FILE_NAME)
+XDG_CONFIG_HOME = os.getenv('XDG_CONFIG_HOME')
+ASSUMED_LOCAL_CONFIG_LOC = Path(XDG_CONFIG_HOME) / CONFIG_FILE_NAME if XDG_CONFIG_HOME \
+    else USER_HOME / '.config' / CONFIG_FILE_NAME
+# In case, $XDG_CONFIG_HOME isn't defined in the machine, location $HOME/.config/elabftw-get.yaml is assumed
 
-PROJECT_CONFIG_LOC = Path.cwd() / Path(f"{CONFIG_FILE_NAME}")
+PROJECT_CONFIG_LOC = Path.cwd() / CONFIG_FILE_NAME
 
 settings = Dynaconf(
     envar_prefix="ELABFTW-GET",
@@ -34,13 +35,14 @@ try:
     # It's called API_TOKEN. Note elabftw-python uses the term api_key
     TOKEN_BEARER = settings.token_bearer
     UNSAFE_API = settings.get('unsafe_api_token_warning')
-    DATA_DOWNLOAD_DIR = Path(settings.get('data_download_dir')).expanduser().resolve()
+    DATA_DOWNLOAD_DIR = Path(settings.get('data_download_dir')).expanduser().resolve() \
+        if settings.get('data_download_dir') else DOWNLOAD_DIR
 except AttributeError:
     logger.critical(
-        f"elabftw-get.yaml configuration file couldn't be found. Are you using project-level configuration?\n"
-        f"Project-level configuration is discouraged for regular use, "
-        f"unless you are using elabftw-get from its source directory for development purpose.\n"
-        f"Please use user-level configuration ($XDG_CONFIG_HOME/elabftw-get.yaml)."
+        "elabftw-get.yaml configuration file couldn't be found. Are you using project-level configuration?\n"
+        "Project-level configuration is discouraged for regular use, "
+        "unless you are using elabftw-get from its source directory for development purpose.\n"
+        "Please use user-level configuration ($XDG_CONFIG_HOME/elabftw-get.yaml)."
     )
 else:
 
