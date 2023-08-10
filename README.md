@@ -1,6 +1,7 @@
 # elabftw API client extension
 
-This package adds functionalities we need to manage [`elabftw`](https://github.com/elabftw/elabftw/) usage at the Heidelberg
+This package adds functionalities we need to manage [`elabftw`](https://github.com/elabftw/elabftw/) usage at the
+Heidelberg
 University.
 
 ## Development environment
@@ -45,16 +46,27 @@ by [`PEP 518`](https://peps.python.org/pep-0518/).
 
 ## elabftw-get CLI
 
-`elabftw-get` also provides a CLI program for ease of making common requests. It needs to added to one of your binary
+`elabftw-get` also provides a CLI program for ease of making common requests. It needs to added to one of your
 paths.
 
 ```bash
-$ ln -s <path to project directory>/cli/elabftw-get.py  ~/.local/bin/elabftw-get
+$ export PYTHONPATH=".:$PYTHONPATH"
+$ ln -s <path to project directory>/cli/elabftw_get.py  ~/.local/bin/elabftw-get
 ```
 
-Run `elabftw-get --help` to see the supported options.
+Run `elabftw_get --help` to see the supported options. Exporting `PYTHONPATH=".:$PYTHONPATH"` will not be necessary for
+the final production version.
 
 ## Apps
 
 `./apps` are where programs with business logic reside. `apps/bill_teams.py` generates a dictionary that contains
-information about active team owners.
+information about active team owners. To run an app from the command line, first make sure your working directory
+is `<path to project directory>`, and Poetry virtual environment is activated (`poetry shell`). Then run:
+
+```sh
+# python -m apps.<app name> 
+# Example:
+python -m apps.bill_teams 
+```
+
+Activating a virtual environment will not be necessary for the final production-ready version.

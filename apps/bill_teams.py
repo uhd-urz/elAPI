@@ -1,17 +1,16 @@
 import json
 from pathlib import Path
 from src.information import Information
-
 from rich import print
 
-users = Information(information_type="users")
-users_data_path = users.get_extensive_unit_data(unit_id=None, ignore_existing_filename=True)
+users = Information(unit_name="users")
+users_data_path = users.get_extensive_unit_data_path(unit_id=None, ignore_existing_filename=True)
 # unit_id=None explicitly sets all users
 # ignore_existing_filename=False: Doesn't download data again if filename already exists
 
-teams = Information(information_type="teams")
+teams = Information(unit_name="teams")
 teams_data = teams.get_unit_data(unit_id=None)
-teams_data_path = teams.export_unit(suppress_message=True, unit_data=teams_data, export_path='cache',
+teams_data_path = teams.export_data(suppress_message=True, data=teams_data, export_path='cache',
                                     ignore_existing_filename=True)
 
 with open(Path(users_data_path), mode="r", encoding="utf-8") as file:
