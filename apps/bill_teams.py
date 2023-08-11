@@ -19,20 +19,31 @@ with open(Path(users_data_path), mode="r", encoding="utf-8") as file:
 with open(Path(teams_data_path), mode="r", encoding="utf-8") as file:
     teams_data = json.loads(file.read())
 
-if __name__ == '__main__':
 
+def get_team_owners(all_users_data: dict = users_data, all_teams_data: dict = teams_data):
     team_owners = {}
-    for u in users_data:
+    # Generate team owners
+    for u in all_users_data:
         for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
             if team["is_owner"] == 1:
-                team_owners[team['id']] = {}
-                team_owners[team['id']]["team_name"] = team['name']
-                team_owners[team['id']]["team_id"] = team['id']
-                team_owners[team['id']]["owner_name"] = u['fullname']
-                team_owners[team['id']]["owner_email"] = u['email']
-                team_owners[team['id']]["owner_user_id"] = u["userid"]
-
-    for team in teams_data:
+                uid = u["userid"]
+                owner = {uid: {}}
+                owner[uid]["owner_name"] = u['fullname']
+                owner[uid]["owner_email"] = u['email']
+                owner[uid]["owner_user_id"] = uid  # duplicate information to avoid ambiguity
+                if not team_owners.get(team['id']):
+                    team_owners[team['id']] = {}
+                    team_owners[team['id']]["team_name"] = team['name']
+                    team_owners[team["id"]]["owners"] = [owner]
+                    team_owners[team["id"]]["team_id"] = team["id"]  # duplicate information to avoid ambiguity
+                else:
+                    team_owners[team["id"]]["owners"].append(owner)
+    # Add team creation date to team owners
+    for team in all_teams_data:
         if team['id'] in team_owners.keys():
             team_owners[team['id']]['team_created_at'] = team['created_at']
-    print(team_owners)
+    return team_owners
+
+
+if __name__ == '__main__':
+    print(get_team_owners())
