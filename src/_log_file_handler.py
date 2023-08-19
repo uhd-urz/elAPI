@@ -13,14 +13,14 @@ _APP_NAME: str = "elabftw-get"
 _USER_HOME: Path = Path.home()
 _FALLBACK_DIR: Path = _USER_HOME / ".local/share" / _APP_NAME
 
-LOG_DIR_ENV_VAR: Union[str, None] = os.getenv("ELABFTW_GET_LOG_DIR")
-LOG_DIR_USER: Path = Path(LOG_DIR_ENV_VAR) if LOG_DIR_ENV_VAR else None
+XDG_DATA_HOME: Union[str, None] = os.getenv("XDG_DATA_HOME")
+_LOG_DIR_USER: Path = Path(XDG_DATA_HOME) / _APP_NAME if XDG_DATA_HOME else None
 LOG_DIR_ROOT: Path = Path("/var/log/elabftw-get")
 LOG_DIR: Union[Path, str] = ""
 
 LOG_FILE_NAME: str = f"{_APP_NAME}.log"
 
-_DIRS: tuple[Path, ...] = LOG_DIR_USER, LOG_DIR_ROOT, _FALLBACK_DIR
+_DIRS: tuple[Path, ...] = _LOG_DIR_USER, LOG_DIR_ROOT, _FALLBACK_DIR
 
 for _, loc in enumerate(_DIRS):
     if loc:
