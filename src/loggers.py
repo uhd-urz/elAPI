@@ -1,10 +1,7 @@
 import logging
-from pathlib import Path
-from src._app_data_handler import LOG_DIR
 
-LOG_FILE_NAME = "elabftw-get.log"
+from src._log_file_handler import LOG_FILE_PATH
 
-LOG_FILE_PATH = Path(LOG_DIR) / LOG_FILE_NAME
 logger = logging.getLogger(__name__)
 
 stdout_handler = logging.StreamHandler()
