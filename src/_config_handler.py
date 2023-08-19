@@ -11,27 +11,7 @@ fallback_dir = _FALLBACK_DIR
 app_name = _APP_NAME
 user_home = _USER_HOME
 
-# Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-# App internal data location
-XDG_DATA_HOME = ProperPath("XDG_DATA_HOME", env_var=True).resolve()
-APP_DATA_DIR = XDG_DATA_HOME / app_name if XDG_DATA_HOME else ProperPath(fallback_dir).resolve()
-# if XDG_DATA_HOME isn't defined in the machine it falls back to fallback_dir
-if not fallback_dir:
-    logger.critical(f"Permission denied when trying to create fallback directory '{fallback_dir}' "
-                    f"for elabftw-get internal application data. "
-                    "The program may still work but this issue should be fixed.")
-
-# API response data location
-RESPONSE_CACHE_DIR = ProperPath('/var/tmp/elabftw-get').resolve()
-
-# Download location
-XDG_DOWNLOAD_DIR = ProperPath('XDG_DOWNLOAD_DIR', env_var=True).resolve()
-FALLBACK_DOWNLOAD_DIR = ProperPath(user_home / 'Downloads').resolve()
-DOWNLOAD_DIR = XDG_DOWNLOAD_DIR if XDG_DOWNLOAD_DIR else FALLBACK_DOWNLOAD_DIR
-# Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
-
 CONFIG_FILE_NAME = f"{app_name}.yaml"
-
 SYSTEM_CONFIG_LOC = ProperPath("/etc").resolve() / CONFIG_FILE_NAME
 
 # reference for the following directory conventions:
@@ -56,20 +36,40 @@ settings = Dynaconf(
 
 try:
     HOST = settings.host  # case insensitive: settings.HOST == settings.host
-    API_TOKEN = settings.api_token
-    # It's called API_TOKEN. Note elabftw-python uses the term api_key
-    TOKEN_BEARER = settings.token_bearer
-    UNSAFE_API = settings.get('unsafe_api_token_warning')
-    DOWNLOAD_DIR_FROM_CONF = settings.get('data_download_dir')
-    DATA_DOWNLOAD_DIR = ProperPath(DOWNLOAD_DIR_FROM_CONF).resolve() if DOWNLOAD_DIR_FROM_CONF else DOWNLOAD_DIR
 except AttributeError:
-    logger.critical(
-        "elabftw-get.yaml configuration file couldn't be found. Are you using project-level configuration?\n"
-        "Project-level configuration is discouraged for regular use, "
-        "unless you are using elabftw-get from its source directory for development purpose.\n"
-        "Please use user-level configuration ($XDG_CONFIG_HOME/elabftw-get.yaml)."
-    )
-else:
+    logger.critical(f"'host' is a missing from {CONFIG_FILE_NAME} file."
+                    f"Please make sure the host or URL to root API endpoint is included.")
 
-    if UNSAFE_API:
+try:
+    API_TOKEN = settings.api_token
+except AttributeError:
+    logger.critical(f"'api_token' is a missing from {CONFIG_FILE_NAME} file."
+                    f"Please make sure the an api token with at least read access is included.")
+    # Note elabftw-python uses the term api_key for "API_TOKEN"
+else:
+    # noinspection PyCompatibility
+    if UNSAFE_API := settings.get('unsafe_api_token_warning'):
         inspect_api_token_location(settings, unsafe_path=PROJECT_CONFIG_LOC)
+    TOKEN_BEARER = "Authorization"
+
+    # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+    # Download location
+    DOWNLOAD_DIR_FROM_CONF = settings.get('data_download_dir')
+    XDG_DOWNLOAD_DIR = ProperPath('XDG_DOWNLOAD_DIR', env_var=True).resolve()
+    FALLBACK_DOWNLOAD_DIR = ProperPath(user_home / 'Downloads').resolve()
+    DATA_DOWNLOAD_DIR = ProperPath(DOWNLOAD_DIR_FROM_CONF).resolve() if DOWNLOAD_DIR_FROM_CONF \
+        else XDG_DOWNLOAD_DIR if XDG_DOWNLOAD_DIR else FALLBACK_DOWNLOAD_DIR
+    # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
+
+    # App internal data location
+    XDG_DATA_HOME = ProperPath("XDG_DATA_HOME", env_var=True).resolve()
+    APP_DATA_DIR = XDG_DATA_HOME / app_name if XDG_DATA_HOME else ProperPath(fallback_dir).resolve()
+    # if XDG_DATA_HOME isn't defined in the machine it falls back to fallback_dir
+    if not fallback_dir:
+        logger.critical(f"Permission denied when trying to create fallback directory '{fallback_dir}' "
+                        f"for elabftw-get internal application data. "
+                        "The program may still work but this issue should be fixed.")
+    # However, it's meant to be utilized to store various local data
+
+    # API response data location
+    RESPONSE_CACHE_DIR = ProperPath('/var/tmp/elabftw-get').resolve()
