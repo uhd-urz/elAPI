@@ -1,8 +1,7 @@
 import json
 from shutil import copy2
 from typing import Union
-from src._config_handler import DATA_DOWNLOAD_DIR
-from src._app_data_handler import RESPONSE_DATA_DIR
+from src._config_handler import DATA_DOWNLOAD_DIR, RESPONSE_CACHE_DIR
 from cli.elabftw_get import elabftw_response
 from pathlib import Path
 
@@ -30,7 +29,7 @@ class Information:
         # TODO: Not all unit names (endpoints) may not have their key name for id as 'id'
 
         if not ignore_existing_filename:
-            return self.file_already_exists(RESPONSE_DATA_DIR, filename)
+            return self.file_already_exists(RESPONSE_CACHE_DIR, filename)
 
         # this will without a unit id create all_<information type>_data.json first
         all_unit_data_path = self._cache_unit_data(self.get_unit_data(unit_id=unit_id))
@@ -52,7 +51,7 @@ class Information:
                          ignore_existing_filename: bool = True) -> Path:
         """Writes unit data from converted JSON to a JSON file in pre-defined directory"""
         FILE_EXT = 'json'
-        data_path = RESPONSE_DATA_DIR
+        data_path = RESPONSE_CACHE_DIR
         unit_id, raw_data = unit_data
 
         # First we are saving it in a temporary directory: /var/tmp/elabftw-get
