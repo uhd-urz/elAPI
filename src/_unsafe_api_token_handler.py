@@ -2,6 +2,7 @@ from pathlib import Path
 from dynaconf.utils import inspect
 from src.loggers import logger
 from dynaconf import Dynaconf
+from src.core_names import CONFIG_FILE_NAME
 
 
 def inspect_api_token_location(setting_object: Dynaconf, unsafe_path: Path):
@@ -12,4 +13,4 @@ def inspect_api_token_location(setting_object: Dynaconf, unsafe_path: Path):
                 logger.warning(
                     f"api_token in project-based configuration file found. This is highly discouraged. The api_token "
                     f"is at risk of being leaked into public repositories. If you still insist, please make sure "
-                    f"elabftw-get.yaml is included in .gitignore.")
+                    f"{CONFIG_FILE_NAME} is included in .gitignore.")
