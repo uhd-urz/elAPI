@@ -30,10 +30,10 @@ class ProperPath:
                 path = path.resolve(strict=strict)
             except FileNotFoundError:
                 logger.warning(
-                    f"<'{self.name}':'{path}'> could not be found. elabftw-get will attempt to create the '{path}'.")
+                    f"<'{self.name}':'{path}'> could not be found. An attempt to create '{path}' will be made.")
 
             try:
-                path.mkdir(parents=True, exist_ok=True)
+                path.mkdir(parents=True, exist_ok=True) if path.is_dir() else path.touch(exist_ok=True)
             except PermissionError:
                 logger.critical(f"Permission has been denied to create <'{self.name}':'{path}'>")
 
