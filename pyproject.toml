@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "elabftw"
+name = "elabftw-get"
 version = "0.1"
-description = "elabftw API client extension for the FIRE division at Heidelberg University"
+description = "elabftw API client extension for the FIRE division at Universität Heidelberg"
 authors = ["Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>"]
 readme = "README.md"
 
@@ -11,10 +11,10 @@ elabapi-python = "^0.3.0"
 dynaconf = "^3.2.0"
 httpx = "^0.24.1"
 httpx-auth = "^0.17.0"
+typer = { extras = ["all"], version = "^0.9.0" }
 
 [tool.poetry.group.dev.dependencies]
 ptpython = "^3.0.23"
-typer = { extras = ["all"], version = "^0.9.0" }
 
 [build-system]
 requires = ["poetry-core"]
