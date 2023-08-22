@@ -3,9 +3,10 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
+from src._log_file_handler import initial_validation
 from src._path_handler import ProperPath
 from src._unsafe_api_token_handler import inspect_api_token_location
-from src.core_names import (APP_NAME, FALLBACK_DIR, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
+from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
                             SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
 from src.loggers import logger
 
@@ -56,21 +57,14 @@ else:
     # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
     # App internal data location
-    APP_DATA_DIR: Path = APP_DATA_DIR
-    # APP_DATA_DIR doesn't need to be ProperPath().resolved as it is already resolved by _log_file_handler.py
-    # if XDG_DATA_HOME isn't defined in the machine it falls back to fallback_dir
-
-    # The following log is triggered when APP_DATA_DIR from _log_file_handler.py is not set but LOG_DIR_ROOT is, and
-    # at the same time FALLBACK_DIR couldn't be resolved (returns None) as well.
-    # So APP_DATA_DIR could still return None when the logs are stored in /var/log/elabftw-get.
+    # The following log is triggered when APP_DATA_DIR from _log_file_handler.py is invalid (returns None),
+    # but LOG_DIR_ROOT is valid.
+    # I.e., APP_DATA_DIR could still return None when the logs are stored in /var/log/elabftw-get.
+    # I.e., Both APP_DATA_DIR and FALLBACK_DIR are None
     # In most cases though logs and application data would share the same local directory: ~/.local/share/elabftw-get
-    if not (APP_DATA_DIR or ProperPath(FALLBACK_DIR).resolve()):
-        # equivalent to: if not APP_DATA_DIR and not ProperPath(FALLBACK_DIR).resolve(); De Morgan's law ;)
-        logger.critical(f"Permission denied when trying to create fallback directory '{FALLBACK_DIR}' "
-                        f"to store {APP_NAME} internal application data. "
-                        "The program may still work but this issue should be fixed.")
-    # APP_DATA_DIR isn't currently in use
-    # However, it's meant to be utilized to store various local data
+    if not initial_validation.get(APP_DATA_DIR):
+        logger.critical(f"Permission is denied when trying to create fallback directory '{APP_DATA_DIR=}' "
+                        f"to store {APP_NAME} internal application data. {APP_NAME}'s functionalities will be limited.")
 
     # API response data location
     # Although the following has the term cache, this cache is slightly more important than most caches.
