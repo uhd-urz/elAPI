@@ -9,6 +9,7 @@ from src._path_handler import ProperPath
 APP_NAME: str = "elabftw-get"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
 CONFIG_FILE_NAME: str = f"{APP_NAME}.yaml"
+CONFIG_HISTORY_FILE_NAME: str = f"{APP_NAME}-active-config.json"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
 
