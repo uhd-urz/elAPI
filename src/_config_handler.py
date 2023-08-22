@@ -53,7 +53,7 @@ else:
     DOWNLOAD_DIR_FROM_CONF: str = settings.get('data_download_dir')
     # XDG_DOWNLOAD_DIR: Path = ProperPath('XDG_DOWNLOAD_DIR', env_var=True).resolve()
     # FALLBACK_DOWNLOAD_DIR: Path = ProperPath(user_home / 'Downloads').resolve()
-    DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF).resolve() if DOWNLOAD_DIR_FROM_CONF else _DOWNLOAD_DIR
+    DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF).create() if DOWNLOAD_DIR_FROM_CONF else _DOWNLOAD_DIR
     # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
     # App internal data location
@@ -70,4 +70,4 @@ else:
     # Although the following has the term cache, this cache is slightly more important than most caches.
     # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
     # Therefor we use '/var/tmp/elabftw-get' instead of '/var/cache' or 'XDG_CACHE_HOME'.
-    TMP_DIR: Path = ProperPath(TMP_DIR).resolve()
+    TMP_DIR: Path = ProperPath(TMP_DIR).create()

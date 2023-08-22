@@ -9,7 +9,7 @@ initial_validation: dict[Path:Union[Path, None]] = {}
 _DIRS: tuple[Path, ...] = LOG_DIR_ROOT, APP_DATA_DIR
 
 for loc in _DIRS:
-    initial_validation[loc] = ProperPath(loc, suppress_stderr=True).resolve()
+    initial_validation[loc] = ProperPath(loc, suppress_stderr=True).create()
 
 LOG_DIR, *_ = [loc for loc in initial_validation.values() if loc is not None]
 
