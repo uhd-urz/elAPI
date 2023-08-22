@@ -13,7 +13,7 @@ The script treats API endpoints as the arguments.
         $ elabftw-get users <id>
 """
 
-from src.defaults import HOST, API_TOKEN, TOKEN_BEARER
+from src import HOST, API_TOKEN, TOKEN_BEARER
 import httpx
 from httpx_auth import HeaderApiKey
 from httpx import Response
