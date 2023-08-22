@@ -73,7 +73,7 @@ class ProperPath:
                 logger.removeHandler(stdout_handler)
             logger.log(msg=message, level=level)
 
-    def resolve(self) -> Union[Path, None]:
+    def create(self) -> Union[Path, None]:
         # resolve() returns None if a path cannot be resolved.
         path = self.expanded
 
