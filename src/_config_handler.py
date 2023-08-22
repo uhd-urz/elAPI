@@ -5,7 +5,7 @@ from dynaconf import Dynaconf
 
 from src._log_file_handler import initial_validation
 from src._path_handler import ProperPath
-from src._unsafe_api_token_handler import inspect_api_token_location
+from src._config_history_handler import InspectConfig
 from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
                             SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
 from src.loggers import logger
@@ -41,9 +41,12 @@ except AttributeError:
                     f"Please make sure the an api token with at least read access is included.")
     # Note elabftw-python uses the term api_key for "API_TOKEN"
 else:
+    records = InspectConfig(setting_object=settings)
+    # records.store()
+
     # UNSAFE_API: bool  # works but defeats the purpose of using walrus operator :/
     if UNSAFE_API := settings.get('unsafe_api_token_warning'):
-        inspect_api_token_location(settings, unsafe_path=PROJECT_CONFIG_LOC)
+        records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
 
     # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
     TOKEN_BEARER: str = "Authorization"
