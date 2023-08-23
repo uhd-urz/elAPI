@@ -4,7 +4,8 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from shutil import rmtree
+from typing import Union, Any
 
 
 class ProperPath:
@@ -95,3 +96,38 @@ class ProperPath:
                 self.path_error_logger(message, level=logging.CRITICAL)
             else:
                 return path
+
+    def _remove_file(self, _file: Path = None, **kwargs) -> None:
+        file = _file if _file else self.expanded
+        if not isinstance(file, Path):
+            raise ValueError("Path is empty or invalid! Check instance attribute 'expanded'.")
+
+        out: Any = kwargs.get('output_handler')
+        try:
+            if file.is_file():
+                file.unlink()
+            else:
+                raise ValueError(
+                    f"{file} doesn't exist or isn't a valid file!")
+        except PermissionError:
+            message = f"Permission is denied to remove <'{self.expanded}':'{file}'>"
+            self.path_error_logger(message, level=logging.WARNING)
+
+        out(f"Deleted: {file}") if out else ...
+
+    def remove(self, root_only: bool = False, output_handler: Union[None, Any] = None) -> None:
+        # removes everything (if root_only is False) found inside a ProperPath except the root directory of the path
+        # if the ProperPath isn't a directory then it just removes the file
+        if self.expanded:
+            if self.kind == 'file':
+                self._remove_file(output_handler=output_handler)
+            elif self.kind == 'dir':
+                ls_ref = self.expanded.glob(r"**/*") if not root_only else self.expanded.glob(r"*.*")
+                for ref in ls_ref:
+                    try:
+                        self._remove_file(_file=ref, output_handler=output_handler)
+                    except ValueError:
+                        rmtree(ref)
+                        output_handler(f"Deleted directory (recursively): {ref}") if output_handler else ...
+                        # in case of permission error with ref, shutil.rmtree() might give better traceback message.
+                        # I.e., which file exactly
