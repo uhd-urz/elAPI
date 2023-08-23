@@ -11,7 +11,7 @@ The following debug information includes configuration values and their sources 
 - **Host address:** {HOST} ← {records.inspect_applied_config["HOST"][1]}
 - **API token:** ***** ← {records.inspect_applied_config["API_TOKEN"][1]}
 - **Token bearer:** "{TOKEN_BEARER}"
-- **Download directory:** {DOWNLOAD_DIR} ← {records.inspect_applied_config["DATA_DOWNLOAD_DIR"][1]}
+- **Download directory:** {DOWNLOAD_DIR} ← {records.inspect_applied_config["DOWNLOAD_DIR"][1]}
 - **App data directory:** {APP_DATA_DIR}
 - **Caching directory:** {TMP_DIR}
 
