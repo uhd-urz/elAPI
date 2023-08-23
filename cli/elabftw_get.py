@@ -25,7 +25,7 @@ from typing_extensions import Annotated
 from apps.debug_configuration import info
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._markdown_doc import _get_custom_help_text
-from src import HOST, API_TOKEN, TOKEN_BEARER
+from src import HOST, API_TOKEN, TOKEN_BEARER, ProperPath, TMP_DIR
 
 # app = appeal.Appeal()
 pretty.install()
@@ -79,6 +79,15 @@ def debug():
     """
     md = Markdown(info)
     console.print(md)
+
+
+@app.command()
+def cleanup():
+    """
+    Remove cache data
+    """
+    ProperPath(TMP_DIR).remove(output_handler=console.print)
+    console.print(f"Done!")
 
 
 if __name__ == '__main__':
