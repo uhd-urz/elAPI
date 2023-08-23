@@ -28,12 +28,11 @@ by [`PEP 518`](https://peps.python.org/pep-0518/).
    
    # elabftw-get.yaml example
    ---
-   token_bearer: "Authorization"
    host: "https://elabftw-dev.uni-heidelberg.de/api/v2"
    api_token: "<your api token>"
    unsafe_api_token_warning: true
    # when true elabftw-get will show warning if api_token is included in the project-level configuration file
-   data_download_dir: "~/Downloads"  
+   download_dir: "~/Downloads"  
    # elabftw-get uses /var/tmp/elabftw-get to store response data from back from API requests. However, a user may wish to use those data and have them saved somewhere else. This field defines an export path for that purpose.  
    ```
 
