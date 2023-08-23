@@ -53,7 +53,7 @@ else:
 
     # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
     # Download location
-    DOWNLOAD_DIR_FROM_CONF: str = settings.get('data_download_dir')
+    DOWNLOAD_DIR_FROM_CONF: str = settings.get('download_dir')
     # XDG_DOWNLOAD_DIR: Path = ProperPath('XDG_DOWNLOAD_DIR', env_var=True).resolve()
     # FALLBACK_DOWNLOAD_DIR: Path = ProperPath(user_home / 'Downloads').resolve()
     DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF).create() if DOWNLOAD_DIR_FROM_CONF else _DOWNLOAD_DIR
