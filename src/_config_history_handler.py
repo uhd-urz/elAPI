@@ -25,9 +25,9 @@ class InspectConfig:
 
     @property
     def inspect_applied_config_files(self):
-        applied_config_files = set()
+        applied_config_files: list = []
         for config in self.history:
-            applied_config_files.add(config["identifier"])
+            applied_config_files.append(config["identifier"])
         return applied_config_files
 
     @inspect_applied_config_files.setter
@@ -41,7 +41,10 @@ class InspectConfig:
             for k, v in config["value"].items():
                 config["value"][k] = v, config["identifier"]
                 applied_config.update(config["value"])
-        applied_config["API_TOKEN"] = "***"
+
+        _, token_source = applied_config["API_TOKEN"]
+        applied_config["API_TOKEN"] = "***", token_source
+
         return applied_config
 
     @inspect_applied_config.setter
