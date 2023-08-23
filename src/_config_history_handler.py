@@ -42,8 +42,8 @@ class InspectConfig:
                 config["value"][k] = v, config["identifier"]
                 applied_config.update(config["value"])
 
-        _, token_source = applied_config["API_TOKEN"]
-        applied_config["API_TOKEN"] = "***", token_source
+        token, token_source = applied_config["API_TOKEN"]
+        applied_config["API_TOKEN_MASKED"] = f"{token[:5]}*****{token[-5:]}", token_source
 
         return applied_config
 
