@@ -13,16 +13,19 @@ The script treats API endpoints as the arguments.
         $ elabftw-get users <id>
 """
 
-from src import HOST, API_TOKEN, TOKEN_BEARER
 import httpx
-from httpx_auth import HeaderApiKey
-from httpx import Response
 import typer
-from typing_extensions import Annotated
+from httpx import Response
+from httpx_auth import HeaderApiKey
 from rich import pretty
 from rich.console import Console
+from rich.markdown import Markdown
+from typing_extensions import Annotated
+
+from apps.debug_configuration import info
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._markdown_doc import _get_custom_help_text
+from src import HOST, API_TOKEN, TOKEN_BEARER
 
 # app = appeal.Appeal()
 pretty.install()
@@ -40,11 +43,11 @@ def elabftw_response(endpoint: str, unit_id: int = None) -> Response:
 
 
 @app.command()
-def main(endpoint: Annotated[str, typer.Argument(
+def fetch(endpoint: Annotated[str, typer.Argument(
     help=docs["endpoint"], show_default=False)],
-         unit_id: Annotated[int, typer.Argument(help=docs["unit_id"])] = None,
-         plaintext: Annotated[bool, typer.Option("--plaintext", "-p",
-                                                 help=docs["plaintext"], show_default=False)] = False) -> None:
+          unit_id: Annotated[int, typer.Argument(help=docs["unit_id"])] = None,
+          plaintext: Annotated[bool, typer.Option("--plaintext", "-p",
+                                                  help=docs["plaintext"], show_default=False)] = False) -> None:
     """
     Make HTTP API requests to elabftw's endpoints as documented in https://doc.elabftw.net/api/v2/.
 
@@ -67,6 +70,15 @@ def main(endpoint: Annotated[str, typer.Argument(
     # alternative of console.print(). console.print() allows a little more customization through Console()
 
     console.print_json(raw_response.text, indent=2) if not plaintext else print(raw_response.json())
+
+
+@app.command()
+def debug():
+    """
+    Get debug information.
+    """
+    md = Markdown(info)
+    console.print(md)
 
 
 if __name__ == '__main__':
