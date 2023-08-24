@@ -24,13 +24,14 @@ from typing_extensions import Annotated
 
 from apps.debug_info import info
 from cli._doc import __PARAMETERS__doc__ as docs
+from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
 from src import HOST, API_TOKEN, TOKEN_BEARER, ProperPath, TMP_DIR
 
 # app = appeal.Appeal()
 pretty.install()
 console = Console(color_system="truecolor")
-app = typer.Typer(rich_markup_mode="markdown")
+app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=False)
 
 typer.rich_utils.STYLE_HELPTEXT = ""  # fixes https://github.com/tiangolo/typer/issues/437
 typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
@@ -46,8 +47,9 @@ def elabftw_response(endpoint: str, unit_id: int = None) -> Response:
 def fetch(endpoint: Annotated[str, typer.Argument(
     help=docs["endpoint"], show_default=False)],
           unit_id: Annotated[int, typer.Argument(help=docs["unit_id"])] = None,
-          plaintext: Annotated[bool, typer.Option("--plaintext", "-p",
-                                                  help=docs["plaintext"], show_default=False)] = False) -> None:
+          output: Annotated[str, typer.Option("--output", "-o",
+                                              help=docs["output"], show_default=False)] = "json") -> None:
+    # plaintext: Annotated[bool, typer.Option("--plaintext", "-p",help=docs["plaintext"], show_default=False)] = False)
     """
     Make HTTP API requests to elabftw's endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/)
@@ -68,7 +70,8 @@ def fetch(endpoint: Annotated[str, typer.Argument(
     # rich.print_json(data)
     # alternative of console.print(). console.print() allows a little more customization through Console()
 
-    console.print_json(raw_response.text, indent=2) if not plaintext else print(raw_response.json())
+    prettify = Highlight(data=raw_response.json(), lang=output)
+    prettify.highlight()
 
 
 @app.command(name="show-config")
