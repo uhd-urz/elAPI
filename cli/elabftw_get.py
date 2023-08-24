@@ -2,7 +2,7 @@
 
 """``elabftw-get`` script is a wrapper around an HTTP client (called ``httpx``). The goal is to be able to send API
 queries from the command line following the API definitions from https://doc.elabftw.net/api/v2/ with ease.
-The script treats API endpoints as the arguments.
+The script treats API endpoints as its arguments.
 
 **Example**::
 
@@ -10,7 +10,7 @@ The script treats API endpoints as the arguments.
         > GET /users/{id}
 
     With elabftw-get you can do the following:
-        $ elabftw-get users <id>
+        $ elabftw-get fetch users <id>
 """
 
 import httpx
@@ -49,19 +49,18 @@ def fetch(endpoint: Annotated[str, typer.Argument(
           plaintext: Annotated[bool, typer.Option("--plaintext", "-p",
                                                   help=docs["plaintext"], show_default=False)] = False) -> None:
     """
-    Make HTTP API requests to elabftw's endpoints as documented in https://doc.elabftw.net/api/v2/.
+    Make HTTP API requests to elabftw's endpoints as documented in
+    [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/)
 
     <br/>
     **Example**:
     <br/>
-    From https://doc.elabftw.net/api/v2/#/Users/read-user:
+    From [the official documentation about `GET users`](https://doc.elabftw.net/api/v2/#/Users/read-user),
     > GET /users/{id}
 
     With `elabftw-get` you can do the following:
-    `$ elabftw-get users <id>`
+    `$ elabftw-get fetch users <id>`
     """
-    # console.print_json(response.text, indent=2) if not plaintext else print(
-    #     response_json) if __name__ == '__main__' else ...
 
     raw_response = elabftw_response(endpoint=endpoint, unit_id=unit_id)
 
@@ -72,10 +71,10 @@ def fetch(endpoint: Annotated[str, typer.Argument(
     console.print_json(raw_response.text, indent=2) if not plaintext else print(raw_response.json())
 
 
-@app.command()
-def debug():
+@app.command(name="show-config")
+def show_config():
     """
-    Get debug information.
+    Get information about detected configuration values.
     """
     md = Markdown(info)
     console.print(md)
@@ -84,7 +83,7 @@ def debug():
 @app.command()
 def cleanup():
     """
-    Remove cache data
+    Remove cached data
     """
     ProperPath(TMP_DIR).remove(output_handler=console.print)
     console.print(f"Done!")
