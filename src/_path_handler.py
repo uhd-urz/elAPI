@@ -19,6 +19,13 @@ class ProperPath:
         self.kind = kind
         self.suppress_stderr = suppress_stderr
 
+    def __str__(self):
+        return str(self.expanded)
+
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(name={self.name}, env_var={self.env_var}, kind={self.kind}, "
+                f"suppress_stderr={self.suppress_stderr})")
+
     @property
     def name(self):
         return self._name
@@ -74,6 +81,10 @@ class ProperPath:
                 logger.removeHandler(stdout_handler)
             logger.log(msg=message, level=level)
 
+    @staticmethod
+    def _error_helper_compare_path_source(source: Path, target: Path):
+        return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
+
     def create(self) -> Union[Path, None]:
         # resolve() returns None if a path cannot be resolved.
         path = self.expanded
@@ -81,7 +92,8 @@ class ProperPath:
         if path:
             if not (path := path.resolve(strict=False)).exists():
                 # except FileNotFoundError:
-                message = f"<'{self.name}':'{path}'> could not be found. An attempt to create '{path}' will be made."
+                message = (f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
+                           f"An attempt to create PATH={path} will be made.")
                 self.path_error_logger(message, level=logging.WARNING)
 
             try:
@@ -92,7 +104,7 @@ class ProperPath:
                 elif self.kind == 'dir':
                     path.mkdir(parents=True, exist_ok=True)
             except PermissionError:
-                message = f"Permission is denied to create <'{self.name}':'{path}'>"
+                message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
                 self.path_error_logger(message, level=logging.CRITICAL)
             else:
                 return path
@@ -100,7 +112,7 @@ class ProperPath:
     def _remove_file(self, _file: Path = None, **kwargs) -> None:
         file = _file if _file else self.expanded
         if not isinstance(file, Path):
-            raise ValueError("Path is empty or invalid! Check instance attribute 'expanded'.")
+            raise ValueError(f"PATH={file} is empty or invalid! Check instance attribute 'expanded'.")
 
         out: Any = kwargs.get('output_handler')
         try:
@@ -110,7 +122,7 @@ class ProperPath:
                 raise ValueError(
                     f"{file} doesn't exist or isn't a valid file!")
         except PermissionError:
-            message = f"Permission is denied to remove <'{self.expanded}':'{file}'>"
+            message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.path_error_logger(message, level=logging.WARNING)
 
         out(f"Deleted: {file}") if out else ...
