@@ -82,7 +82,7 @@ class ProperPath:
             logger.log(msg=message, level=level)
 
     @staticmethod
-    def _error_helper_compare_path_source(source: Path, target: Path) -> str:
+    def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
         return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
 
     def create(self) -> Union[Path, None]:
