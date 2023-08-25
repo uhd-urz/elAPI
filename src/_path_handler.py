@@ -27,17 +27,17 @@ class ProperPath:
                 f"suppress_stderr={self.suppress_stderr})")
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, value):
+    def name(self, value) -> None:
         if value == "":
             raise ValueError("Path cannot be an empty string!")
         self._name = value
 
     @property
-    def expanded(self):
+    def expanded(self) -> Path:
         if self.env_var:
             env_var_val: Union[str, None] = os.getenv(self.name)
             return Path(env_var_val).expanduser() if env_var_val else None
@@ -45,15 +45,15 @@ class ProperPath:
             return Path(self.name).expanduser() if self.name else None
 
     @expanded.setter
-    def expanded(self, value):
+    def expanded(self, value) -> None:
         raise AttributeError("Expanded is not meant to be modified.")
 
     @property
-    def kind(self):
+    def kind(self) -> str:
         return self._kind
 
     @kind.setter
-    def kind(self, value):
+    def kind(self, value) -> None:
         if self.expanded:
             if not value:
                 self._kind = 'file' if self.expanded.suffix else 'dir'
@@ -67,7 +67,7 @@ class ProperPath:
                     raise ValueError(
                         "Invalid value for parameter 'kind'. The following values for 'kind' are allowed: file, dir.")
 
-    def path_error_logger(self, message: str, level: int = logging.DEBUG):
+    def path_error_logger(self, message: str, level: int = logging.DEBUG) -> None:
         LOG_LEVELS = {10: "DEBUG", 20: "INFO", 30: "WARNING", 40: "ERROR", 50: "CRITICAL"}
 
         try:
@@ -82,7 +82,7 @@ class ProperPath:
             logger.log(msg=message, level=level)
 
     @staticmethod
-    def _error_helper_compare_path_source(source: Path, target: Path):
+    def _error_helper_compare_path_source(source: Path, target: Path) -> str:
         return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
 
     def create(self) -> Union[Path, None]:

@@ -33,15 +33,15 @@ class Highlight:
     lang: str = "JSON"
     theme: str = "lightbulb"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.language = self.lang
 
     @property
-    def language(self):
+    def language(self) -> str:
         return self.lang
 
     @language.setter
-    def language(self, value):
+    def language(self, value) -> None:
         for key in Highlight.SUPPORTED_FORMAT:
             if re.match(Highlight.SUPPORTED_FORMAT[key]["pattern"], value, flags=re.IGNORECASE):
                 self.lang = key
@@ -53,18 +53,18 @@ class Highlight:
             print("\n", file=sys.stderr)
             self.lang = Highlight.FALLBACK_FORMAT  # falls back to "text"
 
-    def get_syntax(self, data):
+    def get_syntax(self, data) -> Syntax:
         return Syntax(data, self.language, background_color="default", theme=self.theme)
 
     @property
-    def format(self):
+    def format(self) -> Union[str, dict]:
         return Highlight.SUPPORTED_FORMAT[self.language]["parser"](self.data)
 
     @format.setter
-    def format(self, value):
+    def format(self, value) -> None:
         raise AttributeError("format is stored internally. It cannot be modified!")
 
-    def highlight(self):
+    def highlight(self) -> None:
         formatted = self.format
         if self.language == Highlight.FALLBACK_FORMAT:
             print(formatted)

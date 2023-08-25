@@ -17,11 +17,11 @@ class InspectConfig:
     config_history_location: Path = APP_DATA_DIR / CONFIG_HISTORY_FILE_NAME
 
     @property
-    def history(self):
+    def history(self) -> list[dict]:
         return inspect.get_history(self.setting_object)
 
     @history.setter
-    def history(self, value):
+    def history(self, value) -> None:
         raise AttributeError("Configuration history isn't meant to modified.")
 
     @property
@@ -39,11 +39,11 @@ class InspectConfig:
         return config_files_with_tag
 
     @inspect_applied_config_files.setter
-    def inspect_applied_config_files(self, value):
+    def inspect_applied_config_files(self, value) -> None:
         raise AttributeError("Configuration history isn't meant to modified.")
 
     @property
-    def inspect_applied_config(self):
+    def inspect_applied_config(self) -> dict:
         applied_config = {}
         for config in self.history:
             for k, v in config["value"].items():
@@ -56,7 +56,7 @@ class InspectConfig:
         return applied_config
 
     @inspect_applied_config.setter
-    def inspect_applied_config(self, value):
+    def inspect_applied_config(self, value) -> None:
         raise AttributeError("Configuration history isn't meant to modified.")
 
     def inspect_api_token_location(self, unsafe_path: Path):
@@ -68,7 +68,7 @@ class InspectConfig:
                         f"The api_token is at risk of being leaked into public repositories. If you still insist, "
                         f"please make sure {CONFIG_FILE_NAME} is included in .gitignore.")
 
-    def store(self):
+    def store(self) -> None:
         store_location = ProperPath(self.config_history_location).create()
         with store_location.open(mode="w", encoding="utf-8") as file:
             json.dump(self.inspect_applied_config, file)

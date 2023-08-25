@@ -75,7 +75,7 @@ def fetch(endpoint: Annotated[str, typer.Argument(
 
 
 @app.command(name="show-config")
-def show_config():
+def show_config() -> None:
     """
     Get information about detected configuration values.
     """
@@ -84,7 +84,7 @@ def show_config():
 
 
 @app.command()
-def cleanup():
+def cleanup() -> None:
     """
     Remove cached data
     """
