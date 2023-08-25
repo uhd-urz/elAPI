@@ -112,34 +112,35 @@ class ProperPath:
     def _remove_file(self, _file: Path = None, **kwargs) -> None:
         file = _file if _file else self.expanded
         if not isinstance(file, Path):
-            raise ValueError(f"PATH={file} is empty or invalid! Check instance attribute 'expanded'.")
+            raise ValueError(f"PATH={file} is empty or isn't a valid pathlib.Path instance! "
+                             f"Check instance attribute 'expanded'.")
 
-        out: Any = kwargs.get('output_handler')
+        output_handler: Any = kwargs.get('output_handler')
         try:
-            if file.is_file():
-                file.unlink()
-            else:
-                raise ValueError(
-                    f"{file} doesn't exist or isn't a valid file!")
+            file.unlink()
+        except FileNotFoundError:
+            # unlink() throws FileNotFoundError when a directory is passed as it expects files only
+            raise ValueError(f"{file} doesn't exist or isn't a valid file!")
         except PermissionError:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.path_error_logger(message, level=logging.WARNING)
 
-        out(f"Deleted: {file}") if out else ...
+        output_handler(f"Deleted: {file}") if output_handler else ...
 
-    def remove(self, root_only: bool = False, output_handler: Union[None, Any] = None) -> None:
-        # removes everything (if root_only is False) found inside a ProperPath except the root directory of the path
+    def remove(self, parent_only: bool = False, output_handler: Union[None, Any] = None) -> None:
+        # removes everything (if parent_only is False) found inside a ProperPath except the parent directory of the path
         # if the ProperPath isn't a directory then it just removes the file
         if self.expanded:
             if self.kind == 'file':
                 self._remove_file(output_handler=output_handler)
             elif self.kind == 'dir':
-                ls_ref = self.expanded.glob(r"**/*") if not root_only else self.expanded.glob(r"*.*")
+                ls_ref = self.expanded.glob(r"**/*") if not parent_only else self.expanded.glob(r"*.*")
                 for ref in ls_ref:
                     try:
                         self._remove_file(_file=ref, output_handler=output_handler)
-                    except ValueError:
+                    except ValueError:  # ValueError occurring means most likely the file is a directory
                         rmtree(ref)
                         output_handler(f"Deleted directory (recursively): {ref}") if output_handler else ...
-                        # in case of permission error with ref, shutil.rmtree() might give better traceback message.
-                        # I.e., which file exactly
+                        # rmtree deletes files and directories recursively.
+                        # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
+                        # traceback message. I.e., which file or directory exactly
