@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 from dataclasses import dataclass
 from typing import ClassVar, Union
 
@@ -30,7 +31,8 @@ class Highlight:
         if not re.match(r"|".join(Highlight.SUPPORTED_FORMAT.values()), value, flags=re.IGNORECASE):
             logger.error(f"The provided format '{value}' cannot be highlighted! "
                          f"Supported formats are: JSON, YAML, plaintext.")
-            self.lang = "text"
+            print("\n", file=sys.stderr)
+            self.lang = "text"  # falls back to "text"
         else:
             self.lang = value
 
