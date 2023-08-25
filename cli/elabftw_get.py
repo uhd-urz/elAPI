@@ -22,7 +22,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
-from apps.debug_info import info
+from apps.show_config import info
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
