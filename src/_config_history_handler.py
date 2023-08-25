@@ -6,7 +6,8 @@ from dynaconf import Dynaconf
 from dynaconf.utils import inspect
 
 from src._path_handler import ProperPath
-from src.core_names import CONFIG_FILE_NAME, APP_DATA_DIR, CONFIG_HISTORY_FILE_NAME
+from src.core_names import (CONFIG_FILE_NAME, APP_DATA_DIR, CONFIG_HISTORY_FILE_NAME, SYSTEM_CONFIG_LOC,
+                            LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC)
 from src.loggers import logger
 
 
@@ -24,11 +25,18 @@ class InspectConfig:
         raise AttributeError("Configuration history isn't meant to modified.")
 
     @property
-    def inspect_applied_config_files(self):
-        applied_config_files: list = []
-        for config in self.history:
-            applied_config_files.append(config["identifier"])
-        return applied_config_files
+    def inspect_applied_config_files(self) -> dict:
+        config_files_with_tag: dict = {
+            SYSTEM_CONFIG_LOC: "ROOT LEVEL",
+            LOCAL_CONFIG_LOC: "USER LEVEL",
+            PROJECT_CONFIG_LOC: "PROJECT LEVEL"
+        }
+
+        applied_config_files: list = [config["identifier"] for config in self.history]
+        config_files_with_tag: dict = {str(k): v for k, v in config_files_with_tag.items() if
+                                       str(k) in applied_config_files}
+
+        return config_files_with_tag
 
     @inspect_applied_config_files.setter
     def inspect_applied_config_files(self, value):
