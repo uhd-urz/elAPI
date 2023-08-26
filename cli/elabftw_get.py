@@ -28,7 +28,6 @@ from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
 from src import HOST, API_TOKEN, TOKEN_BEARER, ProperPath, TMP_DIR
 
-# app = appeal.Appeal()
 pretty.install()
 console = Console(color_system="truecolor")
 app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=False)
@@ -49,7 +48,6 @@ def fetch(endpoint: Annotated[str, typer.Argument(
           unit_id: Annotated[int, typer.Argument(help=docs["unit_id"])] = None,
           output: Annotated[str, typer.Option("--output", "-o",
                                               help=docs["output"], show_default=False)] = "json") -> None:
-    # plaintext: Annotated[bool, typer.Option("--plaintext", "-p",help=docs["plaintext"], show_default=False)] = False)
     """
     Make HTTP API requests to elabftw's endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/)

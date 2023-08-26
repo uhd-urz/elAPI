@@ -46,7 +46,7 @@ class Highlight:
         return self.lang
 
     @language.setter
-    def language(self, value) -> None:
+    def language(self, value: str) -> None:
         for key in Highlight.SUPPORTED_FORMAT:
             if re.match(Highlight.SUPPORTED_FORMAT[key]["pattern"], value, flags=re.IGNORECASE):
                 self.lang = key
@@ -58,7 +58,10 @@ class Highlight:
             print("\n", file=sys.stderr)
             self.lang = Highlight._FALLBACK_FORMAT  # falls back to "PLAINTEXT"
 
-    def get_syntax(self, data) -> Syntax:
+    def get_syntax(self, data: str) -> Syntax:
+        # If data is str but un-formatted (without new lines or indentations), rich will not try to format it of course,
+        # which will result in a highlighted but an ultra-compact single line output!
+        # E.g., if data = response.text or json.dump(data) (no indentation)
         return Syntax(data, self.language, background_color="default", theme=self.theme)
 
     @property
