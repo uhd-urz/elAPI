@@ -50,7 +50,7 @@ def fetch(endpoint: Annotated[str, typer.Argument(
                                               help=docs["output"], show_default=False)] = "json") -> None:
     """
     Make HTTP API requests to elabftw's endpoints as documented in
-    [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/)
+    [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
 
     <br/>
     **Example**:
@@ -63,11 +63,6 @@ def fetch(endpoint: Annotated[str, typer.Argument(
     """
 
     raw_response = elabftw_response(endpoint=endpoint, unit_id=unit_id)
-
-    # pretty_response = Syntax(response.text, "json")  # this only prints the first line!! Likely a rich bug.
-    # rich.print_json(data)
-    # alternative of console.print(). console.print() allows a little more customization through Console()
-
     prettify = Highlight(data=raw_response.json(), lang=output)
     prettify.highlight()
 
@@ -84,7 +79,7 @@ def show_config() -> None:
 @app.command()
 def cleanup() -> None:
     """
-    Remove cached data
+    Remove cached data.
     """
     ProperPath(TMP_DIR).remove(output_handler=console.print)
     console.print(f"Done!")
