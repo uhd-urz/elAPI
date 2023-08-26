@@ -2,6 +2,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from functools import partial
 from typing import ClassVar, Union
 
 import yaml
@@ -13,21 +14,25 @@ from src import logger
 
 @dataclass
 class Highlight:
+    # SUPPORTED_FORMAT contains the definitions for parsers that will parse and format the JSON from HTTP response.
+    # Though not the most common practice (there's no protection against modifying "TEXT": {...} (the fallback format),
+    # this design allows for adding support for a new format quite easily.
     SUPPORTED_FORMAT: ClassVar[dict] = {
         "JSON": {
             "pattern": r"json",
-            "parser": lambda data: json.dumps(data, indent=True, ensure_ascii=True)
+            "parser": partial(json.dumps, indent=True, ensure_ascii=True)
+
         },
         "YAML": {
             "pattern": r"ya?ml",
-            "parser": lambda data: yaml.dump(data)
+            "parser": partial(yaml.dump, allow_unicode=True)
         },
-        "TEXT": {
+        "PLAINTEXT": {
             "pattern": r"(plain)?text",
             "parser": lambda data: data
         }
     }
-    FALLBACK_FORMAT: ClassVar[str] = "TEXT"
+    _FALLBACK_FORMAT: ClassVar[str] = "PLAINTEXT"
     console: ClassVar[Console] = Console(color_system="truecolor")
     data: Union[dict, str]
     lang: str = "JSON"
@@ -51,7 +56,7 @@ class Highlight:
             logger.error(f"The provided format '{value}' cannot be highlighted! "
                          f"Supported formats are: {Highlight.SUPPORTED_FORMAT.keys()}")
             print("\n", file=sys.stderr)
-            self.lang = Highlight.FALLBACK_FORMAT  # falls back to "text"
+            self.lang = Highlight._FALLBACK_FORMAT  # falls back to "PLAINTEXT"
 
     def get_syntax(self, data) -> Syntax:
         return Syntax(data, self.language, background_color="default", theme=self.theme)
@@ -66,7 +71,7 @@ class Highlight:
 
     def highlight(self) -> None:
         formatted = self.format
-        if self.language == Highlight.FALLBACK_FORMAT:
+        if self.language == Highlight._FALLBACK_FORMAT:
             print(formatted)
         else:
             highlighted = self.get_syntax(data=formatted)
