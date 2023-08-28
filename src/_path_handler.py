@@ -1,10 +1,11 @@
+import errno
 import logging
 import os
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from shutil import rmtree
+from shutil import rmtree, copyfileobj
 from typing import Union, Any
 
 
@@ -85,9 +86,10 @@ class ProperPath:
     def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
         return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
 
-    def create(self) -> Union[Path, None]:
-        # resolve() returns None if a path cannot be resolved.
+    def create(self, allocate_amount: Union[int, None] = None) -> Union[Path, None]:
+        # create() returns None if a path cannot be resolved.
         path = self.expanded
+        _KB_TO_BYTE_CONVERT_VAL = 10 ** 3
 
         if path:
             if not (path := path.resolve(strict=False)).exists():
@@ -107,7 +109,37 @@ class ProperPath:
                 message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
                 self.path_error_logger(message, level=logging.CRITICAL)
             else:
+                if allocate_amount:
+                    allocate_amount: int = allocate_amount * _KB_TO_BYTE_CONVERT_VAL
+                    if (file_size := path.stat().st_size) < allocate_amount:
+                        extended_allocate_amount: int = allocate_amount + file_size
+                        self._allocate(amount=extended_allocate_amount, unit="KB")
                 return path
+
+    def _allocate(self, amount: int, **kwargs) -> None:
+        path = self.expanded
+
+        if self.kind != 'file':
+            raise TypeError(f"Only files can be allocated! {path} isn't a valid file.")
+
+        temp_path: Path = path.parent / f"{path.name}.tmp"
+        unit_name: str = kwargs.get("unit")
+
+        try:
+            with path.open(mode="rb") as src, temp_path.open(mode="wb") as alloc:
+                alloc.truncate(amount)
+                copyfileobj(src, alloc)
+            temp_path.rename(path)
+        except IOError as ioe:
+            if ioe.errno == errno.ENOSPC:
+                message = (f"Not enough disk space is left to be able to allocate {amount} "
+                           f"{unit_name} of memory for "
+                           f"{self._error_helper_compare_path_source(self.name, path)}.")
+                self.path_error_logger(message, level=logging.CRITICAL)
+            if ioe.errno == errno.EPERM:
+                message = (f"Permission to allocate {amount} {unit_name} of memory for "
+                           f"{self._error_helper_compare_path_source(self.name, path)} is denied.")
+                self.path_error_logger(message, level=logging.CRITICAL)
 
     def _remove_file(self, _file: Path = None, **kwargs) -> None:
         file = _file if _file else self.expanded
