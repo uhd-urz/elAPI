@@ -20,16 +20,16 @@ class Highlight:
     SUPPORTED_FORMAT: ClassVar[dict] = {
         "JSON": {
             "pattern": r"json",
-            "parser": partial(json.dumps, indent=True, ensure_ascii=True)
+            "method": partial(json.dumps, indent=True, ensure_ascii=True)
 
         },
         "YAML": {
             "pattern": r"ya?ml",
-            "parser": partial(yaml.dump, allow_unicode=True)
+            "method": partial(yaml.dump, allow_unicode=True)
         },
         "PLAINTEXT": {
             "pattern": r"(plain)?text",
-            "parser": lambda data: data
+            "method": lambda data: data
         }
     }
     _FALLBACK_FORMAT: ClassVar[str] = "PLAINTEXT"
@@ -66,7 +66,7 @@ class Highlight:
 
     @property
     def format(self) -> Union[str, dict]:
-        return Highlight.SUPPORTED_FORMAT[self.language]["parser"](self.data)
+        return Highlight.SUPPORTED_FORMAT[self.language]["method"](self.data)
 
     @format.setter
     def format(self, value) -> None:
