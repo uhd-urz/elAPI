@@ -53,8 +53,8 @@ class Highlight:
                 break
 
         if self.lang not in Highlight.SUPPORTED_FORMAT:
-            logger.error(f"The provided format '{value}' cannot be highlighted! "
-                         f"Supported formats are: {Highlight.SUPPORTED_FORMAT.keys()}")
+            logger.error(f"Provided format '{value}' cannot be highlighted! "
+                         f"Supported formats are: {', '.join(Highlight.SUPPORTED_FORMAT.keys())}.")
             print("\n", file=sys.stderr)
             self.lang = Highlight._FALLBACK_FORMAT  # falls back to "PLAINTEXT"
 
