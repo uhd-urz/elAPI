@@ -1,16 +1,31 @@
-from src import LOG_FILE_PATH, APP_NAME, HOST, records, TOKEN_BEARER, DOWNLOAD_DIR, APP_DATA_DIR, TMP_DIR
+from src import LOG_FILE_PATH, APP_NAME, HOST, records, TOKEN_BEARER, UNSAFE_API, DOWNLOAD_DIR, APP_DATA_DIR, TMP_DIR
 
 detected_config_files = records.inspect_applied_config_files
+FALLBACK = "DEFAULT"
 
-api_token_masked, api_token_source = records.inspect_applied_config["API_TOKEN_MASKED"]
-api_token_source = detected_config_files[api_token_source]
+try:
+    api_token_masked, api_token_source = records.inspect_applied_config["API_TOKEN_MASKED"]
+    api_token_source = detected_config_files[api_token_source]
+except KeyError:
+    api_token_masked, api_token_source = None, None
 
-unsafe_token_use_value, unsafe_token_use_source = records.inspect_applied_config["UNSAFE_API_TOKEN_WARNING"]
-unsafe_token_use_value = "Yes" if records.inspect_applied_config["API_TOKEN"] else "No"
-unsafe_token_use_source = detected_config_files[unsafe_token_use_source]
+try:
+    unsafe_token_use_source = records.inspect_applied_config["UNSAFE_API_TOKEN_WARNING"][1]
+    unsafe_token_use_source = detected_config_files[unsafe_token_use_source]
+except KeyError:
+    unsafe_token_use_source = FALLBACK
+finally:
+    unsafe_token_use_value = "Yes" if UNSAFE_API else "No"
 
-host_source = detected_config_files[records.inspect_applied_config["HOST"][1]]
-download_dir_source = detected_config_files[records.inspect_applied_config["DOWNLOAD_DIR"][1]]
+try:
+    host_source = detected_config_files[records.inspect_applied_config["HOST"][1]]
+except KeyError:
+    host_source = None
+
+try:
+    download_dir_source = detected_config_files[records.inspect_applied_config["DOWNLOAD_DIR"][1]]
+except KeyError:
+    download_dir_source = FALLBACK
 
 detected_config_files_formatted = "\n- " + "\n- ".join(f"`{v}`: {k}" for k, v in detected_config_files.items())
 
