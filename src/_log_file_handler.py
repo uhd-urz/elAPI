@@ -8,7 +8,7 @@ initial_validation: dict[Path:Path] = {}
 _DIRS: tuple[Path, ...] = LOG_DIR_ROOT, APP_DATA_DIR
 
 for loc in _DIRS:
-    if working_path := ProperPath(loc / LOG_FILE_NAME, suppress_stderr=True).create(allocate_amount=1500):
+    if working_path := ProperPath(loc / LOG_FILE_NAME, suppress_stderr=True).create():
         initial_validation[loc] = working_path
         break
 
@@ -20,4 +20,4 @@ except ValueError as e:
         f"{APP_DATA_DIR}/{LOG_FILE_NAME} is denied as well! This is a critical error.\n"
         f"elabftw-get will not run!") from e
 
-LOG_FILE_PATH: Path = LOG_FILE_PATH  # same variable but type annotated
+LOG_FILE_PATH: Path = LOG_FILE_PATH.expanded
