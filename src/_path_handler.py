@@ -3,14 +3,15 @@ import logging
 import os
 import re
 import sys
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from shutil import rmtree, copyfileobj
-from typing import Union, Any
+from shutil import rmtree
+from typing import Union, Any, TextIO
 
 
-class ProperPath:
-    def __init__(self, name: Union[str, Path, None],
+class CustomPath:
+    def __init__(self, name: Union[str, Path, "CustomPath", None],
                  env_var: bool = False,
                  kind: Union[str, None] = '',
                  suppress_stderr: bool = False):
@@ -27,12 +28,20 @@ class ProperPath:
         return (f"{self.__class__.__name__}(name={self.name}, env_var={self.env_var}, kind={self.kind}, "
                 f"suppress_stderr={self.suppress_stderr})")
 
+    def __eq__(self, to: Union[str, Path, "CustomPath"]):
+        return self.expanded == CustomPath(to).expanded
+
+    def __truediv__(self, other):
+        return self.expanded / other if self.expanded else None
+
     @property
     def name(self) -> str:
         return self._name
 
     @name.setter
     def name(self, value) -> None:
+        if isinstance(value, CustomPath):  # We want to be able to pass a CustomPath() to CustomPath()
+            value = value.name
         if value == "":
             raise ValueError("Path cannot be an empty string!")
         self._name = value
@@ -86,7 +95,7 @@ class ProperPath:
     def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
         return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
 
-    def create(self, allocate_amount: Union[int, None] = None) -> Union[Path, None]:
+    def create(self) -> Union[Path, None]:
         # create() returns None if a path cannot be resolved.
         path = self.expanded
         _KB_TO_BYTE_CONVERT_VAL = 10 ** 3
@@ -109,37 +118,7 @@ class ProperPath:
                 message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
                 self.path_error_logger(message, level=logging.CRITICAL)
             else:
-                if allocate_amount:
-                    allocate_amount: int = allocate_amount * _KB_TO_BYTE_CONVERT_VAL
-                    if (file_size := path.stat().st_size) < allocate_amount:
-                        extended_allocate_amount: int = allocate_amount + file_size
-                        self._allocate(amount=extended_allocate_amount, unit="KB")
                 return path
-
-    def _allocate(self, amount: int, **kwargs) -> None:
-        path = self.expanded
-
-        if self.kind != 'file':
-            raise TypeError(f"Only files can be allocated! {path} isn't a valid file.")
-
-        temp_path: Path = path.parent / f"{path.name}.tmp"
-        unit_name: str = kwargs.get("unit")
-
-        try:
-            with path.open(mode="rb") as src, temp_path.open(mode="wb") as alloc:
-                alloc.truncate(amount)
-                copyfileobj(src, alloc)
-            temp_path.rename(path)
-        except IOError as ioe:
-            if ioe.errno == errno.ENOSPC:
-                message = (f"Not enough disk space is left to be able to allocate {amount} "
-                           f"{unit_name} of memory for "
-                           f"{self._error_helper_compare_path_source(self.name, path)}.")
-                self.path_error_logger(message, level=logging.CRITICAL)
-            if ioe.errno == errno.EPERM:
-                message = (f"Permission to allocate {amount} {unit_name} of memory for "
-                           f"{self._error_helper_compare_path_source(self.name, path)} is denied.")
-                self.path_error_logger(message, level=logging.CRITICAL)
 
     def _remove_file(self, _file: Path = None, **kwargs) -> None:
         file = _file if _file else self.expanded
@@ -176,3 +155,63 @@ class ProperPath:
                         # rmtree deletes files and directories recursively.
                         # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
                         # traceback message. I.e., which file or directory exactly
+
+    @contextmanager
+    def open(self, mode="r", encoding="utf-8") -> None:
+        path = self.expanded
+        file: Union[TextIO, None] = None
+        try:
+            # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
+            # before the file is opened. E.g., FileNotFoundError
+            file: TextIO = path.open(mode=mode, encoding=encoding)
+        except FileNotFoundError as e:
+            message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
+            self.path_error_logger(message, level=logging.WARNING)
+
+            try:
+                yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
+                # I.e., contextmanager always expects a yield?
+            except AttributeError as e:
+                # However, yielding None leads to attribute calls to None
+                # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
+                attribute_in_error = str(e).split()[-1]
+                message = (f"An attempt to access attribute(s) (likely the attribute {attribute_in_error}) "
+                           f"of the file object was made, "
+                           f"but there was a problem opening the file '{path}'. "
+                           f"No further operation is possible unless file can be opened.")
+                self.path_error_logger(message, logging.WARNING)
+
+        else:
+            try:
+                # Now we yield the contextmanager expected yield
+                yield file
+            except AttributeError:
+                # This is useful for catching AttributeError when the file object is valid but the attributes accessed
+                # aren't valid/known/public.
+                message = (f"An attempt to access unknown/private attribute of the file object {file} was made. "
+                           f"No further operation is possible.")
+                self.path_error_logger(message, logging.WARNING)
+            except PermissionError as e:
+                message = (f"Permission denied while trying to use mode '{mode}' with "
+                           f"{self._error_helper_compare_path_source(self.name, path)}.")
+                self.path_error_logger(message, level=logging.CRITICAL)
+            except MemoryError as e:
+                message = (f"Out of memory while trying to use mode '{mode}' with "
+                           f"{self._error_helper_compare_path_source(self.name, path)}.")
+                self.path_error_logger(message, level=logging.CRITICAL)
+            except IOError as ioe:
+                # We catch "No disk space left" error which will likely trigger during a write attempt on the file
+                if ioe.errno == errno.ENOSPC:
+                    message = (f"Not enough disk space left while trying to use mode {mode} with "
+                               f"{self._error_helper_compare_path_source(self.name, path)}.")
+                    self.path_error_logger(message, level=logging.CRITICAL)
+        finally:
+            if file:
+                file.close()
+
+
+class ProperPath(CustomPath):
+    def create(self) -> CustomPath:
+        # We want to make sure the path returned of create() is again a CustomPath instance.
+        created = super().create()
+        return CustomPath(created) if created else None
