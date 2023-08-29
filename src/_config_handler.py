@@ -5,7 +5,7 @@ from dynaconf import Dynaconf
 
 from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
-from src._path_handler import ProperPath
+from src._path_handler import ProperPath, CustomPath
 from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
                             SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
 from src.loggers import logger
@@ -47,6 +47,8 @@ else:
     # UNSAFE_API: bool  # works but defeats the purpose of using walrus operator :/
     if UNSAFE_API := settings.get('unsafe_api_token_warning'):
         records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
+    else:
+        UNSAFE_API = True  # Default value is True if UNSAFE_API isn't defined in the config files
 
     # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
     TOKEN_BEARER: str = "Authorization"
@@ -74,4 +76,4 @@ else:
     # Although the following has the term cache, this cache is slightly more important than most caches.
     # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
     # Therefor we use '/var/tmp/elabftw-get' instead of '/var/cache' or 'XDG_CACHE_HOME'.
-    TMP_DIR: Path = ProperPath(TMP_DIR).create()
+    TMP_DIR: CustomPath = ProperPath(TMP_DIR).create()
