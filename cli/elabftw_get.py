@@ -13,10 +13,7 @@ The script treats API endpoints as its arguments.
         $ elabftw-get fetch users <id>
 """
 
-import httpx
 import typer
-from httpx import Response
-from httpx_auth import HeaderApiKey
 from rich import pretty
 from rich.console import Console
 from rich.markdown import Markdown
@@ -26,7 +23,7 @@ from apps.show_config import info
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
-from src import HOST, API_TOKEN, TOKEN_BEARER, ProperPath, TMP_DIR
+from src import ProperPath, TMP_DIR, elabftw_fetch
 
 pretty.install()
 console = Console(color_system="truecolor")
@@ -34,12 +31,6 @@ app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=Fal
 
 typer.rich_utils.STYLE_HELPTEXT = ""  # fixes https://github.com/tiangolo/typer/issues/437
 typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
-
-
-def elabftw_response(endpoint: str, unit_id: int = None) -> Response:
-    with httpx.Client(auth=HeaderApiKey(api_key=API_TOKEN, header_name=TOKEN_BEARER), verify=True) as client:
-        response = client.get(f'{HOST}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
-    return response
 
 
 @app.command()
@@ -62,7 +53,7 @@ def fetch(endpoint: Annotated[str, typer.Argument(
     `$ elabftw-get fetch users <id>`
     """
 
-    raw_response = elabftw_response(endpoint=endpoint, unit_id=unit_id)
+    raw_response = elabftw_fetch(endpoint=endpoint, unit_id=unit_id)
     prettify = Highlight(data=raw_response.json(), lang=output)
     prettify.highlight()
 
