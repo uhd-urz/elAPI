@@ -5,7 +5,7 @@ from dynaconf import Dynaconf
 
 from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
-from src._path_handler import ProperPath, CustomPath
+from src._path_handler import ProperPath
 from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
                             SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
 from src.loggers import logger
@@ -76,4 +76,4 @@ else:
     # Although the following has the term cache, this cache is slightly more important than most caches.
     # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
     # Therefor we use '/var/tmp/elabftw-get' instead of '/var/cache' or 'XDG_CACHE_HOME'.
-    TMP_DIR: CustomPath = ProperPath(TMP_DIR).create()
+    TMP_DIR: Path = ProperPath(TMP_DIR).create()

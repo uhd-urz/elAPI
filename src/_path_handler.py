@@ -10,8 +10,8 @@ from shutil import rmtree
 from typing import Union, Any, TextIO
 
 
-class CustomPath:
-    def __init__(self, name: Union[str, Path, "CustomPath", None],
+class ProperPath:
+    def __init__(self, name: Union[str, Path, None],
                  env_var: bool = False,
                  kind: Union[str, None] = '',
                  suppress_stderr: bool = False):
@@ -28,8 +28,8 @@ class CustomPath:
         return (f"{self.__class__.__name__}(name={self.name}, env_var={self.env_var}, kind={self.kind}, "
                 f"suppress_stderr={self.suppress_stderr})")
 
-    def __eq__(self, to: Union[str, Path, "CustomPath"]):
-        return self.expanded == CustomPath(to).expanded
+    def __eq__(self, to: Union[str, Path, "ProperPath"]):
+        return self.expanded == ProperPath(to).expanded
 
     def __truediv__(self, other):
         return self.expanded / other if self.expanded else None
@@ -40,7 +40,7 @@ class CustomPath:
 
     @name.setter
     def name(self, value) -> None:
-        if isinstance(value, CustomPath):  # We want to be able to pass a CustomPath() to CustomPath()
+        if isinstance(value, ProperPath):  # We want to be able to pass a CustomPath() to CustomPath()
             value = value.name
         if value == "":
             raise ValueError("Path cannot be an empty string!")
@@ -164,7 +164,7 @@ class CustomPath:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
             file: TextIO = path.open(mode=mode, encoding=encoding)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
             self.path_error_logger(message, level=logging.WARNING)
 
@@ -191,11 +191,11 @@ class CustomPath:
                 message = (f"An attempt to access unknown/private attribute of the file object {file} was made. "
                            f"No further operation is possible.")
                 self.path_error_logger(message, logging.WARNING)
-            except PermissionError as e:
+            except PermissionError:
                 message = (f"Permission denied while trying to use mode '{mode}' with "
                            f"{self._error_helper_compare_path_source(self.name, path)}.")
                 self.path_error_logger(message, level=logging.CRITICAL)
-            except MemoryError as e:
+            except MemoryError:
                 message = (f"Out of memory while trying to use mode '{mode}' with "
                            f"{self._error_helper_compare_path_source(self.name, path)}.")
                 self.path_error_logger(message, level=logging.CRITICAL)
@@ -208,10 +208,3 @@ class CustomPath:
         finally:
             if file:
                 file.close()
-
-
-class ProperPath(CustomPath):
-    def create(self) -> CustomPath:
-        # We want to make sure the path returned of create() is again a CustomPath instance.
-        created = super().create()
-        return CustomPath(created) if created else None

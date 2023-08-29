@@ -20,4 +20,4 @@ except ValueError as e:
         f"{APP_DATA_DIR}/{LOG_FILE_NAME} is denied as well! This is a critical error.\n"
         f"elabftw-get will not run!") from e
 
-LOG_FILE_PATH: Path = LOG_FILE_PATH.expanded
+LOG_FILE_PATH: Path = LOG_FILE_PATH  # same variable but type annotated
