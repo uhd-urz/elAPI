@@ -95,6 +95,9 @@ class ProperPath:
     def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
         return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
 
+    def exists(self) -> Union[Path, None]:
+        return self.expanded if self.expanded.exists() else None
+
     def create(self) -> Union[Path, None]:
         # create() returns None if a path cannot be resolved.
         path = self.expanded
