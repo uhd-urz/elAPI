@@ -44,11 +44,11 @@ else:
     records = InspectConfig(setting_object=settings)
     # records.store()
 
-    # UNSAFE_API: bool  # works but defeats the purpose of using walrus operator :/
-    if UNSAFE_API := settings.get('unsafe_api_token_warning'):
+    # UNSAFE_TOKEN_WARNING: bool  # works but defeats the purpose of using walrus operator :/
+    if UNSAFE_TOKEN_WARNING := settings.get('unsafe_api_token_warning'):
         records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
     else:
-        UNSAFE_API = True  # Default value is True if UNSAFE_API isn't defined in the config files
+        UNSAFE_TOKEN_WARNING = True  # Default value is True if UNSAFE_TOKEN_WARNING isn't defined in the config files
 
     # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
     TOKEN_BEARER: str = "Authorization"

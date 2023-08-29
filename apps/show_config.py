@@ -1,4 +1,4 @@
-from src import LOG_FILE_PATH, APP_NAME, HOST, records, TOKEN_BEARER, UNSAFE_API, DOWNLOAD_DIR, APP_DATA_DIR, TMP_DIR
+from src import LOG_FILE_PATH, APP_NAME, HOST, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR, TMP_DIR
 
 detected_config_files = records.inspect_applied_config_files
 FALLBACK = "DEFAULT"
@@ -15,7 +15,7 @@ try:
 except KeyError:
     unsafe_token_use_source = FALLBACK
 finally:
-    unsafe_token_use_value = "Yes" if UNSAFE_API else "No"
+    unsafe_token_use_value = "Yes" if UNSAFE_TOKEN_WARNING else "No"
 
 try:
     host_source = detected_config_files[records.inspect_applied_config["HOST"][1]]
