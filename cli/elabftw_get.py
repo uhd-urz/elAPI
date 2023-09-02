@@ -73,7 +73,18 @@ def cleanup() -> None:
     Remove cached data.
     """
     ProperPath(TMP_DIR).remove(output_handler=console.print)
-    console.print(f"Done!")
+    console.print("Done!")
+
+
+@app.command(name="bill-teams")
+def bill_teams(output: Annotated[str, typer.Option("--output", "-o",
+                                                   help=docs["output"], show_default=False)] = "json") -> None:
+    """*Experimental:* Generate billable teams data."""
+
+    from apps.bill_teams import get_team_owners
+    billable = get_team_owners()
+    prettify = Highlight(data=billable, lang=output)
+    prettify.highlight()
 
 
 if __name__ == '__main__':
