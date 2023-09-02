@@ -13,7 +13,7 @@ def elabftw_fetch(endpoint: str, unit_id: int = None) -> Response:
     return response
 
 
-def elabftw_throw(endpoint: str, *, unit_id: int = None, **data: Union[str, dict, int, None]) -> Response:
+def elabftw_post(endpoint: str, *, unit_id: int = None, **data: Union[str, dict, int, None]) -> Response:
     data = {k: v.strip() if isinstance(v, str) else v for k, v in data.items()}
     # Email address starting with a space makes email address invalid! Hence, v.strip()
     with httpx.Client(auth=HeaderApiKey(api_key=API_TOKEN, header_name=TOKEN_BEARER), verify=True) as client:
