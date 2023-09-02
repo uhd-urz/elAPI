@@ -1,7 +1,7 @@
 import json
-from pathlib import Path
+
+from src import ProperPath
 from src.information import Information
-from rich import print
 
 users = Information(unit_name="users")
 users_data_path = users.get_extensive_unit_data_path(unit_id=None, ignore_existing_filename=True)
@@ -10,17 +10,18 @@ users_data_path = users.get_extensive_unit_data_path(unit_id=None, ignore_existi
 
 teams = Information(unit_name="teams")
 teams_data = teams.get_unit_data(unit_id=None)
-teams_data_path = teams.export_data(suppress_message=True, data=teams_data, export_path='cache',
-                                    ignore_existing_filename=True)
+teams_data_path = teams.export_data(suppress_message=True, data=teams_data,
+                                    export_path='cache', ignore_existing_filename=True)
 
-with open(Path(users_data_path), mode="r", encoding="utf-8") as file:
+with ProperPath(users_data_path).open(mode="r", encoding="utf-8") as file:
     users_data = json.loads(file.read())
 
-with open(Path(teams_data_path), mode="r", encoding="utf-8") as file:
+with ProperPath(teams_data_path).open(mode="r", encoding="utf-8") as file:
     teams_data = json.loads(file.read())
 
 
-def get_team_owners(all_users_data: dict = users_data, all_teams_data: dict = teams_data):
+def get_team_owners(all_users_data: dict = users_data,
+                    all_teams_data: dict = teams_data):
     team_owners = {}
     # Generate team owners
     for u in all_users_data:
