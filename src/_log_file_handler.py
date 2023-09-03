@@ -15,7 +15,7 @@ for loc in _DIRS:
 try:
     LOG_FILE_PATH, *_ = initial_validation.values()
 except ValueError as e:
-    raise PermissionError(
+    raise SystemExit(
         f"{datetime.now().isoformat(sep=' ', timespec='seconds')}:FATAL: Permission to write logs in fallback path "
         f"{APP_DATA_DIR}/{LOG_FILE_NAME} is denied as well! This is a critical error.\n"
         f"elabftw-get will not run!") from e
