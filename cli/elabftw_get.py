@@ -12,7 +12,6 @@ The script treats API endpoints as its arguments.
     With elabftw-get you can do the following:
         $ elabftw-get fetch users <id>
 """
-import ast
 
 import typer
 from rich import pretty
@@ -20,11 +19,9 @@ from rich.console import Console
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
-from apps.show_config import info
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
-from src import ProperPath, TMP_DIR, elabftw_fetch, elabftw_post
 
 pretty.install()
 console = Console(color_system="truecolor")
@@ -59,6 +56,7 @@ def fetch(
     <br/>
     `$ elabftw-get fetch users --id <id>` will return information about the specific user `<id>`.
     """
+    from src import elabftw_fetch
 
     raw_response = elabftw_fetch(endpoint=endpoint, unit_id=unit_id)
     prettify = Highlight(data=raw_response.json(), lang=output)
@@ -96,7 +94,10 @@ def post(
     <br/>
     `$ elabftw-get post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
     """
+    import ast
+    from src import elabftw_post
     from json import JSONDecodeError
+
     if json_:
         valid_data: dict = ast.literal_eval(json_)
     else:
@@ -121,6 +122,8 @@ def show_config() -> None:
     """
     Get information about detected configuration values.
     """
+    from apps.show_config import info
+
     md = Markdown(info)
     console.print(md)
 
@@ -130,6 +133,8 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
+    from src import ProperPath, TMP_DIR
+
     ProperPath(TMP_DIR).remove(output_handler=console.print)
     console.print("Done!")
 
@@ -138,8 +143,8 @@ def cleanup() -> None:
 def bill_teams(output: Annotated[str, typer.Option("--output", "-o",
                                                    help=docs["output"], show_default=False)] = "json") -> None:
     """*Beta:* Generate billable teams data."""
-
     from apps.bill_teams import get_team_owners
+
     billable = get_team_owners()
     prettify = Highlight(data=billable, lang=output)
     prettify.highlight()
