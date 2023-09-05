@@ -56,6 +56,15 @@ class InspectConfig:
         else:
             applied_config["API_TOKEN_MASKED"] = (f"{token[:5]}*****{token[-5:]}", token_source) \
                 if token else ("''", token_source)
+
+        try:
+            host, host_source = applied_config["HOST"]
+        except KeyError:
+            ...
+        else:
+            if not host:
+                applied_config["HOST"] = "''", host_source
+
         return applied_config
 
     @inspect_applied_config.setter

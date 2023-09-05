@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from src import LOG_FILE_PATH, APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR, \
     TMP_DIR
 
@@ -5,11 +7,20 @@ detected_config = records.inspect_applied_config
 detected_config_files = records.inspect_applied_config_files
 FALLBACK = "DEFAULT"
 
+
+@dataclass(slots=True)
+class Missing:
+    message: str = "MISSING"
+
+    def __call__(self) -> str:
+        return self.message
+
+
 try:
     api_token_masked, api_token_source = detected_config["API_TOKEN_MASKED"]
     api_token_source = detected_config_files[api_token_source]
 except KeyError:
-    api_token_masked, api_token_source = None, None
+    api_token_masked, api_token_source = Missing(), None
 
 try:
     unsafe_token_use_source = detected_config["UNSAFE_API_TOKEN_WARNING"][1]
@@ -23,7 +34,7 @@ try:
     host_value = detected_config["HOST"][0]
     host_source = detected_config_files[detected_config["HOST"][1]]
 except KeyError:
-    host_value, host_source = None, None
+    host_value, host_source = Missing(), None
 
 try:
     download_dir_source = detected_config_files[detected_config["DOWNLOAD_DIR"][1]]
@@ -38,8 +49,11 @@ The following debug information includes configuration values and their sources 
 > Name: Value ← Source
 
 - **Log file path:** {LOG_FILE_PATH}
+""" + (f"""
 - **Host address:** {host_value} ← `{host_source}`
+""" if host_source else f"- **Host address:** _{host_value()}_\n") + (f"""
 - **API token:** {api_token_masked} ← `{api_token_source}`
+""" if api_token_source else f"- **API token:** _{api_token_masked()}_") + f"""
 - **Token bearer:** {TOKEN_BEARER}
 - **Download directory:** {DOWNLOAD_DIR} ← `{download_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
