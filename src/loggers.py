@@ -25,5 +25,9 @@ file_log_format = logging.Formatter('%(asctime)s:%(levelname)s:%(filename)s: %(m
 stdout_handler.setFormatter(stdout_log_format)
 custom_file_handler.setFormatter(file_log_format)
 
+stdout_handler.setLevel(logging.DEBUG)
+custom_file_handler.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+
 logger.addHandler(stdout_handler)
 logger.addHandler(custom_file_handler)
