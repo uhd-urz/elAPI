@@ -35,7 +35,7 @@ typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.
 def fetch(
         endpoint: Annotated[str, typer.Argument(
             help=docs["endpoint"], show_default=False)],
-        unit_id: Annotated[int, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)] = None,
+        unit_id: Annotated[str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)] = None,
         output: Annotated[str, typer.Option("--output", "-o",
                                             help=docs["output"], show_default=False)]
         = "json"
@@ -57,6 +57,10 @@ def fetch(
     `$ elabftw-get fetch users --id <id>` will return information about the specific user `<id>`.
     """
     from src import elabftw_fetch
+    from src import Validate, ConfigValidator
+
+    validate_config = Validate(ConfigValidator())
+    validate_config()
 
     raw_response = elabftw_fetch(endpoint=endpoint, unit_id=unit_id)
     prettify = Highlight(data=raw_response.json(), lang=output)
@@ -73,7 +77,7 @@ def fetch(
 def post(
         endpoint: Annotated[str, typer.Argument(
             help=docs["endpoint"], show_default=False)], *,
-        unit_id: Annotated[int, typer.Option("--id", "-i", help=docs["unit_id_post"], show_default=False)] = None,
+        unit_id: Annotated[str, typer.Option("--id", "-i", help=docs["unit_id_post"], show_default=False)] = None,
         json_: Annotated[str, typer.Option("--data", "-d", help=docs["data"], show_default=False)] = None,
         data: typer.Context = None,
         output: Annotated[str, typer.Option("--output", "-o",
@@ -97,6 +101,10 @@ def post(
     import ast
     from src import elabftw_post
     from json import JSONDecodeError
+    from src import Validate, ConfigValidator
+
+    validate_config = Validate(ConfigValidator())
+    validate_config()
 
     if json_:
         valid_data: dict = ast.literal_eval(json_)
@@ -143,6 +151,11 @@ def cleanup() -> None:
 def bill_teams(output: Annotated[str, typer.Option("--output", "-o",
                                                    help=docs["output"], show_default=False)] = "json") -> None:
     """*Beta:* Generate billable teams data."""
+    from src import Validate, ConfigValidator, PermissionValidator
+
+    validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
+    validate()
+
     from apps.bill_teams import get_team_owners
 
     billable = get_team_owners()
