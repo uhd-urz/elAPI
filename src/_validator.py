@@ -48,7 +48,7 @@ class ConfigValidator:
 
                 try:
                     # noinspection PyUnboundLocalVariable
-                    logger.info(f"Returned response: '{api_token_client.status_code}: {api_token_client.text}.'")
+                    logger.info(f"Returned response: '{api_token_client.status_code}: {api_token_client.text}'")
                 except UnboundLocalError:
                     logger.info(f"No request was made to the host URL! Exception details: '{error!r}'")
                     raise SystemExit()
@@ -102,13 +102,13 @@ class PermissionValidator:
         except (JSONDecodeError, UnsupportedProtocol, ConnectError):
             logger.critical("Something went wrong while trying to read user information! "
                             "Try to validate the configuration first with 'ConfigValidator' "
-                            "to see what's specifically went wrong.")
+                            "to see what specifically went wrong.")
             raise SystemExit()
         else:
             if self.group == "sysadmin":
                 if not user_data["is_sysadmin"]:
                     logger.critical(
-                        "User doesn't have elabftw 'sysadmin' permission to be able to access the resource.")
+                        "Requesting user doesn't have elabftw 'sysadmin' permission to be able to access the resource.")
                     raise SystemExit()
             elif self.group in ["admin", "user"]:
                 for team in user_data["teams"]:
