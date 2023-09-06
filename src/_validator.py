@@ -3,11 +3,13 @@ from functools import partial
 from json import JSONDecodeError
 from typing import ClassVar
 
-from httpx import Response, UnsupportedProtocol, ConnectError
+from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout
 
 from src._api import elabftw_fetch
 from src._config_handler import records, HOST, API_TOKEN
 from src.loggers import logger
+
+network_errors: (Exception, ...) = JSONDecodeError, UnsupportedProtocol, ConnectError, ConnectTimeout, TimeoutError
 
 
 @dataclass(slots=True)
@@ -43,7 +45,7 @@ class ConfigValidator:
             try:
                 api_token_client: Response = self.client()
                 api_token_client.json()
-            except (JSONDecodeError, UnsupportedProtocol, ConnectError) as error:
+            except network_errors as error:
                 logger.critical(f"There was a problem accessing host '{HOST}' with API token '{API_TOKEN_MASKED}'.")
 
                 try:
@@ -99,7 +101,7 @@ class PermissionValidator:
         try:
             user_client: Response = self.client()
             user_data: dict = user_client.json()
-        except (JSONDecodeError, UnsupportedProtocol, ConnectError):
+        except network_errors:
             logger.critical("Something went wrong while trying to read user information! "
                             "Try to validate the configuration first with 'ConfigValidator' "
                             "to see what specifically went wrong.")
