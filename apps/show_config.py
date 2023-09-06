@@ -8,12 +8,19 @@ detected_config_files = records.inspect_applied_config_files
 FALLBACK = "DEFAULT"
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class Missing:
     message: str = "MISSING"
 
-    def __call__(self) -> str:
+    def __str__(self):
         return self.message
+
+    def __eq__(self, other):
+        if not other or isinstance(other, Missing):
+            return True
+
+    def __bool__(self):
+        return False
 
 
 try:
@@ -51,9 +58,9 @@ The following debug information includes configuration values and their sources 
 - **Log file path:** {LOG_FILE_PATH}
 """ + (f"""
 - **Host address:** {host_value} ← `{host_source}`
-""" if host_source else f"- **Host address:** _{host_value()}_\n") + (f"""
+""" if host_source else f"- **Host address:** _{host_value}_\n") + (f"""
 - **API token:** {api_token_masked} ← `{api_token_source}`
-""" if api_token_source else f"- **API token:** _{api_token_masked()}_") + f"""
+""" if api_token_source else f"- **API token:** _{api_token_masked}_") + f"""
 - **Token bearer:** {TOKEN_BEARER}
 - **Download directory:** {DOWNLOAD_DIR} ← `{download_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
