@@ -149,7 +149,9 @@ def cleanup() -> None:
 
 
 @app.command(name="bill-teams")
-def bill_teams(export: Annotated[Optional[bool], typer.Option("--export",
+def bill_teams(clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
+                                                             help=docs["clean"], show_default=False)] = False,
+               export: Annotated[Optional[bool], typer.Option("--export",
                                                               help=docs["export"], show_default=False)] = False,
 
                output: Annotated[Optional[str], typer.Option("--output", "-o",
@@ -158,7 +160,7 @@ def bill_teams(export: Annotated[Optional[bool], typer.Option("--export",
                ) -> None:
     """*Beta:* Generate billable teams data."""
 
-    from src import Validate, ConfigValidator, PermissionValidator
+    from src import CLEANUP_AFTER, Validate, ConfigValidator, PermissionValidator
 
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
     validate()
@@ -178,6 +180,13 @@ def bill_teams(export: Annotated[Optional[bool], typer.Option("--export",
         console.print(f"Data successfully exported to '{FILE}' in '{output}' format.")
     else:
         serialized_data.highlight()
+
+    if clean or CLEANUP_AFTER:
+        from time import sleep
+
+        console.print("\nCleaning up...", style="yellow")
+        sleep(1)
+        cleanup()
 
 
 if __name__ == '__main__':

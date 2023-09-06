@@ -71,3 +71,7 @@ if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_dat
 # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
 # Therefor we use '/var/tmp/elabftw-get' instead of '/var/cache' or 'XDG_CACHE_HOME'.
 TMP_DIR: Path = ProperPath(TMP_DIR).create()
+
+# Whether to run "cleanup" command on CLI after finishing a task (when available)
+CLEANUP_AFTER: bool = settings.get('cleanup_after_finish')
+# Default value is False if cleanup_after_finish isn't defined in the config file

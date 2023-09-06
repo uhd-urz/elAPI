@@ -19,6 +19,8 @@ __PARAMETERS__doc__ = {
             f"by the JSON content like with `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
             f"`{APP_NAME} post teams --name Alpha`.",
+    "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
+             "_--cleanup_ is automatically applied.",
     "export": f"Beta: Export output to `download_dir` defined in configuration file. "
               f"If `download_dir` is not defined, then _--export_ falls back to `{FALLBACK_DOWNLOAD_DIR}`."
               f"_--export_ doesn't support a new path as argument.",
