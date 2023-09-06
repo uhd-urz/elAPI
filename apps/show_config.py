@@ -53,7 +53,7 @@ try:
 except KeyError:
     cleanup_source = FALLBACK
 finally:
-    cleanup_value = "True" if CLEANUP_AFTER else "False"
+    cleanup_value = "Yes" if CLEANUP_AFTER else "No"
 
 detected_config_files_formatted = "\n- " + "\n- ".join(f"`{v}`: {k}" for k, v in detected_config_files.items())
 

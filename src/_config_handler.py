@@ -26,12 +26,12 @@ settings = Dynaconf(
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
-HOST: str = settings.get("host")  # case-insensitive: settings.get("HOST") == settings.get("host")
+HOST: str = settings.get('host')  # case-insensitive: settings.get("HOST") == settings.get("host")
 if not HOST:
     logger.critical(f"'host' is empty or missing from {CONFIG_FILE_NAME} file. "
                     f"Please make sure host (URL pointing to root API endpoint) is included.")
 
-API_TOKEN: str = settings.get("api_token")
+API_TOKEN: str = settings.get('api_token')
 if not API_TOKEN:
     logger.critical(f"'api_token' is empty or missing from {CONFIG_FILE_NAME} file. "
                     f"Please make sure api token with at least read access is included.")
@@ -40,14 +40,20 @@ if not API_TOKEN:
 records = InspectConfig(setting_object=settings)
 # records.store()
 
-# UNSAFE_TOKEN_WARNING: bool  # works but defeats the purpose of using walrus operator :/
-if UNSAFE_TOKEN_WARNING := settings.get('unsafe_api_token_warning'):
-    records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
+# UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
+try:
+    settings['unsafe_api_token_warning']
+except KeyError:
+    UNSAFE_TOKEN_WARNING: bool = True
 else:
-    UNSAFE_TOKEN_WARNING = True  # Default value is True if UNSAFE_TOKEN_WARNING isn't defined in the config files
+    UNSAFE_TOKEN_WARNING: bool = settings.as_bool('unsafe_api_token_warning')
+    # equivalent to settings.get(<key>, cast='@bool')
+
+if UNSAFE_TOKEN_WARNING:
+    records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
-TOKEN_BEARER: str = "Authorization"
+TOKEN_BEARER: str = 'Authorization'
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Download location
@@ -73,5 +79,5 @@ if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_dat
 TMP_DIR: Path = ProperPath(TMP_DIR).create()
 
 # Whether to run "cleanup" command on CLI after finishing a task (when available)
-CLEANUP_AFTER: bool = settings.get('cleanup_after_finish')
+CLEANUP_AFTER: bool = settings.as_bool('cleanup_after_finish')
 # Default value is False if cleanup_after_finish isn't defined in the config file
