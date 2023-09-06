@@ -1,8 +1,10 @@
+import sys
 from dataclasses import dataclass
 from functools import partial
 from json import JSONDecodeError
 from typing import ClassVar
 
+import typer
 from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout
 
 from src._api import elabftw_fetch
@@ -21,25 +23,26 @@ class ConfigValidator:
         try:
             records.inspect_applied_config["HOST"]
         except KeyError:
-            raise SystemExit(
-                f"Host is missing from the config files! Host contains the URL of the root API endpoint. Example:\n"
-                f"{ConfigValidator._HOST_EXAMPLE}")
+            print(f"Host is missing from the config files! Host contains the URL of the root API endpoint. Example:\n"
+                  f"{ConfigValidator._HOST_EXAMPLE}", file=sys.stderr)
+            raise typer.Exit(1)
         else:
             if not HOST:
-                raise SystemExit(f"Host is detected but it's empty! Host contains the URL of the root API endpoint. "
-                                 f"Example: {ConfigValidator._HOST_EXAMPLE}")
+                print(f"Host is detected but it's empty! Host contains the URL of the root API endpoint. "
+                      f"Example: {ConfigValidator._HOST_EXAMPLE}", file=sys.stderr)
+                raise typer.Exit(1)
 
         try:
             records.inspect_applied_config["API_TOKEN"]
         except KeyError:
-            raise SystemExit(
-                "API token is missing from the config files! An API token with at least read-access is required "
-                "to make requests.")
+            print("API token is missing from the config files! An API token with at least read-access is required "
+                  "to make requests.", file=sys.stderr)
+            raise typer.Exit(1)
         else:
             if not API_TOKEN:
-                raise SystemExit(
-                    "API token is detected but it's empty! An API token with at least read-access is required "
-                    "to make requests.")
+                print("API token is detected but it's empty! An API token with at least read-access is required "
+                      "to make requests.", file=sys.stderr)
+                raise typer.Exit(1)
 
             API_TOKEN_MASKED = records.inspect_applied_config.get("API_TOKEN_MASKED")[0]
             try:
@@ -53,15 +56,16 @@ class ConfigValidator:
                     logger.info(f"Returned response: '{api_token_client.status_code}: {api_token_client.text}'")
                 except UnboundLocalError:
                     logger.info(f"No request was made to the host URL! Exception details: '{error!r}'")
-                    raise SystemExit()
+                    raise typer.Exit(1)
 
                 if api_token_client.is_server_error:
                     logger.critical(
                         f"There was a problem with the host server: '{HOST}'. Please contact an administrator.")
-                    raise SystemExit()
-                raise SystemExit("\nThere is likely nothing wrong with the host server. Possible reasons for failure:\n"
-                                 "- Invalid/expired/incorrect API token.\n"
-                                 "- Incorrect host URL.\n")
+                    raise typer.Exit(1)
+                print("\nThere is likely nothing wrong with the host server. Possible reasons for failure:\n"
+                      "- Invalid/expired/incorrect API token.\n"
+                      "- Incorrect host URL.\n", file=sys.stderr)
+                raise typer.Exit(1)
 
 
 class PermissionValidator:
@@ -105,22 +109,22 @@ class PermissionValidator:
             logger.critical("Something went wrong while trying to read user information! "
                             "Try to validate the configuration first with 'ConfigValidator' "
                             "to see what specifically went wrong.")
-            raise SystemExit()
+            raise typer.Exit(1)
         else:
             if self.group == "sysadmin":
                 if not user_data["is_sysadmin"]:
                     logger.critical(
                         "Requesting user doesn't have elabftw 'sysadmin' permission to be able to access the resource.")
-                    raise SystemExit()
+                    raise typer.Exit(1)
             elif self.group in ["admin", "user"]:
                 for team in user_data["teams"]:
                     if not team["id"] == self.team_id:
                         logger.critical(
                             f"The provided team ID '{self.team_id}' didn't match any of the teams the user is part of.")
-                        raise SystemExit()
+                        raise typer.Exit(1)
                     if not team["usergroup"] in [self.GROUPS[self.group], self.GROUPS["sysadmin"]]:
                         logger.critical(f"Requesting user doesn't belong to the permission group '{self.group}'!")
-                        raise SystemExit()
+                        raise typer.Exit(1)
 
 
 class Validate:
