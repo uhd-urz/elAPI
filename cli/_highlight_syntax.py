@@ -27,12 +27,12 @@ class Highlight:
             "pattern": r"ya?ml",
             "method": partial(yaml.dump, allow_unicode=True)
         },
-        "PLAINTEXT": {
-            "pattern": r"(plain)?text",
-            "method": lambda data: data
+        "TXT": {
+            "pattern": r"(plain)?te?xt",
+            "method": lambda data: str(data)
         }
     }
-    _FALLBACK_FORMAT: ClassVar[str] = "PLAINTEXT"
+    _FALLBACK_FORMAT: ClassVar[str] = "TXT"
     console: ClassVar[Console] = Console(color_system="truecolor")
     data: Union[dict, str]
     lang: str = "JSON"
