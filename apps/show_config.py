@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from src import LOG_FILE_PATH, APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR, \
-    TMP_DIR
+from src import (LOG_FILE_PATH, APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR,
+                 TMP_DIR, CLEANUP_AFTER)
 
 detected_config = records.inspect_applied_config
 detected_config_files = records.inspect_applied_config_files
@@ -48,6 +48,13 @@ try:
 except KeyError:
     download_dir_source = FALLBACK
 
+try:
+    cleanup_source = detected_config_files[detected_config["CLEANUP_AFTER_FINISH"][1]]
+except KeyError:
+    cleanup_source = FALLBACK
+finally:
+    cleanup_value = "Yes" if CLEANUP_AFTER else "No"
+
 detected_config_files_formatted = "\n- " + "\n- ".join(f"`{v}`: {k}" for k, v in detected_config_files.items())
 
 info = (f"""
@@ -67,10 +74,12 @@ The following debug information includes configuration values and their sources 
 - **Caching directory:** {TMP_DIR}
 - **Unsafe API token use warning:** {unsafe_token_use_value} ← 
 `{unsafe_token_use_source}`
+- **Cleanup cache after finishing task:** {cleanup_value} ← 
+`{cleanup_source}`
 
 
 **_Detected configuration files that are in use:_**
 {detected_config_files_formatted}
 """ + (f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
-""" if FALLBACK in (download_dir_source, unsafe_token_use_source) else ""))
+""" if FALLBACK in (download_dir_source, unsafe_token_use_source, cleanup_source) else ""))

@@ -12,6 +12,7 @@ The script treats API endpoints as its arguments.
     With elabftw-get you can do the following:
         $ elabftw-get fetch users <id>
 """
+from typing import Optional
 
 import typer
 from rich import pretty
@@ -144,14 +145,22 @@ def cleanup() -> None:
     from src import ProperPath, TMP_DIR
 
     ProperPath(TMP_DIR).remove(output_handler=console.print)
-    console.print("Done!")
+    console.print("Done!", style="green")
 
 
 @app.command(name="bill-teams")
-def bill_teams(output: Annotated[str, typer.Option("--output", "-o",
-                                                   help=docs["output"], show_default=False)] = "json") -> None:
+def bill_teams(clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
+                                                             help=docs["clean"], show_default=False)] = False,
+               export: Annotated[Optional[bool], typer.Option("--export",
+                                                              help=docs["export"], show_default=False)] = False,
+
+               output: Annotated[Optional[str], typer.Option("--output", "-o",
+                                                             help=docs["output"], show_default=False)] = "json"
+
+               ) -> None:
     """*Beta:* Generate billable teams data."""
-    from src import Validate, ConfigValidator, PermissionValidator
+
+    from src import CLEANUP_AFTER, Validate, ConfigValidator, PermissionValidator
 
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
     validate()
@@ -159,8 +168,25 @@ def bill_teams(output: Annotated[str, typer.Option("--output", "-o",
     from apps.bill_teams import get_team_owners
 
     billable = get_team_owners()
-    prettify = Highlight(data=billable, lang=output)
-    prettify.highlight()
+    serialized_data = Highlight(data=billable, lang=output)
+
+    if export:
+        from src import ProperPath, DOWNLOAD_DIR
+        from pathlib import Path
+
+        FILE: Path = DOWNLOAD_DIR / f"{bill_teams.__name__}.{serialized_data.language.lower()}"
+        with ProperPath(FILE).open(mode="w") as file:
+            file.write(serialized_data.format)
+        console.print(f"Data successfully exported to '{FILE}' in '{output}' format.")
+    else:
+        serialized_data.highlight()
+
+    if clean or CLEANUP_AFTER:
+        from time import sleep
+
+        console.print("\nCleaning up...", style="yellow")
+        sleep(1)
+        cleanup()
 
 
 if __name__ == '__main__':

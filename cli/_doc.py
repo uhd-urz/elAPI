@@ -3,6 +3,7 @@ This script includes docstring for elabftw-get. The docstrings are mainly meant 
 """
 from cli._highlight_syntax import Highlight
 from src import APP_NAME
+from src.core_names import FALLBACK_DOWNLOAD_DIR
 
 supported_highlighting_formats = ", ".join(f"**{_}**" for _ in Highlight.SUPPORTED_FORMAT.keys())
 
@@ -18,10 +19,15 @@ __PARAMETERS__doc__ = {
             f"by the JSON content like with `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
             f"`{APP_NAME} post teams --name Alpha`.",
+    "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
+             "_--cleanup_ is automatically applied.",
+    "export": f"Beta: Export output to `download_dir` defined in configuration file. "
+              f"If `download_dir` is not defined, then _--export_ falls back to `{FALLBACK_DOWNLOAD_DIR}`."
+              f"_--export_ doesn't support a new path as argument.",
     "output": f"Format style for printing output. Supported values are: {supported_highlighting_formats}. "
               "The values are case insensitive. The default format is `JSON`. "
-              "When 'plaintext' is used, response will be sent to STDOUT in *original*, un-formatted, "
+              "When 'txt' is used, response will be sent to STDOUT in *original*, un-formatted, "
               "without syntax highlighting. This can be utilized if one wishes to pipe the output to "
               "some external formatting program like `less`. "
-              "If an unsupported format value is provided then the output falls back to 'plaintext'."
+              "If an unsupported format value is provided then the output falls back to 'txt'."
 }
