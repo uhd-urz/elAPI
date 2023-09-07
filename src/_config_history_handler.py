@@ -49,9 +49,21 @@ class InspectConfig:
             for k, v in config["value"].items():
                 config["value"][k] = v, config["identifier"]
                 applied_config.update(config["value"])
+        try:
+            token, token_source = applied_config["API_TOKEN"]
+        except KeyError:
+            ...
+        else:
+            applied_config["API_TOKEN_MASKED"] = (f"{token[:5]}*****{token[-5:]}", token_source) \
+                if token else ("''", token_source)
 
-        token, token_source = applied_config["API_TOKEN"]
-        applied_config["API_TOKEN_MASKED"] = f"{token[:5]}*****{token[-5:]}", token_source
+        try:
+            host, host_source = applied_config["HOST"]
+        except KeyError:
+            ...
+        else:
+            if not host:
+                applied_config["HOST"] = "''", host_source
 
         return applied_config
 
