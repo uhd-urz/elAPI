@@ -1,42 +1,38 @@
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy2
-from typing import Union
+from typing import Union, ClassVar
 
-from cli.elabftw_get import elabftw_response
+from src import ProperPath, elabftw_fetch
 from src._config_handler import DOWNLOAD_DIR
 from src.core_names import TMP_DIR
 
 
+@dataclass(slots=True)
 class Information:
-
-    def __init__(self, unit_name: str, unit_data_export_dir: Union[str, Path] = None):
-        self.unit_name = unit_name
-        self.unit_data_export_dir = unit_data_export_dir if unit_data_export_dir else DOWNLOAD_DIR
+    unit_name: str
+    unit_data_export_dir: Union[str, Path] = DOWNLOAD_DIR
+    DATA_FILE_EXT: ClassVar[str] = "json"
 
     def get_unit_data(self, unit_id: Union[None, int] = None) -> tuple[Union[None, int], Union[list[dict], dict]]:
         """Fetches the current unit list from direct API response without changing the format."""
-        response = elabftw_response(endpoint=self.unit_name, unit_id=unit_id).json()
+        response = elabftw_fetch(endpoint=self.unit_name, unit_id=unit_id).json()
         return unit_id, response
-
-    @staticmethod
-    def file_already_exists(directory: Path, filename: Union[str, Path]):
-        if (directory / filename).exists():
-            return directory / filename
 
     def get_extensive_unit_data_path(self, unit_id: Union[None, int] = None, filename: Union[Path, str] = None,
                                      ignore_existing_filename: bool = True) -> Path:
-        filename = filename if filename else f"extensive_{self.unit_name}_data.json"
+        filename = filename if filename else f"extensive_{self.unit_name}_data.{Information.DATA_FILE_EXT}"
         id_prefix = "userid" if self.unit_name == "users" else "id"  # to read ids from inside the response data
         # TODO: Not all unit names (endpoints) may not have their key name for id as 'id'
 
         if not ignore_existing_filename:
-            return self.file_already_exists(TMP_DIR, filename)
+            return ProperPath(TMP_DIR / filename).exists()
 
         # this will without a unit id create all_<information type>_data.json first
         all_unit_data_path = self._cache_unit_data(self.get_unit_data(unit_id=unit_id))
 
-        with open(all_unit_data_path, "r", encoding="utf-8") as file:
+        with ProperPath(all_unit_data_path).open(mode="r", encoding="utf-8") as file:
             structured = json.loads(file.read())
 
         if not unit_id:
@@ -52,19 +48,19 @@ class Information:
     def _cache_unit_data(self, unit_data: tuple[Union[None, int], Union[list[dict], dict]], filename: str = None,
                          ignore_existing_filename: bool = True) -> Path:
         """Writes unit data from converted JSON to a JSON file in pre-defined directory"""
-        FILE_EXT = 'json'
+        # FILE_EXT = 'json'
         data_path = TMP_DIR
         unit_id, raw_data = unit_data
 
         # First we are saving it in a temporary directory: /var/tmp/elabftw-get
-        filename = filename if filename else f"all_{self.unit_name}.{FILE_EXT}" if not unit_id \
-            else f"{self.unit_name}_{unit_id}.{FILE_EXT}"
+        filename = filename if filename else f"all_{self.unit_name}.{Information.DATA_FILE_EXT}" if not unit_id \
+            else f"{self.unit_name}_{unit_id}.{Information.DATA_FILE_EXT}"
 
         if not ignore_existing_filename:
-            return self.file_already_exists(data_path, filename)
+            return ProperPath(data_path / filename).exists()
 
-        with open(data_path / filename, "w", encoding="utf-8") as file:
-            file.write(self._convert_to_json(raw_data))
+        with ProperPath(data_path / filename).open("w", "utf-8") as file:
+            file.write(json.dumps(raw_data))
 
         return data_path / filename
 
@@ -83,8 +79,3 @@ class Information:
         if not suppress_message:
             print(f"{self.unit_name} data successfully exported to: {self.unit_data_export_dir}/{filepath.name}")
         return self.unit_data_export_dir / filepath.name
-
-    @staticmethod
-    def _convert_to_json(raw_data: Union[list, dict]) -> str:
-        """Converts dictionary to JSON"""
-        return json.dumps(raw_data)

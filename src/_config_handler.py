@@ -3,9 +3,9 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
+from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
 from src._path_handler import ProperPath
-from src._config_history_handler import InspectConfig
 from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
                             SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
 from src.loggers import logger
@@ -44,9 +44,11 @@ else:
     records = InspectConfig(setting_object=settings)
     # records.store()
 
-    # UNSAFE_API: bool  # works but defeats the purpose of using walrus operator :/
-    if UNSAFE_API := settings.get('unsafe_api_token_warning'):
+    # UNSAFE_TOKEN_WARNING: bool  # works but defeats the purpose of using walrus operator :/
+    if UNSAFE_TOKEN_WARNING := settings.get('unsafe_api_token_warning'):
         records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
+    else:
+        UNSAFE_TOKEN_WARNING = True  # Default value is True if UNSAFE_TOKEN_WARNING isn't defined in the config files
 
     # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
     TOKEN_BEARER: str = "Authorization"
@@ -65,8 +67,9 @@ else:
     # I.e., APP_DATA_DIR could still return None when the logs are stored in /var/log/elabftw-get.
     # I.e., Both APP_DATA_DIR and FALLBACK_DIR are None
     # In most cases though logs and application data would share the same local directory: ~/.local/share/elabftw-get
-    if not initial_validation.get(APP_DATA_DIR):
-        logger.critical(f"Permission is denied when trying to create fallback directory '{APP_DATA_DIR=}' "
+    _proper_app_data_dir = ProperPath(APP_DATA_DIR)
+    if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_data_dir.create())):
+        logger.critical(f"Permission is denied when trying to create fallback directory '{_proper_app_data_dir.name}' "
                         f"to store {APP_NAME} internal application data. {APP_NAME}'s functionalities will be limited.")
 
     # API response data location
