@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1000" height="1000" viewBox="0 0 1000 1000" xml:space="preserve">
+<desc>Created with Fabric.js 3.5.0</desc>
+<defs>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+<g transform="matrix(0.9091 0 0 0.9091 500.7273 892.9714)" id="Calque_1">
+<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(255,255,204); fill-rule: nonzero; opacity: 1;" points="0,0.1395 0.481,-0.1395 -0.481,-0.1395 "/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 500.0037 500.0042)" id="Calque_1">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(214,204,204); fill-rule: nonzero; opacity: 1;" transform=" translate(-500.806, -500.5815)" d="M 506.854 952.918 h -12.106 L 94.41 721.789 V 252.532 L 446.027 49.518 v 287.3 l -12.485 5.44 c -60.576 26.389 -99.718 86.099 -99.718 152.115 c 0 91.461 74.408 165.868 165.868 165.868 c 91.458 0 165.865 -74.407 165.865 -165.868 c 0 -66.022 -39.141 -125.732 -99.715 -152.115 l -12.493 -5.44 V 48.245 l 353.853 204.284 v 469.26 L 506.854 952.918 z M 135.987 697.787 L 500.8 908.405 l 364.825 -210.618 v -421.25 l -270.699 -156.28 v 189.82 c 68.596 35.455 112.209 106.356 112.209 184.296 c 0 114.384 -93.056 207.445 -207.442 207.445 s -207.445 -93.062 -207.445 -207.445 c 0 -77.934 43.61 -148.835 112.203 -184.296 V 121.533 L 135.987 276.534 V 697.787 z" stroke-linecap="round"/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 843.3364 695.3041)" id="Calque_1">
+<line style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" x1="-8.743999999999971" y1="5.0464999999999804" x2="8.743999999999971" y2="-5.0464999999999804"/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 150.181 332.9009)" id="Calque_1">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(51,51,51); fill-rule: nonzero; opacity: 1;" transform=" translate(-115.199, -316.191)" d="M 115.199 316.191" stroke-linecap="round"/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 500.734 531.6123)" id="Calque_1">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(232,2,55); fill-rule: nonzero; opacity: 1;" transform=" translate(-500.806, -534.7725)" d="M 628.928 430.731 H 372.681 c -9.808 19.42 -15.368 41.345 -15.368 64.593 c 0 79.245 64.243 143.49 143.493 143.49 c 79.249 0 143.493 -64.245 143.493 -143.49 C 644.299 472.077 638.742 450.151 628.928 430.731 z M 437.898 487.158 c -10.661 0 -19.304 -8.643 -19.304 -19.304 s 8.643 -19.304 19.304 -19.304 s 19.304 8.643 19.304 19.304 S 448.559 487.158 437.898 487.158 z M 505.171 532.279 c -12.868 0 -23.3 -10.436 -23.3 -23.301 c 0 -12.877 10.432 -23.306 23.3 -23.306 c 12.877 0 23.306 10.429 23.306 23.306 C 528.477 521.844 518.048 532.279 505.171 532.279 z M 567.084 491.612 c -13.12 0 -23.758 -10.638 -23.758 -23.758 s 10.638 -23.758 23.758 -23.758 c 13.121 0 23.759 10.638 23.759 23.758 S 580.205 491.612 567.084 491.612 z" stroke-linecap="round"/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 520.9025 388.018)" id="Calque_1">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(232,2,55); fill-rule: nonzero; opacity: 1;" transform=" translate(-522.9925, -376.8195)" d="M 546.296 376.822 c 0 12.865 -10.429 23.301 -23.306 23.301 c -12.865 0 -23.301 -10.436 -23.301 -23.301 c 0 -12.877 10.436 -23.306 23.301 -23.306 C 535.867 353.517 546.296 363.945 546.296 376.822 z" stroke-linecap="round"/>
+</g>
+<g transform="matrix(0.9091 0 0 0.9091 474.5702 402.8484)" id="Calque_1">
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; is-custom-font: none; font-file-url: none; fill: rgb(232,2,55); fill-rule: nonzero; opacity: 1;" transform=" translate(-472.027, -393.133)" d="M 488.338 393.133 c 0 9.002 -7.302 16.311 -16.311 16.311 c -9.008 0 -16.311 -7.309 -16.311 -16.311 c 0 -9.014 7.303 -16.311 16.311 -16.311 C 481.036 376.822 488.338 384.119 488.338 393.133 z" stroke-linecap="round"/>
+</g>
+</svg>
