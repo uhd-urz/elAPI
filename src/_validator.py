@@ -5,13 +5,14 @@ from json import JSONDecodeError
 from typing import ClassVar
 
 import typer
-from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout
+from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout, InvalidURL
 
 from src._api import elabftw_fetch
 from src._config_handler import records, HOST, API_TOKEN
 from src.loggers import logger
 
-network_errors: (Exception, ...) = JSONDecodeError, UnsupportedProtocol, ConnectError, ConnectTimeout, TimeoutError
+network_errors: (Exception, ...) = (JSONDecodeError, UnsupportedProtocol, InvalidURL,
+                                    ConnectError, ConnectTimeout, TimeoutError)
 
 
 @dataclass(slots=True)
