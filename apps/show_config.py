@@ -1,7 +1,4 @@
-from dataclasses import dataclass
-
-from colorama import Style, Fore
-
+from cli import Missing
 from src import (LOG_FILE_PATH, APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR,
                  TMP_DIR, CLEANUP_AFTER)
 
@@ -9,31 +6,11 @@ detected_config = records.inspect_applied_config
 detected_config_files = records.inspect_applied_config_files
 FALLBACK = "DEFAULT"
 
-
-@dataclass(slots=True, eq=False)
-class Missing:
-    message: str = "MISSING"
-    ansi_color: str = ""
-
-    def __str__(self) -> str:
-        return self.message
-
-    def __eq__(self, other) -> bool:
-        if not other or isinstance(other, Missing):
-            return True
-
-    def __bool__(self) -> bool:
-        return False
-
-    def colorize(self) -> str:
-        return f"{self.ansi_color}{self.message}{Style.RESET_ALL}"
-
-
 try:
     api_token_masked, api_token_source = detected_config["API_TOKEN_MASKED"]
     api_token_source = detected_config_files[api_token_source]
 except KeyError:
-    api_token_masked, api_token_source = Missing(ansi_color=Fore.RED), None
+    api_token_masked, api_token_source = Missing(), None
 
 try:
     unsafe_token_use_source = detected_config["UNSAFE_API_TOKEN_WARNING"][1]
@@ -47,7 +24,7 @@ try:
     host_value = detected_config["HOST"][0]
     host_source = detected_config_files[detected_config["HOST"][1]]
 except KeyError:
-    host_value, host_source = Missing(ansi_color=Fore.RED), None
+    host_value, host_source = Missing(), None
 
 try:
     download_dir_source = detected_config_files[detected_config["DOWNLOAD_DIR"][1]]
