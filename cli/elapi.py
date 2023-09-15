@@ -1,6 +1,6 @@
 #!.venv/bin/python3
 
-"""``elabftw-get`` script is a wrapper around an HTTP client (called ``httpx``). The goal is to be able to send API
+"""``elapi`` script is a wrapper around an HTTP client (called ``httpx``). The goal is to be able to send API
 queries from the command line following the API definitions from https://doc.elabftw.net/api/v2/ with ease.
 The script treats API endpoints as its arguments.
 
@@ -9,8 +9,8 @@ The script treats API endpoints as its arguments.
     From https://doc.elabftw.net/api/v2/#/Users/read-user:
         > GET /users/{id}
 
-    With elabftw-get you can do the following:
-        $ elabftw-get fetch users <id>
+    With elapi you can do the following:
+        $ elapi fetch users <id>
 """
 from typing import Optional
 
@@ -51,11 +51,11 @@ def fetch(
     From [the official documentation about `GET users`](https://doc.elabftw.net/api/v2/#/Users/read-user),
     > GET /users/{id}
 
-    With `elabftw-get` you can do the following:
+    With `elapi` you can do the following:
     <br/>
-    `$ elabftw-get fetch users` will return list of all users.
+    `$ elapi fetch users` will return list of all users.
     <br/>
-    `$ elabftw-get fetch users --id <id>` will return information about the specific user `<id>`.
+    `$ elapi fetch users --id <id>` will return information about the specific user `<id>`.
     """
     from src import elabftw_fetch
     from src import Validate, ConfigValidator
@@ -95,9 +95,9 @@ def post(
     From [the official documentation about `POST users`](https://doc.elabftw.net/api/v2/#/Users/post-user),
     > POST /users/{id}
 
-    With `elabftw-get` you can do the following:
+    With `elapi` you can do the following:
     <br/>
-    `$ elabftw-get post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
+    `$ elapi post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
     """
     import ast
     from src import elabftw_post

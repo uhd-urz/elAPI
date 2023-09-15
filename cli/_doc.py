@@ -1,5 +1,5 @@
 """
-This script includes docstring for elabftw-get. The docstrings are mainly meant to be used with a CLI interface.
+This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
 from cli._highlight_syntax import Highlight
 from src import APP_NAME

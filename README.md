@@ -18,22 +18,22 @@ by [`PEP 518`](https://peps.python.org/pep-0518/).
    environment is created
    inside `./.venv`! See `poetry env info`.
 5. Run `poetry install`. This will install all the necessary dependencies.
-6. `elabftw-get` supports the following configuration locations:
-    - `/etc/elabftw-get.yaml` <- Lowest precedence
-    - `$HOME/.config/elabftw-get.yaml`
-    - `<project directory of elabftw-get (this repository)>/elabftw-get.yaml` <- highest precedence
+6. `elapi` supports the following configuration locations:
+    - `/etc/elapi.yaml` <- Lowest precedence
+    - `$HOME/.config/elapi.yaml`
+    - `<project directory of elapi (this repository)>/elapi.yaml` <- highest precedence
 
-   `elabftw-get` expects to parse necessary authentication information from the `elabftw-get.yaml`.
+   `elapi` expects to parse necessary authentication information from the `elapi.yaml`.
    ```yaml
    
-   # elabftw-get.yaml example
+   # elapi.yaml example
    ---
    host: "https://elabftw-dev.uni-heidelberg.de/api/v2"
    api_token: "<your api token>"
    unsafe_api_token_warning: true
-   # when true elabftw-get will show warning if api_token is included in the project-level configuration file
+   # when true elapi will show warning if api_token is included in the project-level configuration file
    download_dir: "~/Downloads"  
-   # elabftw-get uses /var/tmp/elabftw-get to store response data from back from API requests. However, a user may wish to use those data and have them saved somewhere else. This field defines an export path for that purpose.  
+   # elapi uses /var/tmp/elapi to store response data from back from API requests. However, a user may wish to use those data and have them saved somewhere else. This field defines an export path for that purpose.  
    ```
 
 7. Restart virtual environment for the changes to take effect.
@@ -43,14 +43,14 @@ by [`PEP 518`](https://peps.python.org/pep-0518/).
    Spawning shell within ./elabftw/.venv ...
    ```
 
-## elabftw-get CLI
+## elapi CLI
 
-`elabftw-get` also provides a CLI program for ease of making common requests. It needs to added to one of your
+`elapi` also provides a CLI program for ease of making common requests. It needs to added to one of your
 paths.
 
 ```bash
 $ export PYTHONPATH=".:$PYTHONPATH"
-$ ln -s <path to project directory>/cli/elabftw_get.py  ~/.local/bin/elabftw-get
+$ ln -s <path to project directory>/cli/elapi.py  ~/.local/bin/elapi
 ```
 
 Run `elabftw_get --help` to see the supported options. Exporting `PYTHONPATH=".:$PYTHONPATH"` will not be necessary for

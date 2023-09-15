@@ -52,7 +52,7 @@ class Information:
         data_path = TMP_DIR
         unit_id, raw_data = unit_data
 
-        # First we are saving it in a temporary directory: /var/tmp/elabftw-get
+        # First we are saving it in a temporary directory: /var/tmp/elapi
         filename = filename if filename else f"all_{self.unit_name}.{Information.DATA_FILE_EXT}" if not unit_id \
             else f"{self.unit_name}_{unit_id}.{Information.DATA_FILE_EXT}"
 

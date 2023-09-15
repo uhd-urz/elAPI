@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "elabftw-get"
-version = "0.1"
-description = "elabftw API client extension for the FIRE division at Universität Heidelberg"
-authors = ["Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>"]
+name = "elapi"
+version = "0.25"
+description = "elabftw API client for the FIRE division at Universität Heidelberg"
+authors = [
+    "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
+    "Alexander Haller <alexander.haller@urz.uni-heidelberg.de>"
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]

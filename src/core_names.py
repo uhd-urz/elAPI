@@ -6,7 +6,7 @@ from src._path_handler import ProperPath
 # variables with leading underscores here indicate that they are to be overwritten by _config_handler.py
 # In which case, import their counterparts from src/_config_handler.py
 # name definitions
-APP_NAME: str = "elabftw-get"
+APP_NAME: str = "elapi"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
 CONFIG_FILE_NAME: str = f"{APP_NAME}.yaml"
 CONFIG_HISTORY_FILE_NAME: str = f"{APP_NAME}-active-config.json"
@@ -31,7 +31,7 @@ FALLBACK_CONFIG_DIR: Path = user_home / '.config'
 SYSTEM_CONFIG_LOC: Path = Path("/etc") / CONFIG_FILE_NAME
 LOCAL_CONFIG_LOC: Path = XDG_CONFIG_HOME / CONFIG_FILE_NAME if XDG_CONFIG_HOME \
     else FALLBACK_CONFIG_DIR / CONFIG_FILE_NAME
-# In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elabftw-get.yaml
+# In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yaml
 PROJECT_CONFIG_LOC: Path = cur_dir / CONFIG_FILE_NAME
 
 # App internal data directory

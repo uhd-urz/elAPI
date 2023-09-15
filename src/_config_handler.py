@@ -13,7 +13,7 @@ SYSTEM_CONFIG_LOC: Path = SYSTEM_CONFIG_LOC
 LOCAL_CONFIG_LOC: Path = LOCAL_CONFIG_LOC
 PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 
-env_var_app_name = APP_NAME.upper().replace("-", "_")  # elabftw-get -> ELABFTW_GET
+env_var_app_name = APP_NAME.upper().replace("-", "_")  #  -> ELABFTW_GET
 
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
@@ -64,9 +64,9 @@ DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF).create() if DOWNLOAD_DIR
 # App internal data location
 # The following log is triggered when APP_DATA_DIR from _log_file_handler.py is invalid (returns None),
 # but LOG_DIR_ROOT is valid.
-# I.e., APP_DATA_DIR could still return None when the logs are stored in /var/log/elabftw-get.
+# I.e., APP_DATA_DIR could still return None when the logs are stored in /var/log/elapi.
 # I.e., Both APP_DATA_DIR and FALLBACK_DIR are None
-# In most cases though logs and application data would share the same local directory: ~/.local/share/elabftw-get
+# In most cases though logs and application data would share the same local directory: ~/.local/share/elapi
 _proper_app_data_dir = ProperPath(APP_DATA_DIR)
 if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_data_dir.create())):
     logger.critical(f"Permission is denied when trying to create fallback directory '{_proper_app_data_dir.name}' "
@@ -75,7 +75,7 @@ if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_dat
 # API response data location
 # Although the following has the term cache, this cache is slightly more important than most caches.
 # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
-# Therefor we use '/var/tmp/elabftw-get' instead of '/var/cache' or 'XDG_CACHE_HOME'.
+# Therefor we use '/var/tmp/elapi' instead of '/var/cache' or 'XDG_CACHE_HOME'.
 TMP_DIR: Path = ProperPath(TMP_DIR).create()
 
 # Whether to run "cleanup" command on CLI after finishing a task (when available)
