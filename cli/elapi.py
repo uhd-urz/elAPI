@@ -57,13 +57,14 @@ def fetch(
     <br/>
     `$ elapi fetch users --id <id>` will return information about the specific user `<id>`.
     """
-    from src import elabftw_fetch
+    from src import GETRequest
     from src import Validate, ConfigValidator
 
     validate_config = Validate(ConfigValidator())
     validate_config()
 
-    raw_response = elabftw_fetch(endpoint=endpoint, unit_id=unit_id)
+    session = GETRequest()
+    raw_response = session(endpoint, unit_id)
     prettify = Highlight(data=raw_response.json(), lang=output)
     prettify.highlight()
 
@@ -100,7 +101,7 @@ def post(
     `$ elapi post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
     """
     import ast
-    from src import elabftw_post
+    from src import POSTRequest
     from json import JSONDecodeError
     from src import Validate, ConfigValidator
 
@@ -113,7 +114,8 @@ def post(
         data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
         data_values: list[str, ...] = data.args[1::2]
         valid_data: dict[str: str, ...] = dict(zip(data_keys, data_values))
-    raw_response = elabftw_post(endpoint, unit_id=unit_id, **valid_data)
+    session = POSTRequest()
+    raw_response = session(endpoint, unit_id, **valid_data)
     try:
         prettify = Highlight(data=raw_response.json(), lang=output)
     except JSONDecodeError:
