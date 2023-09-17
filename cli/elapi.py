@@ -33,7 +33,7 @@ typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.
 
 
 @app.command(short_help="Make `GET` requests to elabftw endpoints.")
-def fetch(
+def get(
         endpoint: Annotated[str, typer.Argument(
             help=docs["endpoint"], show_default=False)],
         unit_id: Annotated[str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)] = None,
