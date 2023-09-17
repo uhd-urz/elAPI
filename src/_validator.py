@@ -1,36 +1,69 @@
 import sys
-from dataclasses import dataclass
-from functools import partial
+from abc import ABC, abstractmethod
 from json import JSONDecodeError
-from typing import ClassVar
 
 import typer
 from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout, InvalidURL
 
-from src._api import elabftw_fetch
+from src import GETRequest
 from src._config_handler import records, HOST, API_TOKEN
 from src.loggers import logger
 
-network_errors: (Exception, ...) = (JSONDecodeError, UnsupportedProtocol, InvalidURL,
-                                    ConnectError, ConnectTimeout, TimeoutError)
+
+class Validator(ABC):
+    def __init__(self):
+        self._common_network_errors: tuple = (JSONDecodeError, UnsupportedProtocol, InvalidURL,
+                                              ConnectError, ConnectTimeout, TimeoutError)
+
+    @abstractmethod
+    def check_endpoint(self, **kwargs):
+        try:
+            endpoint, unit_id = kwargs["endpoint"], kwargs["unit_id"]
+        except KeyError:
+            return NotImplemented
+        else:
+            session = GETRequest()
+            return session(endpoint, unit_id)
+
+    @abstractmethod
+    def validate(self):
+        ...
+
+    @property
+    def common_network_errors(self):
+        return self._common_network_errors
+
+    @common_network_errors.setter
+    def common_network_errors(self, value):
+        if value not in self._common_network_errors:
+            self._common_network_errors += value
+        else:
+            raise ValueError(f"Value {value} already exists!")
+
+    @common_network_errors.deleter
+    def common_network_errors(self):
+        self._common_network_errors = ()
 
 
-@dataclass(slots=True)
-class ConfigValidator:
-    client: partial = partial(elabftw_fetch, endpoint="apikeys")
-    _HOST_EXAMPLE: ClassVar[str] = "host: 'https://demo.elabftw.net/api/v2'"
+class ConfigValidator(Validator):
+    __slots__ = ()
+
+    def check_endpoint(self):
+        return super().check_endpoint(endpoint="apikeys", unit_id="")
 
     def validate(self):
+        _HOST_EXAMPLE: str = "host: 'https://demo.elabftw.net/api/v2'"
+
         try:
             records.inspect_applied_config["HOST"]
         except KeyError:
-            print(f"Host is missing from the config files! Host contains the URL of the root API endpoint. Example:\n"
-                  f"{ConfigValidator._HOST_EXAMPLE}", file=sys.stderr)
+            print(f"Host is missing from the config files! Host contains the URL of the root API endpoint. Example:"
+                  f"\n{_HOST_EXAMPLE}", file=sys.stderr)
             raise typer.Exit(1)
         else:
             if not HOST:
-                print(f"Host is detected but it's empty! Host contains the URL of the root API endpoint. "
-                      f"Example: {ConfigValidator._HOST_EXAMPLE}", file=sys.stderr)
+                print(f"Host is detected but it's empty! Host contains the URL of the root API endpoint. Example:"
+                      f"\n{_HOST_EXAMPLE}", file=sys.stderr)
                 raise typer.Exit(1)
 
         try:
@@ -47,19 +80,19 @@ class ConfigValidator:
 
             API_TOKEN_MASKED = records.inspect_applied_config.get("API_TOKEN_MASKED")[0]
             try:
-                api_token_client: Response = self.client()
-                api_token_client.json()
-            except network_errors as error:
+                response: Response = self.check_endpoint()
+                response.json()
+            except self.common_network_errors as error:
                 logger.critical(f"There was a problem accessing host '{HOST}' with API token '{API_TOKEN_MASKED}'.")
 
                 try:
                     # noinspection PyUnboundLocalVariable
-                    logger.info(f"Returned response: '{api_token_client.status_code}: {api_token_client.text}'")
+                    logger.info(f"Returned response: '{response.status_code}: {response.text}'")
                 except UnboundLocalError:
                     logger.info(f"No request was made to the host URL! Exception details: '{error!r}'")
                     raise typer.Exit(1)
 
-                if api_token_client.is_server_error:
+                if response.is_server_error:
                     logger.critical(
                         f"There was a problem with the host server: '{HOST}'. Please contact an administrator.")
                     raise typer.Exit(1)
@@ -69,13 +102,13 @@ class ConfigValidator:
                 raise typer.Exit(1)
 
 
-class PermissionValidator:
-    __slots__ = "client", "_who", "team_id"
+class PermissionValidator(Validator):
+    __slots__ = "_group", "team_id", "_who"
 
     def __init__(self, _group: str, team_id: int = 1):
+        super().__init__()
         self.group: str = _group
         self.team_id = team_id
-        self.client: partial = partial(elabftw_fetch, endpoint="users", unit_id="me")
 
     @property
     def GROUPS(self) -> dict:
@@ -102,23 +135,26 @@ class PermissionValidator:
         else:
             self._who = value
 
+    def check_endpoint(self):
+        return super().check_endpoint(endpoint="users", unit_id="me")
+
     def validate(self) -> None:
         try:
-            user_client: Response = self.client()
-            user_data: dict = user_client.json()
-        except network_errors:
+            response: Response = self.check_endpoint()
+            caller_data: dict = response.json()
+        except self.common_network_errors:
             logger.critical("Something went wrong while trying to read user information! "
                             "Try to validate the configuration first with 'ConfigValidator' "
                             "to see what specifically went wrong.")
             raise typer.Exit(1)
         else:
             if self.group == "sysadmin":
-                if not user_data["is_sysadmin"]:
+                if not caller_data["is_sysadmin"]:
                     logger.critical(
                         "Requesting user doesn't have elabftw 'sysadmin' permission to be able to access the resource.")
                     raise typer.Exit(1)
             elif self.group in ["admin", "user"]:
-                for team in user_data["teams"]:
+                for team in caller_data["teams"]:
                     if not team["id"] == self.team_id:
                         logger.critical(
                             f"The provided team ID '{self.team_id}' didn't match any of the teams the user is part of.")
