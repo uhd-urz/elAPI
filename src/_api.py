@@ -21,7 +21,7 @@ class APIRequest(ABC):
             verify=True, **kwargs)
 
     # noinspection PyMethodOverriding
-    def __init_subclass__(cls, /, is_async_client: bool, **kwargs):
+    def __init_subclass__(cls, /, is_async_client: bool = False, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.is_async_client = is_async_client
 
@@ -49,7 +49,7 @@ class APIRequest(ABC):
         return response
 
 
-class GETRequest(APIRequest, is_async_client=False):
+class GETRequest(APIRequest):
     __slots__ = ()
 
     def __init__(self, **kwargs):
@@ -66,11 +66,11 @@ class GETRequest(APIRequest, is_async_client=False):
         return super().__call__(endpoint, unit_id)
 
 
-class POSTRequest(APIRequest, is_async_client=False):
+class POSTRequest(APIRequest):
     __slots__ = ()
 
     def __init__(self, **kwargs):
-        super().__init__(async_client=False, **kwargs)
+        super().__init__(**kwargs)
 
     def _make(self, *args, **kwargs) -> Response:
         endpoint, unit_id = args
