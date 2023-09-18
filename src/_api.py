@@ -8,12 +8,12 @@ from src._config_handler import API_TOKEN, TOKEN_BEARER, HOST
 
 
 class APIRequest(ABC):
-    __slots__ = "host", "api_token", "header_name", "keep_session_open", "_client"
+    __slots__ = "keep_session_open", "_client"
+    host: str = HOST
+    api_token: str = API_TOKEN
+    header_name: str = TOKEN_BEARER
 
     def __init__(self, keep_session_open: bool = False, **kwargs):
-        self.host: str = HOST
-        self.api_token: str = API_TOKEN
-        self.header_name: str = TOKEN_BEARER
         self.keep_session_open = keep_session_open
         _client = Client if not self.is_async_client else AsyncClient
         self._client: Union[Client, AsyncClient] = _client(
