@@ -33,6 +33,11 @@ class APIRequest(ABC):
     def client(self, value):
         raise AttributeError("Client cannot be modified!")
 
+    @staticmethod
+    def fix_none(value: None):
+        # When endpoint == 'users', id == 'None', requesting endpoint/id == endpoint/'None' yields all users!
+        return "" if value is None else value
+
     @abstractmethod
     def _make(self, *args, **kwargs):
         ...
@@ -57,6 +62,7 @@ class GETRequest(APIRequest):
 
     def _make(self, *args) -> Response:
         endpoint, unit_id = args
+        unit_id = self.fix_none(unit_id)
         return super().client.get(f'{self.host}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
 
     def close(self):
@@ -74,6 +80,7 @@ class POSTRequest(APIRequest):
 
     def _make(self, *args, **kwargs) -> Response:
         endpoint, unit_id = args
+        unit_id = self.fix_none(unit_id)
         data = {k: v.strip() if isinstance(v, str) else v for k, v in kwargs.items()}
         return super().client.post(f'{HOST}/{endpoint}/{unit_id}',
                                    headers={"Accept": "*/*", "Content-Type": "application/json"}, json=data)
@@ -96,6 +103,7 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
 
     async def _make(self, *args) -> Response:
         endpoint, unit_id = args
+        unit_id = self.fix_none(unit_id)
         return await super().client.get(f'{self.host}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
 
     async def close(self):

@@ -52,7 +52,7 @@ class RecurseInformation:
         # TODO: Not all unit names (endpoints) may not have their key name for id as 'id'
 
         # this will without a unit id create all_<information type>_data.json first
-        unit_all_data = await self.fixed_endpoint(unit_id="")
+        unit_all_data = await self.fixed_endpoint(unit_id=None)
         self._cache_unit_data(unit_all_data,
                               filename=f"all_{self.fixed_endpoint.unit_name}_data.{self.fixed_endpoint.DATA_FORMAT}")
 
