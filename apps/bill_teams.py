@@ -1,50 +1,87 @@
-import json
+from dataclasses import dataclass
+from datetime import datetime
+from typing import ClassVar
 
-from src import ProperPath
-from src.information import Information
-
-users = Information(unit_name="users")
-users_data_path = users.get_extensive_unit_data_path(unit_id=None, ignore_existing_filename=True)
-# unit_id=None explicitly sets all users
-# ignore_existing_filename=False: Doesn't download data again if filename already exists
-
-teams = Information(unit_name="teams")
-teams_data = teams.get_unit_data(unit_id=None)
-teams_data_path = teams.export_data(suppress_message=True, data=teams_data,
-                                    export_path='cache', ignore_existing_filename=True)
-
-with ProperPath(users_data_path).open(mode="r", encoding="utf-8") as file:
-    users_data = json.loads(file.read())
-
-with ProperPath(teams_data_path).open(mode="r", encoding="utf-8") as file:
-    teams_data = json.loads(file.read())
+from dateutil import parser
+from dateutil.relativedelta import relativedelta
 
 
-def get_team_owners(all_users_data: dict = users_data,
-                    all_teams_data: dict = teams_data):
-    team_owners = {}
-    # Generate team owners
-    for u in all_users_data:
-        for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
-            if team["is_owner"] == 1:
-                uid = u["userid"]
-                owner = {uid: {}}
-                owner[uid]["owner_name"] = u['fullname']
-                owner[uid]["owner_email"] = u['email']
-                owner[uid]["owner_user_id"] = uid  # duplicate information to avoid ambiguity
-                if not team_owners.get(team['id']):
-                    team_owners[team['id']] = {}
-                    team_owners[team['id']]["team_name"] = team['name']
-                    team_owners[team["id"]]["owners"] = [owner]
-                    team_owners[team["id"]]["team_id"] = team["id"]  # duplicate information to avoid ambiguity
+@dataclass(slots=True)
+class UsersInformation:
+    is_async_client: bool = False
+
+    def __call__(self) -> list[dict, ...]:
+        if not self.is_async_client:
+            from src.information import Information, RecurseInformation
+        else:
+            from src.async_information import Information, RecurseInformation
+        users = Information(unit_name="users", keep_session_open=True)
+        get_recursive_users = RecurseInformation(users)
+        return get_recursive_users()
+
+
+@dataclass(slots=True)
+class TeamsInformation:
+    def __call__(self) -> list[dict, ...]:
+        from src import GETRequest
+        teams = GETRequest()
+        return teams(endpoint="teams", unit_id="").json()
+
+
+@dataclass(slots=True)
+class BillTeams:
+    users_information: list[dict, ...]
+    teams_information: list[dict, ...]
+    launch_date: ClassVar[datetime] = datetime(2023, 8, 1, 0, 0, 0)
+    trial_period: ClassVar[relativedelta] = relativedelta(months=6)
+
+    def team_trial_start_date(self, creation_date: datetime) -> datetime:
+        if creation_date < self.launch_date:
+            return self.launch_date
+        return creation_date
+
+    def _get_owners(self) -> dict:
+        # Generate teams information with team owners
+        team_members, team_owners = {}, {}
+        for u in self.users_information:
+            for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
+                # Get teams user count
+                if not team_members.get(team["id"]):
+                    team_members[team["id"]]: list = [u["userid"]]
                 else:
-                    team_owners[team["id"]]["owners"].append(owner)
-    # Add team creation date to team owners
-    for team in all_teams_data:
-        if team['id'] in team_owners.keys():
-            team_owners[team['id']]['team_created_at'] = team['created_at']
-    return team_owners
+                    team_members[team["id"]].append(u["userid"])
+                # Get owners information
+                if team["is_owner"] == 1:
+                    uid = u["userid"]
+                    owner = {uid: {}}
+                    owner[uid]["owner_name"] = u['fullname']
+                    owner[uid]["owner_email"] = u['email']
+                    owner[uid]["owner_user_id"] = uid  # duplicate information to avoid ambiguity
+                    if not team_owners.get(team['id']):
+                        team_owners[team['id']] = {}
+                        team_owners[team['id']]["team_name"] = team['name']
+                        team_owners[team["id"]]["owners"] = [owner]
+                        team_owners[team["id"]]["team_id"] = team["id"]  # duplicate information to avoid ambiguity
+                    else:
+                        team_owners[team["id"]]["owners"].append(owner)
 
+        # Add team creation date to team_owners
+        for team in self.teams_information:
+            if team['id'] in team_owners.keys():
+                team_owners[team['id']]["team_created_at"] = team['created_at']
 
-if __name__ == '__main__':
-    print(get_team_owners())
+        # Add member count to team_owners
+        for team_id in team_owners:
+            team_owners[team_id]["members"] = {}
+            team_owners[team_id]["members"]["user_ids"] = team_members[team_id]
+            team_owners[team_id]["members"]["member_count"] = len(team_members[team_id])
+            # Add trial information
+            trial_starts_at = self.team_trial_start_date(parser.isoparse(team_owners[team_id]["team_created_at"]))
+            trial_ends_at = trial_starts_at + self.trial_period
+            team_owners[team_id]["trial_ends_at"] = str(trial_ends_at)
+            team_owners[team_id]["on_trial"] = trial_ends_at > datetime.now()
+
+        return team_owners
+
+    def __call__(self) -> dict:
+        return self._get_owners()
