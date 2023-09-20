@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
 
-from httpx import Response, Client, AsyncClient
+from httpx import Response, Client, AsyncClient, Limits
 from httpx_auth import HeaderApiKey
 
 from src._config_handler import API_TOKEN, TOKEN_BEARER, HOST
@@ -90,7 +90,9 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(timeout=None,
+                         limits=Limits(max_connections=100, max_keepalive_connections=50, keepalive_expiry=30),
+                         **kwargs)
 
     async def _make(self, *args) -> Response:
         endpoint, unit_id = args
