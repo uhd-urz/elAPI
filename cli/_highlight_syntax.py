@@ -20,12 +20,12 @@ class Highlight:
     SUPPORTED_FORMAT: ClassVar[dict] = {
         "JSON": {
             "pattern": r"json",
-            "method": partial(json.dumps, indent=True, ensure_ascii=True)
+            "method": partial(json.dumps, indent=2, ensure_ascii=True)
 
         },
         "YAML": {
             "pattern": r"ya?ml",
-            "method": partial(yaml.dump, allow_unicode=True)
+            "method": partial(yaml.dump, indent=2, allow_unicode=True)
         },
         "TXT": {
             "pattern": r"(plain)?te?xt",
