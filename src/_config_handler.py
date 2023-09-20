@@ -13,7 +13,7 @@ SYSTEM_CONFIG_LOC: Path = SYSTEM_CONFIG_LOC
 LOCAL_CONFIG_LOC: Path = LOCAL_CONFIG_LOC
 PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 
-env_var_app_name = APP_NAME.upper().replace("-", "_")  #  -> ELABFTW_GET
+env_var_app_name = APP_NAME.upper().replace("-", "_")
 
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
