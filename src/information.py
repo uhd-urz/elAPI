@@ -1,81 +1,74 @@
 import json
-from dataclasses import dataclass
 from pathlib import Path
-from shutil import copy2
-from typing import Union, ClassVar
+from typing import TypeAlias, Union, Optional
 
-from src import ProperPath, elabftw_fetch
-from src._config_handler import DOWNLOAD_DIR
+import typer
+from rich.progress import track
+
+from src import ProperPath, GETRequest, logger
 from src.core_names import TMP_DIR
 
+SPECIAL_RESPONSE: TypeAlias = tuple[Optional[int], Union[list[dict], dict]]
 
-@dataclass(slots=True)
+
 class Information:
-    unit_name: str
-    unit_data_export_dir: Union[str, Path] = DOWNLOAD_DIR
-    DATA_FILE_EXT: ClassVar[str] = "json"
+    def __init__(self, unit_name: str, keep_session_open: bool = False):
+        self.unit_name = unit_name
+        self._session = GETRequest(keep_session_open=keep_session_open)
 
-    def get_unit_data(self, unit_id: Union[None, int] = None) -> tuple[Union[None, int], Union[list[dict], dict]]:
-        """Fetches the current unit list from direct API response without changing the format."""
-        response = elabftw_fetch(endpoint=self.unit_name, unit_id=unit_id).json()
-        return unit_id, response
+    @property
+    def session(self) -> GETRequest:
+        return self._session
 
-    def get_extensive_unit_data_path(self, unit_id: Union[None, int] = None, filename: Union[Path, str] = None,
-                                     ignore_existing_filename: bool = True) -> Path:
-        filename = filename if filename else f"extensive_{self.unit_name}_data.{Information.DATA_FILE_EXT}"
-        id_prefix = "userid" if self.unit_name == "users" else "id"  # to read ids from inside the response data
+    @session.setter
+    def session(self, value):
+        raise AttributeError("Session cannot be modified!")
+
+    @property
+    def DATA_FORMAT(self) -> str:
+        return "json"
+
+    def __call__(self, unit_id: Union[str, int, None] = None) -> dict:
+        response = self.session(self.unit_name, unit_id)
+        return response.json()
+
+
+class RecurseInformation:
+    def __init__(self, fixed_endpoint: Information):
+        self.fixed_endpoint = fixed_endpoint
+        self._cache_path = TMP_DIR
+
+    def _get_data(self) -> list[dict, ...]:
+        recursive_unit_data_filename = (f"recursive_{self.fixed_endpoint.unit_name}_data"
+                                        f".{self.fixed_endpoint.DATA_FORMAT}")
+        id_prefix = "userid" if self.fixed_endpoint.unit_name == "users" else "id"
+        # to read ids from inside the response data
         # TODO: Not all unit names (endpoints) may not have their key name for id as 'id'
 
-        if not ignore_existing_filename:
-            return ProperPath(TMP_DIR / filename).exists()
-
         # this will without a unit id create all_<information type>_data.json first
-        all_unit_data_path = self._cache_unit_data(self.get_unit_data(unit_id=unit_id))
+        unit_all_data = self.fixed_endpoint(unit_id="")
+        self._cache_unit_data(unit_all_data,
+                              filename=f"all_{self.fixed_endpoint.unit_name}_data.{self.fixed_endpoint.DATA_FORMAT}")
+        recursive_unit_data = []
+        try:
+            for item in track(unit_all_data, description=f"Getting {self.fixed_endpoint.unit_name} data:"):
+                recursive_unit_data.append(self.fixed_endpoint(unit_id=item[id_prefix]))
+        except KeyboardInterrupt:
+            logger.warning(f"Request to '{self.__class__.__name__}' with "
+                           f"'{self.fixed_endpoint.unit_name}' is interrupted.")
+            self.fixed_endpoint.session.close()
+            raise typer.Exit()
 
-        with ProperPath(all_unit_data_path).open(mode="r", encoding="utf-8") as file:
-            structured = json.loads(file.read())
+        self.fixed_endpoint.session.close()
+        self._cache_unit_data(recursive_unit_data, filename=recursive_unit_data_filename)
+        return recursive_unit_data
 
-        if not unit_id:
-            unit_data_list = []
-            for item in structured:
-                unit_id, raw_data = self.get_unit_data(unit_id=item[id_prefix])
-                unit_data_list.append(raw_data)
-
-            return self._cache_unit_data(unit_data=(None, unit_data_list), filename=filename)
-
-        return self._cache_unit_data(unit_data=self.get_unit_data(unit_id=structured[id_prefix]))
-
-    def _cache_unit_data(self, unit_data: tuple[Union[None, int], Union[list[dict], dict]], filename: str = None,
-                         ignore_existing_filename: bool = True) -> Path:
+    def _cache_unit_data(self, unit_data, filename: str = None) -> Path:
         """Writes unit data from converted JSON to a JSON file in pre-defined directory"""
-        # FILE_EXT = 'json'
-        data_path = TMP_DIR
-        unit_id, raw_data = unit_data
+        file_path = self._cache_path / filename
+        with ProperPath(file_path).open("w", "utf-8") as file:
+            file.write(json.dumps(unit_data, indent=2))
+        return file_path
 
-        # First we are saving it in a temporary directory: /var/tmp/elapi
-        filename = filename if filename else f"all_{self.unit_name}.{Information.DATA_FILE_EXT}" if not unit_id \
-            else f"{self.unit_name}_{unit_id}.{Information.DATA_FILE_EXT}"
-
-        if not ignore_existing_filename:
-            return ProperPath(data_path / filename).exists()
-
-        with ProperPath(data_path / filename).open("w", "utf-8") as file:
-            file.write(json.dumps(raw_data))
-
-        return data_path / filename
-
-    def export_data(self, data: tuple[Union[None, int], Union[list[dict], dict]],
-                    export_path: Union[Path, str, None] = None,
-                    suppress_message: bool = False, **kwargs) -> Path:
-
-        filepath = self._cache_unit_data(unit_data=data, **kwargs)
-        # kwargs can be used to modify file name or ignore existing
-        if export_path == 'cache':
-            return filepath
-
-        export_path = export_path if export_path else self.unit_data_export_dir
-        copy2(filepath, export_path)
-
-        if not suppress_message:
-            print(f"{self.unit_name} data successfully exported to: {self.unit_data_export_dir}/{filepath.name}")
-        return self.unit_data_export_dir / filepath.name
+    def __call__(self) -> list[dict, ...]:
+        return self._get_data()
