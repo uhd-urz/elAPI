@@ -151,7 +151,9 @@ def cleanup() -> None:
 
 
 @app.command(name="bill-teams")
-def bill_teams(clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
+def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async", "-a",
+                                                                       help=docs["async"], show_default=True)] = False,
+               clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
                                                              help=docs["clean"], show_default=False)] = False,
                export: Annotated[Optional[bool], typer.Option("--export",
                                                               help=docs["export"], show_default=False)] = False,
@@ -167,10 +169,12 @@ def bill_teams(clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
     validate()
 
-    from apps.bill_teams import get_team_owners
+    from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
-    billable = get_team_owners()
-    serialized_data = Highlight(data=billable, lang=output)
+    users_info = UsersInformation(is_async_client)
+    teams_info = TeamsInformation()
+    bill_teams_ = BillTeams(users_info(), teams_info())
+    serialized_data = Highlight(data=bill_teams_(), lang=output)
 
     if export:
         from src import ProperPath, DOWNLOAD_DIR
