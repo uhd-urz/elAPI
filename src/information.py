@@ -33,6 +33,13 @@ class Information:
         return response.json()
 
 
+class FixedEndpoint:
+    """An alias for Information class."""
+
+    def __new__(cls, *args, **kwargs) -> Information:
+        return Information(*args, **kwargs)
+
+
 class RecurseInformation:
     def __init__(self, fixed_endpoint: Information):
         self.fixed_endpoint = fixed_endpoint
