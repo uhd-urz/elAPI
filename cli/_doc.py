@@ -3,7 +3,6 @@ This script includes docstring for elapi. The docstrings are mainly meant to be 
 """
 from cli._highlight_syntax import Highlight
 from src import APP_NAME
-from src.core_names import FALLBACK_DOWNLOAD_DIR
 
 supported_highlighting_formats = ", ".join(f"**{_}**" for _ in Highlight.SUPPORTED_FORMAT.keys())
 
@@ -22,13 +21,11 @@ __PARAMETERS__doc__ = {
     "async": f"Beta: Make process asynchronous. This speeds up receiving data from eLabFTW server manyfold.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
-    "export": f"Beta: Export output to `download_dir` defined in configuration file. "
-              f"If `download_dir` is not defined, then _--export_ falls back to `{FALLBACK_DOWNLOAD_DIR}`."
-              f"_--export_ doesn't support a new path as argument.",
-    "output": f"Format style for printing output. Supported values are: {supported_highlighting_formats}. "
+    "stdout": f"Instead of downloading/exporting data, send data to `STDOUT` (i.e., print on terminal).",
+    "output": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               "The values are case insensitive. The default format is `JSON`. "
-              "When 'txt' is used, response will be sent to STDOUT in *original*, un-formatted, "
-              "without syntax highlighting. This can be utilized if one wishes to pipe the output to "
-              "some external formatting program like `less`. "
+              "When 'txt' is used, the response will be sent in *original*, un-formatted, "
+              "without syntax highlighting. This can be utilized if one wishes to pipe the output "
+              "(with _'--stdout'_) to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output falls back to 'txt'."
 }

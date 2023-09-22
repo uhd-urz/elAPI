@@ -12,6 +12,7 @@ The script treats API endpoints as its arguments.
     With elapi you can do the following:
         $ elapi fetch users <id>
 """
+from datetime import datetime
 from typing import Optional
 
 import typer
@@ -155,8 +156,8 @@ def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async"
                                                                        help=docs["async"], show_default=True)] = False,
                clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
                                                              help=docs["clean"], show_default=False)] = False,
-               export: Annotated[Optional[bool], typer.Option("--export",
-                                                              help=docs["export"], show_default=False)] = False,
+               stdout: Annotated[Optional[bool], typer.Option("--stdout",
+                                                              help=docs["stdout"], show_default=False)] = False,
 
                output: Annotated[Optional[str], typer.Option("--output", "-o",
                                                              help=docs["output"], show_default=False)] = "json"
@@ -176,14 +177,16 @@ def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async"
     bill_teams_ = BillTeams(users_info(), teams_info())
     serialized_data = Highlight(data=bill_teams_(), lang=output)
 
-    if export:
+    if not stdout:
         from src import ProperPath, DOWNLOAD_DIR
         from pathlib import Path
 
-        FILE: Path = DOWNLOAD_DIR / f"{bill_teams.__name__}.{serialized_data.language.lower()}"
+        DATE = datetime.now()
+        FILE_SUFFIX = f'{DATE.strftime("%Y-%m-%d")}_{DATE.strftime("%H%M%S")}'
+        FILE: Path = DOWNLOAD_DIR / f"{bill_teams.__name__}_{FILE_SUFFIX}.{serialized_data.language.lower()}"
         with ProperPath(FILE).open(mode="w") as file:
             file.write(serialized_data.format)
-        console.print(f"Data successfully exported to '{FILE}' in '{output}' format.")
+        console.print(f"Data successfully downloaded to '{FILE}' in '{output}' format.")
     else:
         serialized_data.highlight()
 
