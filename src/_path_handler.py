@@ -102,8 +102,6 @@ class ProperPath:
     def create(self) -> Union[Path, None]:
         # create() returns None if a path cannot be resolved.
         path = self.expanded
-        _KB_TO_BYTE_CONVERT_VAL = 10 ** 3
-
         if path:
             if not (path := path.resolve(strict=False)).exists():
                 # except FileNotFoundError:
