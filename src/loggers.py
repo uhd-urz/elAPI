@@ -12,11 +12,10 @@ class CustomFileHandler(logging.FileHandler):
         path: ProperPath = ProperPath(self.baseFilename)
         with path.open(mode="a", encoding="utf-8") as log:
             log.write(entry)
+            log.write("\n")
 
 
 stdout_handler = logging.StreamHandler()
-# stdout_handler.setLevel(logging.ERROR)  # no default level is set so the levels can be set on the go
-# file_handler.setLevel(logging.ERROR)  # no default level is set so the levels can be set on the go
 custom_file_handler = CustomFileHandler(LOG_FILE_PATH)
 
 stdout_log_format = logging.Formatter('%(levelname)s:%(filename)s: %(message)s')
