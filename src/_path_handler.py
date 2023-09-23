@@ -66,7 +66,8 @@ class ProperPath:
     def kind(self, value) -> None:
         if self.expanded:
             if not value:
-                self._kind = 'file' if self.expanded.suffix else 'dir'
+                self._kind = 'dir' if self.expanded.is_dir() else 'file' if (
+                        self.expanded.is_file() or self.expanded.suffix) else 'dir'
             else:
                 # TODO: Python pattern matching doesn't support regex matching yet.
                 if re.match(r'\bfile\b', value, flags=re.IGNORECASE):
