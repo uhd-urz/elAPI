@@ -94,7 +94,7 @@ class ProperPath:
 
     @staticmethod
     def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
-        return f"PATH={target} from SOURCE={source}" if str(source) != str(target) else f"PATH={target}"
+        return f"PATH='{target}' from SOURCE='{source}'" if str(source) != str(target) else f"PATH='{target}'"
 
     def exists(self) -> Union[Path, None]:
         return self.expanded if self.expanded.exists() else None
@@ -171,6 +171,10 @@ class ProperPath:
         except FileNotFoundError:
             message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
             self.path_error_logger(message, level=logging.WARNING)
+        except PermissionError:
+            message = (f"Permission denied while trying to open file with mode '{mode}' for "
+                       f"{self._error_helper_compare_path_source(self.name, path)}.")
+            self.path_error_logger(message, level=logging.CRITICAL)
 
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
@@ -195,10 +199,6 @@ class ProperPath:
                 message = (f"An attempt to access unknown/private attribute of the file object {file} was made. "
                            f"No further operation is possible.")
                 self.path_error_logger(message, logging.WARNING)
-            except PermissionError:
-                message = (f"Permission denied while trying to use mode '{mode}' with "
-                           f"{self._error_helper_compare_path_source(self.name, path)}.")
-                self.path_error_logger(message, level=logging.CRITICAL)
             except MemoryError:
                 message = (f"Out of memory while trying to use mode '{mode}' with "
                            f"{self._error_helper_compare_path_source(self.name, path)}.")
@@ -206,7 +206,7 @@ class ProperPath:
             except IOError as ioe:
                 # We catch "No disk space left" error which will likely trigger during a write attempt on the file
                 if ioe.errno == errno.ENOSPC:
-                    message = (f"Not enough disk space left while trying to use mode {mode} with "
+                    message = (f"Not enough disk space left while trying to use mode '{mode}' with "
                                f"{self._error_helper_compare_path_source(self.name, path)}.")
                     self.path_error_logger(message, level=logging.CRITICAL)
         finally:
