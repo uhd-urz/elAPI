@@ -211,4 +211,17 @@ class ProperPath:
                     self.path_error_logger(message, level=logging.CRITICAL)
         finally:
             if file:
-                file.close()
+                try:
+                    file.close()
+                # This is a behavior that was noticed during experimenting with "/dev/full" on Debian/Linux.
+                # f = open("/dev/full", mode="w"); f.write("hello"); <- This won't trigger ENOSPC error yet!
+                # But the error is triggered when trying to close: f.close(); immediately after!
+                # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again,
+                # this will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
+                # Therefore, we need to catch the error again!
+                except IOError as ioe:
+                    if ioe.errno == errno.ENOSPC:
+                        message = (f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
+                                   f"close the file before using it with '{mode}'. Data may have been lost."
+                                   f"{self._error_helper_compare_path_source(self.name, path)}.")
+                        self.path_error_logger(message, level=logging.CRITICAL)
