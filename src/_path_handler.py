@@ -88,8 +88,8 @@ class ProperPath:
                 print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')}:{LOG_LEVELS[level]}: {message}",
                       file=sys.stderr)
         else:
-            if self.suppress_stderr:
-                logger.removeHandler(stdout_handler)
+            logger.removeHandler(stdout_handler) if self.suppress_stderr else logger.addHandler(
+                stdout_handler) if stdout_handler not in logger.handlers else ...
             logger.log(msg=message, level=level)
 
     @staticmethod
