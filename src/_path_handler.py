@@ -31,8 +31,8 @@ class ProperPath:
     def __eq__(self, to: Union[str, Path, "ProperPath"]):
         return self.expanded == ProperPath(to).expanded
 
-    def __truediv__(self, other):
-        return self.expanded / other if self.expanded else None
+    def __truediv__(self, other) -> "ProperPath":
+        return ProperPath(self.expanded / other) if self.expanded else None
 
     @property
     def name(self) -> str:
