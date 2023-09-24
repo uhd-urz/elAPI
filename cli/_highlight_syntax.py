@@ -1,81 +1,122 @@
-import json
 import re
-import sys
-from dataclasses import dataclass
-from functools import partial
-from typing import ClassVar, Union
+from abc import abstractmethod, ABC
+from typing import Any
 
-import yaml
-from rich.console import Console
 from rich.syntax import Syntax
 
-from src import logger
 
+class BaseFormat(ABC):
+    _registry = {}
+    _names = []
 
-@dataclass
-class Highlight:
-    # SUPPORTED_FORMAT contains the definitions for parsers that will parse and format the JSON from HTTP response.
-    # Though not the most common practice (there's no protection against modifying "TEXT": {...} (the fallback format),
-    # this design allows for adding support for a new format quite easily.
-    SUPPORTED_FORMAT: ClassVar[dict] = {
-        "JSON": {
-            "pattern": r"json",
-            "method": partial(json.dumps, indent=2, ensure_ascii=True)
-
-        },
-        "YAML": {
-            "pattern": r"ya?ml",
-            "method": partial(yaml.dump, indent=2, allow_unicode=True)
-        },
-        "TXT": {
-            "pattern": r"(plain)?te?xt",
-            "method": lambda data: str(data)
-        }
-    }
-    _FALLBACK_FORMAT: ClassVar[str] = "TXT"
-    console: ClassVar[Console] = Console(color_system="truecolor")
-    data: Union[dict, str]
-    lang: str = "JSON"
-    theme: str = "lightbulb"
-
-    def __post_init__(self) -> None:
-        self.language = self.lang
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._registry[cls.pattern()] = cls
+        cls._names.append(cls.name)
 
     @property
-    def language(self) -> str:
-        return self.lang
+    @abstractmethod
+    def name(self):
+        ...
 
-    @language.setter
-    def language(self, value: str) -> None:
-        for key in Highlight.SUPPORTED_FORMAT:
-            if re.match(Highlight.SUPPORTED_FORMAT[key]["pattern"], value, flags=re.IGNORECASE):
-                self.lang = key
-                break
+    @classmethod
+    def supported_formatters(cls) -> dict[str: "BaseFormat", ...]:
+        return cls._registry
 
-        if self.lang not in Highlight.SUPPORTED_FORMAT:
-            logger.error(f"Provided format '{value}' cannot be highlighted! "
-                         f"Supported formats are: {', '.join(Highlight.SUPPORTED_FORMAT.keys())}.")
-            print("\n", file=sys.stderr)
-            self.lang = Highlight._FALLBACK_FORMAT  # falls back to "PLAINTEXT"
+    @classmethod
+    def supported_formatter_names(cls) -> list[str, ...]:
+        return cls._names
 
-    def get_syntax(self, data: str) -> Syntax:
-        # If data is str but un-formatted (without new lines or indentations), rich will not try to format it of course,
-        # which will result in a highlighted but an ultra-compact single line output!
-        # E.g., if data = response.text or json.dump(data) (no indentation)
-        return Syntax(data, self.language, background_color="default", theme=self.theme)
+    @classmethod
+    @abstractmethod
+    def pattern(cls):
+        ...
+
+    @abstractmethod
+    def __call__(self, data: Any):
+        ...
+
+
+class JSONFormat(BaseFormat):
+    name: str = "JSON"
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^json$"
+
+    def __call__(self, data: Any) -> str:
+        import json
+        return json.dumps(data, indent=2, ensure_ascii=True)
+
+
+class YAMLFormat(BaseFormat):
+    name = "YAML"
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^ya?ml$"
+
+    def __call__(self, data: Any) -> str:
+        import yaml
+        return yaml.dump(data, indent=2, allow_unicode=True)
+
+
+class TXTFormat(BaseFormat):
+    name = "TXT"
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^(plain)?te?xt$"
+
+    def __call__(self, data: Any) -> str:
+        from pprint import pformat
+        return pformat(data)
+
+
+class ValidateLanguage:
+    def __init__(self, language: str):
+        self._validated = language
 
     @property
-    def format(self) -> Union[str, dict]:
-        return Highlight.SUPPORTED_FORMAT[self.language]["method"](self.data)
+    def _validated(self):
+        raise AttributeError("'_validated' isn't meant to be called directly! Use attributes 'name' and 'formatter'.")
 
-    @format.setter
-    def format(self, value) -> None:
-        raise AttributeError("format is stored internally. It cannot be modified!")
+    @_validated.setter
+    def _validated(self, value):
+        for pattern, formatter in BaseFormat.supported_formatters().items():
+            if re.match(fr"{pattern}", value, flags=re.IGNORECASE):
+                self.name: str = formatter.name
+                self.formatter: type(BaseFormat) = formatter
+                return
+        raise ValueError(
+            f"'{value}' isn't a supported language format! "
+            f"Supported formats are: {BaseFormat.supported_formatter_names()}.")
 
-    def highlight(self) -> None:
-        formatted = self.format
-        if self.language == Highlight._FALLBACK_FORMAT:
-            print(formatted)
-        else:
-            highlighted = self.get_syntax(data=formatted)
-            Highlight.console.print(highlighted)
+
+class Format:
+    def __new__(cls, language: str, /) -> BaseFormat:
+        validator = ValidateLanguage(language)
+        return validator.formatter()
+
+
+BaseFormat.register(Format)
+
+
+class BaseHighlight(ABC):
+    @classmethod
+    def __subclasshook__(cls, subclass) -> bool:
+        return issubclass(subclass, Syntax) or super().__subclasshook__(cls, subclass)
+
+    @abstractmethod
+    def __call__(self, *args, **kwargs):
+        ...
+
+
+class Highlight(BaseHighlight):
+    def __init__(self, language: str, /, theme: str = "lightbulb"):
+        validator = ValidateLanguage(language)
+        self.name = validator.name
+        self.theme = theme
+
+    def __call__(self, data: str) -> Syntax:
+        return Syntax(data, self.name, background_color="default", theme=self.theme)
