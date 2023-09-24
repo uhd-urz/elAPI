@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from dynaconf import Dynaconf
+from dynaconf import Dynaconf, Validator
 
 from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
@@ -25,6 +25,10 @@ settings = Dynaconf(
     settings_files=[SYSTEM_CONFIG_LOC, LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC]
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
+
+settings.validators.register(Validator("export_dir", default=_DOWNLOAD_DIR, apply_default_on_none=True,
+                                       cast=lambda s: _DOWNLOAD_DIR if not s else s))
+settings.validators.validate()
 
 HOST: str = settings.get('host')  # case-insensitive: settings.get("HOST") == settings.get("host")
 if not HOST:
@@ -57,8 +61,12 @@ TOKEN_BEARER: str = 'Authorization'
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Download location
-DOWNLOAD_DIR_FROM_CONF: str = settings.get('download_dir')
-DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF).create() if DOWNLOAD_DIR_FROM_CONF else _DOWNLOAD_DIR
+DOWNLOAD_DIR: Path = ProperPath(settings['export_dir']).create()
+if not DOWNLOAD_DIR:
+    logger.critical("No directory for exporting data could be validated! This is a fatal error. "
+                    "To quickly fix this error define an export directory with 'export_dir' in configuration file. "
+                    f"{APP_NAME} will not run!")
+    raise SystemExit()
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
