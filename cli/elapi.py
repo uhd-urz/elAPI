@@ -12,7 +12,6 @@ The script treats API endpoints as its arguments.
     With elapi you can do the following:
         $ elapi fetch users <id>
 """
-from datetime import datetime
 from typing import Optional
 
 import typer
@@ -22,8 +21,10 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
+from cli._export import ExportToDirectory
 from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
+from src import logger
 
 pretty.install()
 console = Console(color_system="truecolor")
@@ -114,7 +115,7 @@ def post(
     else:
         data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
         data_values: list[str, ...] = data.args[1::2]
-        valid_data: dict[str: str, ...] = dict(zip(data_keys, data_values))
+        valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     session = POSTRequest()
     raw_response = session(endpoint, unit_id, **valid_data)
     try:
@@ -152,17 +153,32 @@ def cleanup() -> None:
 
 
 @app.command(name="bill-teams")
-def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async", "-a",
-                                                                       help=docs["async"], show_default=True)] = False,
-               clean: Annotated[Optional[bool], typer.Option("--cleanup", "-c",
-                                                             help=docs["clean"], show_default=False)] = False,
-               stdout: Annotated[Optional[bool], typer.Option("--stdout",
-                                                              help=docs["stdout"], show_default=False)] = False,
-
-               output: Annotated[Optional[str], typer.Option("--output", "-o",
-                                                             help=docs["output"], show_default=False)] = "json"
-
-               ) -> None:
+def bill_teams(
+    is_async_client: Annotated[
+        Optional[bool],
+        typer.Option("--async", "-a", help=docs["async"], show_default=True),
+    ] = False,
+    clean: Annotated[
+        Optional[bool],
+        typer.Option("--cleanup", "-c", help=docs["clean"], show_default=False),
+    ] = False,
+    output: Annotated[
+        Optional[str],
+        typer.Option("--output", "-o", help=docs["output"], show_default=False),
+    ] = "json",
+    export: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--export-dir",
+            "-e",
+            help=docs["export"],
+            is_flag=True,
+            is_eager=True,
+            show_default=False,
+        ),
+    ] = False,
+    _export_value: Annotated[str, typer.Argument(hidden=True)] = "",
+) -> None:
     """*Beta:* Generate billable teams data."""
 
     from src import CLEANUP_AFTER, Validate, ConfigValidator, PermissionValidator
@@ -171,24 +187,31 @@ def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async"
     validate()
 
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
+    from cli._highlight_syntax import Format, Highlight
 
     users_info = UsersInformation(is_async_client)
     teams_info = TeamsInformation()
     bill_teams_ = BillTeams(users_info(), teams_info())
-    serialized_data = Highlight(data=bill_teams_(), lang=output)
 
-    if not stdout:
-        from src import ProperPath, DOWNLOAD_DIR
-        from pathlib import Path
+    bill_teams_data = bill_teams_()
+    try:
+        format = Format(output)
+    except ValueError as e:
+        logger.error(e)
+        format = Format("txt")  # Falls back to "txt"
+    formatted_bill_teams_data = format(bill_teams_data)
 
-        DATE = datetime.now()
-        FILE_SUFFIX = f'{DATE.strftime("%Y-%m-%d")}_{DATE.strftime("%H%M%S")}'
-        FILE: Path = DOWNLOAD_DIR / f"{bill_teams.__name__}_{FILE_SUFFIX}.{serialized_data.language.lower()}"
-        with ProperPath(FILE).open(mode="w") as file:
-            file.write(serialized_data.format)
-        console.print(f"Data successfully downloaded to '{FILE}' in '{output}' format.")
+    if export:
+        export = ExportToDirectory(
+            _export_value,
+            file_name_prefix=bill_teams.__name__,
+            file_extension=format.name,
+        )
+        export(data=formatted_bill_teams_data)
+        console.print(export.success_message)
     else:
-        serialized_data.highlight()
+        highlight = Highlight(output)
+        console.print(highlight(formatted_bill_teams_data))
 
     if clean or CLEANUP_AFTER:
         from time import sleep
@@ -198,5 +221,5 @@ def bill_teams(is_async_client: Annotated[Optional[bool], typer.Option("--async"
         cleanup()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app()
