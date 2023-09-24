@@ -22,7 +22,6 @@ from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._export import ExportToDirectory
-from cli._highlight_syntax import Highlight
 from cli._markdown_doc import _get_custom_help_text
 from src import logger
 
@@ -30,18 +29,35 @@ pretty.install()
 console = Console(color_system="truecolor")
 app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=False)
 
-typer.rich_utils.STYLE_HELPTEXT = ""  # fixes https://github.com/tiangolo/typer/issues/437
-typer.rich_utils._get_help_text = _get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
+typer.rich_utils.STYLE_HELPTEXT = (
+    ""  # fixes https://github.com/tiangolo/typer/issues/437
+)
+typer.rich_utils._get_help_text = (
+    _get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
+)
 
 
 @app.command(short_help="Make `GET` requests to elabftw endpoints.")
 def get(
-        endpoint: Annotated[str, typer.Argument(
-            help=docs["endpoint"], show_default=False)],
-        unit_id: Annotated[str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)] = None,
-        output: Annotated[str, typer.Option("--output", "-o",
-                                            help=docs["output"], show_default=False)]
-        = "json"
+    endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
+    unit_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)
+    ] = None,
+    output: Annotated[
+        str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
+    ] = "json",
+    export: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--export-dir",
+            "-e",
+            help=docs["export"],
+            is_flag=True,
+            is_eager=True,
+            show_default=False,
+        ),
+    ] = False,
+    _export_value: Annotated[str, typer.Argument(hidden=True)] = "",
 ) -> None:
     """
     Make `GET` requests to elabftw endpoints as documented in
@@ -61,14 +77,33 @@ def get(
     """
     from src import GETRequest
     from src import Validate, ConfigValidator
+    from cli._export import ExportToDirectory
+    from cli._highlight_syntax import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
     validate_config()
 
     session = GETRequest()
     raw_response = session(endpoint, unit_id)
-    prettify = Highlight(data=raw_response.json(), lang=output)
-    prettify.highlight()
+    try:
+        format = Format(output)
+    except ValueError as e:
+        logger.error(e)
+        format = Format("txt")  # Falls back to "txt"
+    formatted_data = format(raw_response.json())
+
+    if export:
+        file_name_prefix = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
+        export = ExportToDirectory(
+            _export_value,
+            file_name_prefix=file_name_prefix,
+            file_extension=format.name,
+        )
+        export(data=formatted_data)
+        console.print(export.success_message)
+    else:
+        highlight = Highlight(output)
+        console.print(highlight(formatted_data))
 
 
 @app.command(
