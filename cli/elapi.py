@@ -78,7 +78,7 @@ def get(
     from src import GETRequest
     from src import Validate, ConfigValidator
     from cli._export import ExportToDirectory
-    from cli._highlight_syntax import Format, Highlight
+    from cli._format import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
     validate_config()
@@ -142,7 +142,7 @@ def post(
     from src import POSTRequest
     from json import JSONDecodeError
     from src import Validate, ConfigValidator
-    from cli._highlight_syntax import Format, Highlight
+    from cli._format import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
     validate_config()
@@ -229,7 +229,7 @@ def bill_teams(
     validate()
 
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
-    from cli._highlight_syntax import Format, Highlight
+    from cli._format import Format, Highlight
 
     users_info = UsersInformation(is_async_client)
     teams_info = TeamsInformation()
