@@ -73,20 +73,21 @@ def get(
 
 @app.command(
     short_help="Make `POST` request to elabftw endpoints.",
-    context_settings={
-        "allow_extra_args": True,
-        "ignore_unknown_options": True
-    }
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def post(
-        endpoint: Annotated[str, typer.Argument(
-            help=docs["endpoint"], show_default=False)], *,
-        unit_id: Annotated[str, typer.Option("--id", "-i", help=docs["unit_id_post"], show_default=False)] = None,
-        json_: Annotated[str, typer.Option("--data", "-d", help=docs["data"], show_default=False)] = None,
-        data: typer.Context = None,
-        output: Annotated[str, typer.Option("--output", "-o",
-                                            help=docs["output"], show_default=False)]
-        = "json"
+    endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
+    *,
+    unit_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["unit_id_post"], show_default=False)
+    ] = None,
+    json_: Annotated[
+        str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
+    ] = None,
+    data: typer.Context = None,
+    output: Annotated[
+        str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
+    ] = "json",
 ) -> None:
     """
     Make `POST` request to elabftw endpoints as documented in
@@ -106,6 +107,7 @@ def post(
     from src import POSTRequest
     from json import JSONDecodeError
     from src import Validate, ConfigValidator
+    from cli._highlight_syntax import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
     validate_config()
@@ -118,16 +120,21 @@ def post(
         valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     session = POSTRequest()
     raw_response = session(endpoint, unit_id, **valid_data)
+    format = Format(output)
     try:
-        prettify = Highlight(data=raw_response.json(), lang=output)
+        formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
             console.print("Success: Resource created!", style="green")
         else:
-            console.print(f"Warning: Something unexpected happened! "
-                          f"The HTTP return was '{raw_response}'.", style="red")
+            console.print(
+                f"Warning: Something unexpected happened! "
+                f"The HTTP return was '{raw_response}'.",
+                style="red",
+            )
     else:
-        prettify.highlight()
+        highlight = Highlight(output)
+        console.print(highlight(formatted_data))
 
 
 @app.command(name="show-config")
