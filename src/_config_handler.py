@@ -26,8 +26,11 @@ settings = Dynaconf(
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
-settings.validators.register(Validator("export_dir", default=_DOWNLOAD_DIR, apply_default_on_none=True,
-                                       cast=lambda s: _DOWNLOAD_DIR if not s else s))
+settings.validators.register(
+    Validator("export_dir", default=_DOWNLOAD_DIR, apply_default_on_none=True,
+              cast=lambda s: _DOWNLOAD_DIR if not s else s),
+    Validator("unsafe_api_token_warning", default=True, apply_default_on_none=True)
+)
 settings.validators.validate()
 
 HOST: str = settings.get('host')  # case-insensitive: settings.get("HOST") == settings.get("host")
@@ -45,13 +48,8 @@ records = InspectConfig(setting_object=settings)
 # records.store()
 
 # UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
-try:
-    settings['unsafe_api_token_warning']
-except KeyError:
-    UNSAFE_TOKEN_WARNING: bool = True
-else:
-    UNSAFE_TOKEN_WARNING: bool = settings.as_bool('unsafe_api_token_warning')
-    # equivalent to settings.get(<key>, cast='@bool')
+UNSAFE_TOKEN_WARNING: bool = settings.as_bool('unsafe_api_token_warning')
+# equivalent to settings.get(<key>, cast='@bool')
 
 if UNSAFE_TOKEN_WARNING:
     records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
