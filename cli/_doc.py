@@ -1,10 +1,10 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
-from cli._highlight_syntax import Highlight
+from cli._highlight_syntax import BaseFormat
 from src import APP_NAME
 
-supported_highlighting_formats = ", ".join(f"**{_}**" for _ in Highlight.SUPPORTED_FORMAT.keys())
+supported_highlighting_formats = ", ".join(f"**{_}**" for _ in BaseFormat.supported_formatter_names())
 
 __PARAMETERS__doc__ = {
     "endpoint": "Name of an endpoint. Valid endpoints are: apikeys, config, experiments, info, "
@@ -21,11 +21,14 @@ __PARAMETERS__doc__ = {
     "async": f"Beta: Make process asynchronous. This speeds up receiving data from eLabFTW server manyfold.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
-    "stdout": f"Instead of downloading/exporting data, send data to `STDOUT` (i.e., print on terminal).",
+    "export": f"Export output to a directory. If only _'--export-dir'_ is passed, "
+              f"`export_dir` value from configuration file is used. If a directory path is provided as well, "
+              f"i.e., _'--export <path/to/directory>'_, then that path is used instead. "
+              f"The file name is auto-generated using the following scheme: *'\<FUNCTION\>_DATE_HHMMSS.EXT'*.",
     "output": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               "The values are case insensitive. The default format is `JSON`. "
-              "When 'txt' is used, the response will be sent in *original*, un-formatted, "
+              "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
               "without syntax highlighting. This can be utilized if one wishes to pipe the output "
-              "(with _'--stdout'_) to some external formatting program like `less`. "
+              " to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output falls back to 'txt'."
 }
