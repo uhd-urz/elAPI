@@ -20,7 +20,7 @@ class BaseFormat(ABC):
         ...
 
     @classmethod
-    def supported_formatters(cls) -> dict[str: "BaseFormat", ...]:
+    def supported_formatters(cls) -> dict[str:"BaseFormat", ...]:
         return cls._registry
 
     @classmethod
@@ -46,6 +46,7 @@ class JSONFormat(BaseFormat):
 
     def __call__(self, data: Any) -> str:
         import json
+
         return json.dumps(data, indent=2, ensure_ascii=True)
 
 
@@ -58,6 +59,7 @@ class YAMLFormat(BaseFormat):
 
     def __call__(self, data: Any) -> str:
         import yaml
+
         return yaml.dump(data, indent=2, allow_unicode=True)
 
 
@@ -70,6 +72,7 @@ class TXTFormat(BaseFormat):
 
     def __call__(self, data: Any) -> str:
         from pprint import pformat
+
         return pformat(data)
 
 
@@ -79,18 +82,21 @@ class ValidateLanguage:
 
     @property
     def _validated(self):
-        raise AttributeError("'_validated' isn't meant to be called directly! Use attributes 'name' and 'formatter'.")
+        raise AttributeError(
+            "'_validated' isn't meant to be called directly! Use attributes 'name' and 'formatter'."
+        )
 
     @_validated.setter
     def _validated(self, value):
         for pattern, formatter in BaseFormat.supported_formatters().items():
-            if re.match(fr"{pattern}", value, flags=re.IGNORECASE):
+            if re.match(rf"{pattern}", value, flags=re.IGNORECASE):
                 self.name: str = formatter.name
                 self.formatter: type(BaseFormat) = formatter
                 return
         raise ValueError(
             f"'{value}' isn't a supported language format! "
-            f"Supported formats are: {BaseFormat.supported_formatter_names()}.")
+            f"Supported formats are: {BaseFormat.supported_formatter_names()}."
+        )
 
 
 class Format:
