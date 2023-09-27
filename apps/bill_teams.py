@@ -10,20 +10,22 @@ from dateutil.relativedelta import relativedelta
 class UsersInformation:
     is_async_client: bool = False
 
-    def __call__(self) -> list[dict, ...]:
+    def items(self) -> list[dict, ...]:
         if not self.is_async_client:
             from src.information import Information, RecurseInformation
         else:
             from src.async_information import Information, RecurseInformation
         users = Information(unit_name="users", keep_session_open=True)
-        get_recursive_users = RecurseInformation(users)
-        return get_recursive_users()
+        recursive_users = RecurseInformation(users)
+        return recursive_users.items()
 
 
 @dataclass(slots=True)
 class TeamsInformation:
-    def __call__(self) -> list[dict, ...]:
+    @staticmethod
+    def items() -> list[dict, ...]:
         from src import GETRequest
+
         teams = GETRequest()
         return teams(endpoint="teams", unit_id="").json()
 
@@ -54,21 +56,23 @@ class BillTeams:
                 if team["is_owner"] == 1:
                     uid = u["userid"]
                     owner = {uid: {}}
-                    owner[uid]["owner_name"] = u['fullname']
-                    owner[uid]["owner_email"] = u['email']
-                    owner[uid]["owner_user_id"] = uid  # duplicate information to avoid ambiguity
-                    if not team_owners.get(team['id']):
-                        team_owners[team['id']] = {}
-                        team_owners[team['id']]["team_name"] = team['name']
+                    owner[uid]["owner_name"] = u["fullname"]
+                    owner[uid]["owner_email"] = u["email"]
+                    owner[uid]["owner_user_id"] = uid
+                    # duplicate information to avoid ambiguity
+                    if not team_owners.get(team["id"]):
+                        team_owners[team["id"]] = {}
+                        team_owners[team["id"]]["team_name"] = team["name"]
                         team_owners[team["id"]]["owners"] = [owner]
-                        team_owners[team["id"]]["team_id"] = team["id"]  # duplicate information to avoid ambiguity
+                        team_owners[team["id"]]["team_id"] = team["id"]
+                        # duplicate information to avoid ambiguity
                     else:
                         team_owners[team["id"]]["owners"].append(owner)
 
         # Add team creation date to team_owners
         for team in self.teams_information:
-            if team['id'] in team_owners.keys():
-                team_owners[team['id']]["team_created_at"] = team['created_at']
+            if team["id"] in team_owners.keys():
+                team_owners[team["id"]]["team_created_at"] = team["created_at"]
 
         # Add member count to team_owners
         for team_id in team_owners:
@@ -76,12 +80,14 @@ class BillTeams:
             team_owners[team_id]["members"]["user_ids"] = team_members[team_id]
             team_owners[team_id]["members"]["member_count"] = len(team_members[team_id])
             # Add trial information
-            trial_starts_at = self.team_trial_start_date(parser.isoparse(team_owners[team_id]["team_created_at"]))
+            trial_starts_at = self.team_trial_start_date(
+                parser.isoparse(team_owners[team_id]["team_created_at"])
+            )
             trial_ends_at = trial_starts_at + self.trial_period
             team_owners[team_id]["trial_ends_at"] = str(trial_ends_at)
             team_owners[team_id]["on_trial"] = trial_ends_at > datetime.now()
 
         return team_owners
 
-    def __call__(self) -> dict:
+    def items(self) -> dict:
         return self._get_owners()

@@ -231,11 +231,11 @@ def bill_teams(
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
     from cli._format import Format, Highlight
 
-    users_info = UsersInformation(is_async_client)
-    teams_info = TeamsInformation()
-    bill_teams_ = BillTeams(users_info(), teams_info())
+    users = UsersInformation(is_async_client)
+    teams = TeamsInformation()
+    bill_teams_ = BillTeams(users.items(), teams.items())
 
-    bill_teams_data = bill_teams_()
+    bill_teams_data = bill_teams_.items()
     try:
         format = Format(output)
     except ValueError as e:
