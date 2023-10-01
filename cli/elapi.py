@@ -23,7 +23,10 @@ from typing_extensions import Annotated
 from cli._doc import __PARAMETERS__doc__ as docs
 from cli._export import ExportToDirectory
 from cli._markdown_doc import _get_custom_help_text
-from src import logger
+from src.loggers import Logger
+
+logger = Logger()
+
 
 pretty.install()
 console = Console(color_system="truecolor")
@@ -75,8 +78,8 @@ def get(
     <br/>
     `$ elapi fetch users --id <id>` will return information about the specific user `<id>`.
     """
-    from src import GETRequest
-    from src import Validate, ConfigValidator
+    from src.api import GETRequest
+    from src.validator import Validate, ConfigValidator
     from cli._export import ExportToDirectory
     from cli._format import Format, Highlight
 
@@ -139,9 +142,9 @@ def post(
     `$ elapi post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
     """
     import ast
-    from src import POSTRequest
+    from src.api import POSTRequest
     from json import JSONDecodeError
-    from src import Validate, ConfigValidator
+    from src.validator import Validate, ConfigValidator
     from cli._format import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
@@ -188,9 +191,10 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
-    from src import ProperPath, TMP_DIR
+    from src.config import TMP_DIR
+    from src.path import ProperPath
 
-    ProperPath(TMP_DIR).remove(output_handler=console.print)
+    ProperPath(TMP_DIR, err_logger=logger).remove(output_handler=console.print)
     console.print("Done!", style="green")
 
 
@@ -223,7 +227,8 @@ def bill_teams(
 ) -> None:
     """*Beta:* Generate billable teams data."""
 
-    from src import CLEANUP_AFTER, Validate, ConfigValidator, PermissionValidator
+    from src.config import CLEANUP_AFTER
+    from src.validator import Validate, ConfigValidator, PermissionValidator
 
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
     validate()
