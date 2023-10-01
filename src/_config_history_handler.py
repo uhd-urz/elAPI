@@ -5,10 +5,12 @@ from pathlib import Path
 from dynaconf import Dynaconf
 from dynaconf.utils import inspect
 
-from src._path_handler import ProperPath
-from src.core_names import (CONFIG_FILE_NAME, APP_DATA_DIR, CONFIG_HISTORY_FILE_NAME, SYSTEM_CONFIG_LOC,
-                            LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC)
-from src.loggers import logger
+from src.path import ProperPath
+from src._names import (CONFIG_FILE_NAME, APP_DATA_DIR, CONFIG_HISTORY_FILE_NAME, SYSTEM_CONFIG_LOC,
+                        LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC)
+from src.loggers import Logger
+
+logger = Logger()
 
 
 @dataclass
@@ -81,7 +83,7 @@ class InspectConfig:
                         f"please make sure {CONFIG_FILE_NAME} is included in .gitignore.")
 
     def store(self) -> None:
-        store_location = ProperPath(self.config_history_location).create()
+        store_location = ProperPath(self.config_history_location, err_logger=logger).create()
         with store_location.open(mode="w", encoding="utf-8") as file:
             json.dump(self.inspect_applied_config, file)
         # print(f"Active configuration history is saved in {self.config_history_location}")
