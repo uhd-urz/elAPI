@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Union
 
-from src._path_handler import ProperPath
+from src.path import ProperPath
 
-# variables with leading underscores here indicate that they are to be overwritten by _config_handler.py
-# In which case, import their counterparts from src/_config_handler.py
+# variables with leading underscores here indicate that they are to be overwritten by config.py
+# In which case, import their counterparts from src/config.py
 # name definitions
 APP_NAME: str = "elapi"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
