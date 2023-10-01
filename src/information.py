@@ -5,8 +5,12 @@ from typing import TypeAlias, Union, Optional
 import typer
 from rich.progress import track
 
-from src import ProperPath, GETRequest, logger
-from src.core_names import TMP_DIR
+from src.api import GETRequest
+from src.path import ProperPath
+from src._names import TMP_DIR
+from src.loggers import Logger
+
+logger = Logger()
 
 SPECIAL_RESPONSE: TypeAlias = tuple[Optional[int], Union[list[dict], dict]]
 
