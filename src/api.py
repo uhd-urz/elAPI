@@ -4,7 +4,7 @@ from typing import Union
 from httpx import Response, Client, AsyncClient, Limits
 from httpx_auth import HeaderApiKey
 
-from src._config_handler import API_TOKEN, TOKEN_BEARER, HOST
+from src.config import API_TOKEN, TOKEN_BEARER, HOST
 
 
 class APIRequest(ABC):
