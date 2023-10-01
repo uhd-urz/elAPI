@@ -24,7 +24,7 @@ class UsersInformation:
 class TeamsInformation:
     @staticmethod
     def items() -> list[dict, ...]:
-        from src import GETRequest
+        from src.api import GETRequest
 
         teams = GETRequest()
         return teams(endpoint="teams", unit_id="").json()

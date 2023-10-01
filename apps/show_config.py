@@ -1,6 +1,7 @@
 from cli import Missing
-from src import (LOG_FILE_PATH, APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR,
-                 TMP_DIR, CLEANUP_AFTER)
+from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR,
+                        TMP_DIR, CLEANUP_AFTER)
+from src import LOG_FILE_PATH
 
 detected_config = records.inspect_applied_config
 detected_config_files = records.inspect_applied_config_files
