@@ -49,10 +49,15 @@ class Validator(ABC):
 
     @common_network_errors.setter
     def common_network_errors(self, value):
-        if value not in self._common_network_errors:
-            self._common_network_errors += value
-        else:
-            raise ValueError(f"Value {value} already exists!")
+        # TODO: The following implementation may lead to confusion as
+        #  common_network_errors = AnyException will lead to common_network_errors += AnyException
+        #  instead of actually overwriting common_network_errors.
+        #  A future refactoring should address this.
+        if value in self._common_network_errors:
+            raise ValueError(f"Value '{value}' already exists!")
+        if not isinstance(value, BaseException):
+            raise ValueError(f"Value '{value}' must be an instance of BaseException!")
+        self._common_network_errors += value
 
     @common_network_errors.deleter
     def common_network_errors(self):
