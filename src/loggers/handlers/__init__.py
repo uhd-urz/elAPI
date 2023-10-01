@@ -1,15 +1,20 @@
+import logging
 from abc import ABC, abstractmethod
 
 
 class Handler(ABC):
     @abstractmethod
     def __eq__(self, other):
-        if not (isinstance(other, Handler) and hasattr(other, "unique")):
+        if not (isinstance(other, Handler) and hasattr(other, "__hash__")):
             raise AssertionError(
                 f"'{other}' must be an instance of {Handler.__class__} and "
-                f"must implement the attribute 'unique'."
+                f"must have the '__hash__' attribute."
             )
-        return self.unique == other.unique
+        return self.__hash__() == other.__hash__()
+
+    @abstractmethod
+    def __hash__(self):
+        ...
 
     @abstractmethod
     def formatter(self):
@@ -19,6 +24,5 @@ class Handler(ABC):
     def handler(self):
         ...
 
-    @abstractmethod
-    def unique(self):
-        ...
+
+Handler.register(logging.Handler)
