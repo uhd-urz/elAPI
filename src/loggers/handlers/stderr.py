@@ -11,8 +11,13 @@ class STDERRHandler(Handler):
             "%(levelname)s:%(filename)s: %(message)s"
         )
 
-    def __eq__(self, other):
-        super().__eq__(other)
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        unique = self.formatter.__dict__.copy()
+        unique.pop("_style")
+        return int(md5(str(unique).encode("utf-8")).hexdigest(), base=16)
 
     @property
     def formatter(self) -> logging.Formatter:
@@ -25,7 +30,7 @@ class STDERRHandler(Handler):
         self._formatter = value
 
     @property
-    def handler(self):
+    def handler(self) -> logging.Handler:
         if self.suppress_stderr:
             import os
 
@@ -39,10 +44,3 @@ class STDERRHandler(Handler):
     @handler.setter
     def handler(self, value):
         raise AttributeError("'handler' cannot be modified!")
-
-    @property
-    def unique(self):
-        unique = self.formatter.__dict__.copy()
-        unique.pop("_style")
-        unique = str(unique).encode("utf-8")
-        return md5(unique).hexdigest()
