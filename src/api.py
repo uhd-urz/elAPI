@@ -18,7 +18,9 @@ class APIRequest(ABC):
         _client = Client if not self.is_async_client else AsyncClient
         self._client: Union[Client, AsyncClient] = _client(
             auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
-            verify=True, **kwargs)
+            verify=True,
+            **kwargs,
+        )
 
     # noinspection PyMethodOverriding
     def __init_subclass__(cls, /, is_async_client: bool = False, **kwargs):
@@ -63,12 +65,16 @@ class GETRequest(APIRequest):
     def _make(self, *args) -> Response:
         endpoint, unit_id = args
         unit_id = self.fix_none(unit_id)
-        return super().client.get(f'{self.host}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
+        return super().client.get(
+            f"{self.host}/{endpoint}/{unit_id}", headers={"Accept": "application/json"}
+        )
 
     def close(self):
         super().close()
 
-    def __call__(self, endpoint: str, unit_id: Union[str, int, None] = None) -> Response:
+    def __call__(
+        self, endpoint: str, unit_id: Union[str, int, None] = None
+    ) -> Response:
         return super().__call__(endpoint, unit_id)
 
 
@@ -82,14 +88,21 @@ class POSTRequest(APIRequest):
         endpoint, unit_id = args
         unit_id = self.fix_none(unit_id)
         data = {k: v.strip() if isinstance(v, str) else v for k, v in kwargs.items()}
-        return super().client.post(f'{HOST}/{endpoint}/{unit_id}',
-                                   headers={"Accept": "*/*", "Content-Type": "application/json"}, json=data)
+        return super().client.post(
+            f"{HOST}/{endpoint}/{unit_id}",
+            headers={"Accept": "*/*", "Content-Type": "application/json"},
+            json=data,
+        )
 
     def close(self):
         super().close()
 
-    def __call__(self, endpoint: str, unit_id: Union[str, int, None] = None,
-                 **data: Union[str, int, None]) -> Response:
+    def __call__(
+        self,
+        endpoint: str,
+        unit_id: Union[str, int, None] = None,
+        **data: Union[str, int, None],
+    ) -> Response:
         return super().__call__(endpoint, unit_id, **data)
 
 
@@ -97,19 +110,27 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
     def __init__(self, **kwargs):
-        super().__init__(timeout=None,
-                         limits=Limits(max_connections=100, max_keepalive_connections=50, keepalive_expiry=30),
-                         **kwargs)
+        super().__init__(
+            timeout=None,
+            limits=Limits(
+                max_connections=100, max_keepalive_connections=50, keepalive_expiry=30
+            ),
+            **kwargs,
+        )
 
     async def _make(self, *args) -> Response:
         endpoint, unit_id = args
         unit_id = self.fix_none(unit_id)
-        return await super().client.get(f'{self.host}/{endpoint}/{unit_id}', headers={"Accept": "application/json"})
+        return await super().client.get(
+            f"{self.host}/{endpoint}/{unit_id}", headers={"Accept": "application/json"}
+        )
 
     async def close(self):
         await self.client.aclose()
 
-    async def __call__(self, endpoint: str, unit_id: Union[str, int, None] = None) -> Response:
+    async def __call__(
+        self, endpoint: str, unit_id: Union[str, int, None] = None
+    ) -> Response:
         response = await self._make(endpoint, unit_id)
         if not self.keep_session_open:
             await self.close()
