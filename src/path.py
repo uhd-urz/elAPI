@@ -1,38 +1,38 @@
 import errno
-import logging
 import os
 import re
-import sys
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from shutil import rmtree
 from typing import Union, Any, TextIO
+
+from src.loggers import SimpleLogger
 
 
 class ProperPath:
     def __init__(self, name: Union[str, Path, None],
                  env_var: bool = False,
                  kind: Union[str, None] = '',
-                 suppress_stderr: bool = False):
+                 err_logger=SimpleLogger(),
+                 ):
 
         self.name = name
         self.env_var = env_var
         self.kind = kind
-        self.suppress_stderr = suppress_stderr
+        self.err_logger = err_logger
 
     def __str__(self):
         return str(self.expanded)
 
     def __repr__(self):
         return (f"{self.__class__.__name__}(name={self.name}, env_var={self.env_var}, kind={self.kind}, "
-                f"suppress_stderr={self.suppress_stderr})")
+                f"err_logger={self.err_logger})")
 
     def __eq__(self, to: Union[str, Path, "ProperPath"]):
         return self.expanded == ProperPath(to).expanded
 
     def __truediv__(self, other) -> "ProperPath":
-        return ProperPath(self.expanded / other) if self.expanded else None
+        return ProperPath(self.expanded / other, err_logger=self.err_logger) if self.expanded else None
 
     @property
     def name(self) -> str:
@@ -45,6 +45,17 @@ class ProperPath:
         if value == "":
             raise ValueError("Path cannot be an empty string!")
         self._name = value
+
+    @property
+    def err_logger(self):
+        return self._err_logger
+
+    @err_logger.setter
+    def err_logger(self, value):
+        import logging
+        if not isinstance(value, logging.Logger):
+            raise ValueError(f"'err_logger' must be a logging.Logger instance!")
+        self._err_logger = value
 
     @property
     def expanded(self) -> Path:
@@ -78,20 +89,6 @@ class ProperPath:
                     raise ValueError(
                         "Invalid value for parameter 'kind'. The following values for 'kind' are allowed: file, dir.")
 
-    def path_error_logger(self, message: str, level: int = logging.DEBUG) -> None:
-        LOG_LEVELS = {10: "DEBUG", 20: "INFO", 30: "WARNING", 40: "ERROR", 50: "CRITICAL"}
-
-        try:
-            from src.loggers import logger, stdout_handler
-        except ImportError:
-            if not self.suppress_stderr:
-                print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')}:{LOG_LEVELS[level]}: {message}",
-                      file=sys.stderr)
-        else:
-            logger.removeHandler(stdout_handler) if self.suppress_stderr else logger.addHandler(
-                stdout_handler) if stdout_handler not in logger.handlers else ...
-            logger.log(msg=message, level=level)
-
     @staticmethod
     def _error_helper_compare_path_source(source: Union[Path, str], target: Union[Path, str]) -> str:
         return f"PATH='{target}' from SOURCE='{source}'" if str(source) != str(target) else f"PATH='{target}'"
@@ -107,7 +104,7 @@ class ProperPath:
                 # except FileNotFoundError:
                 message = (f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
                            f"An attempt to create PATH={path} will be made.")
-                self.path_error_logger(message, level=logging.WARNING)
+                self.err_logger.warning(message)
 
             try:
                 if self.kind == 'file':
@@ -118,7 +115,7 @@ class ProperPath:
                     path.mkdir(parents=True, exist_ok=True)
             except PermissionError:
                 message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
-                self.path_error_logger(message, level=logging.CRITICAL)
+                self.err_logger.critical(message)
             else:
                 return path
 
@@ -136,7 +133,7 @@ class ProperPath:
             raise ValueError(f"{file} doesn't exist or isn't a valid file!")
         except PermissionError:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
-            self.path_error_logger(message, level=logging.WARNING)
+            self.err_logger.warning(message)
 
         output_handler(f"Deleted: {file}") if output_handler else ...
 
@@ -168,11 +165,11 @@ class ProperPath:
             file: TextIO = path.open(mode=mode, encoding=encoding)
         except FileNotFoundError:
             message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
-            self.path_error_logger(message, level=logging.WARNING)
+            self.err_logger.warning(message)
         except PermissionError:
             message = (f"Permission denied while trying to open file with mode '{mode}' for "
                        f"{self._error_helper_compare_path_source(self.name, path)}.")
-            self.path_error_logger(message, level=logging.CRITICAL)
+            self.err_logger.critical(message)
 
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
@@ -185,7 +182,7 @@ class ProperPath:
                            f"of the file object was made, "
                            f"but there was a problem opening the file '{path}'. "
                            f"No further operation is possible unless file can be opened.")
-                self.path_error_logger(message, logging.WARNING)
+                self.err_logger.warning(message)
 
         else:
             try:
@@ -196,17 +193,17 @@ class ProperPath:
                 # aren't valid/known/public.
                 message = (f"An attempt to access unknown/private attribute of the file object {file} was made. "
                            f"No further operation is possible.")
-                self.path_error_logger(message, logging.WARNING)
+                self.err_logger.warning(message)
             except MemoryError:
                 message = (f"Out of memory while trying to use mode '{mode}' with "
                            f"{self._error_helper_compare_path_source(self.name, path)}.")
-                self.path_error_logger(message, level=logging.CRITICAL)
+                self.err_logger.critical(message)
             except IOError as ioe:
                 # We catch "No disk space left" error which will likely trigger during a write attempt on the file
                 if ioe.errno == errno.ENOSPC:
                     message = (f"Not enough disk space left while trying to use mode '{mode}' with "
                                f"{self._error_helper_compare_path_source(self.name, path)}.")
-                    self.path_error_logger(message, level=logging.CRITICAL)
+                    self.err_logger.critical(message)
         finally:
             if file:
                 try:
@@ -222,4 +219,4 @@ class ProperPath:
                         message = (f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
                                    f"close the file before using it with '{mode}'. Data may have been lost."
                                    f"{self._error_helper_compare_path_source(self.name, path)}.")
-                        self.path_error_logger(message, level=logging.CRITICAL)
+                        self.err_logger.critical(message)
