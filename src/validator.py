@@ -5,9 +5,11 @@ from json import JSONDecodeError
 import typer
 from httpx import Response, UnsupportedProtocol, ConnectError, ConnectTimeout, InvalidURL
 
-from src import GETRequest
-from src._config_handler import records, HOST, API_TOKEN
-from src.loggers import logger
+from src.api import GETRequest
+from src.config import records, HOST, API_TOKEN
+from src.loggers import Logger
+
+logger = Logger()
 
 
 class Validator(ABC):
