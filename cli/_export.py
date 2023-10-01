@@ -2,7 +2,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union
 
-from src import ProperPath, DOWNLOAD_DIR, logger
+from src.config import DOWNLOAD_DIR
+from src.path import ProperPath
+from src.loggers import Logger
+
+logger = Logger()
 
 
 class ExportToDirectory:
@@ -40,7 +44,7 @@ class ExportToDirectory:
     @export_path.setter
     def export_path(self, value):
         try:
-            export_path_ = ProperPath(value, kind="dir")
+            export_path_ = ProperPath(value, kind="dir", err_logger=logger)
         except ValueError:
             self._export_path = self.default_export_path
         else:
@@ -60,5 +64,5 @@ class ExportToDirectory:
         )
 
     def __call__(self, data: Any) -> None:
-        with ProperPath(self.export_path).open(mode="w") as file:
+        with ProperPath(self.export_path, err_logger=logger).open(mode="w") as file:
             file.write(data)
