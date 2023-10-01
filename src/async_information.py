@@ -6,8 +6,12 @@ from typing import Union
 import typer
 from rich.progress import track
 
-from src import ProperPath, AsyncGETRequest, logger
-from src.core_names import TMP_DIR
+from src.api import AsyncGETRequest
+from src.path import ProperPath
+from src._names import TMP_DIR
+from src.loggers import Logger
+
+logger = Logger()
 
 
 class Information:
