@@ -1,15 +1,15 @@
 import logging
 from hashlib import md5
 
+from rich.logging import RichHandler
+
 from src.loggers.handlers import Handler
 
 
 class STDERRHandler(Handler):
     def __init__(self, suppress_stderr=False):
         self.suppress_stderr = suppress_stderr
-        self.formatter: logging.Formatter = logging.Formatter(
-            "%(levelname)s:%(filename)s: %(message)s"
-        )
+        self.formatter: logging.Formatter = logging.Formatter("%(message)s")
 
     def __eq__(self, other) -> bool:
         return super().__eq__(other)
@@ -36,7 +36,7 @@ class STDERRHandler(Handler):
 
             handler = logging.FileHandler(filename=os.devnull)
         else:
-            handler = logging.StreamHandler()
+            handler = RichHandler(show_time=False, enable_link_path=False)
         handler.setFormatter(self.formatter)
         handler.setLevel(logging.DEBUG)
         return handler
