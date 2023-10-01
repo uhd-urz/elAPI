@@ -4,10 +4,12 @@ from dynaconf import Dynaconf, Validator
 
 from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
-from src._path_handler import ProperPath
-from src.core_names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
-                            SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
-from src.loggers import logger
+from src._names import (APP_NAME, APP_DATA_DIR, CONFIG_FILE_NAME, _DOWNLOAD_DIR, TMP_DIR,
+                        SYSTEM_CONFIG_LOC, PROJECT_CONFIG_LOC, LOCAL_CONFIG_LOC)
+from src.loggers import Logger
+from src.path import ProperPath
+
+logger = Logger()
 
 SYSTEM_CONFIG_LOC: Path = SYSTEM_CONFIG_LOC
 LOCAL_CONFIG_LOC: Path = LOCAL_CONFIG_LOC
@@ -59,7 +61,7 @@ TOKEN_BEARER: str = 'Authorization'
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Download location
-DOWNLOAD_DIR: Path = ProperPath(settings['export_dir']).create()
+DOWNLOAD_DIR: Path = ProperPath(settings['export_dir'], err_logger=logger).create()
 if not DOWNLOAD_DIR:
     logger.critical("No directory for exporting data could be validated! This is a fatal error. "
                     "To quickly fix this error define an export directory with 'export_dir' in configuration file. "
@@ -73,7 +75,7 @@ if not DOWNLOAD_DIR:
 # I.e., APP_DATA_DIR could still return None when the logs are stored in /var/log/elapi.
 # I.e., Both APP_DATA_DIR and FALLBACK_DIR are None
 # In most cases though logs and application data would share the same local directory: ~/.local/share/elapi
-_proper_app_data_dir = ProperPath(APP_DATA_DIR)
+_proper_app_data_dir = ProperPath(APP_DATA_DIR, err_logger=logger)
 if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_data_dir.create())):
     logger.critical(f"Permission is denied when trying to create fallback directory '{_proper_app_data_dir.name}' "
                     f"to store {APP_NAME} internal application data. {APP_NAME}'s functionalities will be limited.")
@@ -82,7 +84,7 @@ if not (initial_validation.get(APP_DATA_DIR) or (APP_DATA_DIR := _proper_app_dat
 # Although the following has the term cache, this cache is slightly more important than most caches.
 # The business logic in apps/ gracefully rely on the downloaded files in TMP_DIR to make decisions
 # Therefor we use '/var/tmp/elapi' instead of '/var/cache' or 'XDG_CACHE_HOME'.
-TMP_DIR: Path = ProperPath(TMP_DIR).create()
+TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
 
 # Whether to run "cleanup" command on CLI after finishing a task (when available)
 CLEANUP_AFTER: bool = settings.as_bool('cleanup_after_finish')
