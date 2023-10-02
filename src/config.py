@@ -65,16 +65,15 @@ try:
 except (KeyError, ValueError):
     EXPORT_DIR = ProperPath(LOCAL_EXPORT_DIR, err_logger=logger).create()
 else:
-    TMP_FILE = ".tmp"
     try:
-        (EXPORT_DIR_FROM_CONF / TMP_FILE).touch()
+        with TemporaryFile(prefix=".", dir=EXPORT_DIR_FROM_CONF) as f:
+            ...
     except PermissionError:
         logger.warning(f"Export directory {EXPORT_DIR_FROM_CONF} from configuration file doesn't "
                        f"have proper write permission. {APP_NAME} will fallback to using "
                        f"the default download directory {LOCAL_EXPORT_DIR}.")
         EXPORT_DIR = ProperPath(LOCAL_EXPORT_DIR, err_logger=logger).create()
     else:
-        (EXPORT_DIR_FROM_CONF / TMP_FILE).unlink()
         EXPORT_DIR = EXPORT_DIR_FROM_CONF
 if not EXPORT_DIR:
     logger.critical("No directory for exporting data could be validated! This is a fatal error. "
