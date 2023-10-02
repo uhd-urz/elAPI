@@ -1,7 +1,8 @@
 from cli import Missing
+from src import LOG_FILE_PATH
 from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
                         TMP_DIR, CLEANUP_AFTER)
-from src import LOG_FILE_PATH
+from src.path import ProperPath
 
 detected_config = records.inspect_applied_config
 detected_config_files = records.inspect_applied_config_files
@@ -31,6 +32,10 @@ try:
     export_dir_source = detected_config_files[detected_config["EXPORT_DIR"][1]]
 except KeyError:
     export_dir_source = FALLBACK
+else:
+    # TODO: The following needs to refactored so ProperPath needs not to be applied again!
+    if ProperPath(export_dir_value := detected_config["EXPORT_DIR"][0]).expanded.resolve() != EXPORT_DIR:
+        export_dir_source = FALLBACK
 
 try:
     cleanup_source = detected_config_files[detected_config["CLEANUP_AFTER_FINISH"][1]]
