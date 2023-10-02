@@ -59,9 +59,27 @@ TOKEN_BEARER: str = 'Authorization'
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Download location
-DOWNLOAD_DIR_FROM_CONF = settings.get('export_dir')
-DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF, err_logger=logger).create() if (
-    DOWNLOAD_DIR_FROM_CONF) else ProperPath(_DOWNLOAD_DIR, err_logger=logger).create()
+try:
+    DOWNLOAD_DIR_FROM_CONF: Path = ProperPath(settings["export_dir"], err_logger=logger).create()
+except (KeyError, ValueError):
+    DOWNLOAD_DIR = ProperPath(_DOWNLOAD_DIR, err_logger=logger).create()
+else:
+    TMP_FILE = ".tmp"
+    try:
+        (DOWNLOAD_DIR_FROM_CONF / TMP_FILE).touch()
+    except PermissionError:
+        logger.warning(f"Export directory {DOWNLOAD_DIR_FROM_CONF} from configuration file doesn't "
+                       f"have proper write permission. {APP_NAME} will fallback to using "
+                       f"the default download directory {_DOWNLOAD_DIR}.")
+        DOWNLOAD_DIR = ProperPath(_DOWNLOAD_DIR, err_logger=logger).create()
+    else:
+        (DOWNLOAD_DIR_FROM_CONF / TMP_FILE).unlink()
+        DOWNLOAD_DIR = DOWNLOAD_DIR_FROM_CONF
+if not DOWNLOAD_DIR:
+    logger.critical("No directory for exporting data could be validated! This is a fatal error. "
+                    "To quickly fix this error define an export directory with 'export_dir' in configuration file. "
+                    f"{APP_NAME} will not run!")
+    raise SystemExit()
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
