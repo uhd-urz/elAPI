@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from dynaconf import Dynaconf, Validator
+from dynaconf import Dynaconf
 
 from src._config_history_handler import InspectConfig
 from src._log_file_handler import initial_validation
@@ -28,13 +28,6 @@ settings = Dynaconf(
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
-settings.validators.register(
-    Validator("export_dir", default=_DOWNLOAD_DIR, apply_default_on_none=True,
-              cast=lambda s: _DOWNLOAD_DIR if not s else s),
-    Validator("unsafe_api_token_warning", default=True, apply_default_on_none=True)
-)
-settings.validators.validate()
-
 HOST: str = settings.get('host')  # case-insensitive: settings.get("HOST") == settings.get("host")
 if not HOST:
     logger.critical(f"'host' is empty or missing from {CONFIG_FILE_NAME} file. "
@@ -50,8 +43,13 @@ records = InspectConfig(setting_object=settings)
 # records.store()
 
 # UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
-UNSAFE_TOKEN_WARNING: bool = settings.as_bool('unsafe_api_token_warning')
-# equivalent to settings.get(<key>, cast='@bool')
+try:
+    settings['unsafe_api_token_warning']
+except KeyError:
+    UNSAFE_TOKEN_WARNING: bool = True
+else:
+    UNSAFE_TOKEN_WARNING: bool = settings.as_bool('unsafe_api_token_warning')
+    # equivalent to settings.get(<key>, cast='@bool')
 
 if UNSAFE_TOKEN_WARNING:
     records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
@@ -61,12 +59,9 @@ TOKEN_BEARER: str = 'Authorization'
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Download location
-DOWNLOAD_DIR: Path = ProperPath(settings['export_dir'], err_logger=logger).create()
-if not DOWNLOAD_DIR:
-    logger.critical("No directory for exporting data could be validated! This is a fatal error. "
-                    "To quickly fix this error define an export directory with 'export_dir' in configuration file. "
-                    f"{APP_NAME} will not run!")
-    raise SystemExit()
+DOWNLOAD_DIR_FROM_CONF = settings.get('export_dir')
+DOWNLOAD_DIR: Path = ProperPath(DOWNLOAD_DIR_FROM_CONF, err_logger=logger).create() if (
+    DOWNLOAD_DIR_FROM_CONF) else ProperPath(_DOWNLOAD_DIR, err_logger=logger).create()
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
