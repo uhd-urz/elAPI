@@ -24,7 +24,7 @@ TMP_DIR: Path = Path(f"/var/tmp/{APP_NAME}")
 
 # Fallback definitions
 FALLBACK_DIR: Path = user_home / ".local/share" / APP_NAME
-FALLBACK_DOWNLOAD_DIR: Path = user_home / 'Downloads'
+FALLBACK_EXPORT_DIR: Path = user_home / 'Downloads'
 FALLBACK_CONFIG_DIR: Path = user_home / '.config'
 
 # Configuration path definitions
@@ -42,4 +42,4 @@ APP_DATA_DIR: Path = XDG_DATA_HOME / APP_NAME if XDG_DATA_HOME else FALLBACK_DIR
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")
 
 # Download data directory
-_DOWNLOAD_DIR: Path = XDG_DOWNLOAD_DIR / APP_NAME if XDG_DOWNLOAD_DIR else FALLBACK_DOWNLOAD_DIR
+LOCAL_EXPORT_DIR: Path = XDG_DOWNLOAD_DIR / APP_NAME if XDG_DOWNLOAD_DIR else FALLBACK_EXPORT_DIR

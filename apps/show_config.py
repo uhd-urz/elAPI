@@ -1,5 +1,5 @@
 from cli import Missing
-from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, DOWNLOAD_DIR, APP_DATA_DIR,
+from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
                         TMP_DIR, CLEANUP_AFTER)
 from src import LOG_FILE_PATH
 
@@ -28,9 +28,9 @@ except KeyError:
     host_value, host_source = Missing(), None
 
 try:
-    download_dir_source = detected_config_files[detected_config["EXPORT_DIR"][1]]
+    export_dir_source = detected_config_files[detected_config["EXPORT_DIR"][1]]
 except KeyError:
-    download_dir_source = FALLBACK
+    export_dir_source = FALLBACK
 
 try:
     cleanup_source = detected_config_files[detected_config["CLEANUP_AFTER_FINISH"][1]]
@@ -53,7 +53,7 @@ The following debug information includes configuration values and their sources 
 - **API token:** {api_token_masked} ← `{api_token_source}`
 """ if api_token_source else f"- **API token:** _{api_token_masked.colorize()}_") + f"""
 - **Token bearer:** {TOKEN_BEARER}
-- **Download directory:** {DOWNLOAD_DIR} ← `{download_dir_source}`
+- **Export directory:** {EXPORT_DIR} ← `{export_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
 - **Caching directory:** {TMP_DIR}
 - **Unsafe API token use warning:** {unsafe_token_use_value} ← 
@@ -66,4 +66,4 @@ The following debug information includes configuration values and their sources 
 {detected_config_files_formatted}
 """ + (f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
-""" if FALLBACK in (download_dir_source, unsafe_token_use_source, cleanup_source) else ""))
+""" if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source) else ""))

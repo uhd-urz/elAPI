@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union
 
-from src.config import DOWNLOAD_DIR
+from src.config import EXPORT_DIR
 from src.path import ProperPath
 from src.loggers import Logger
 
@@ -35,7 +35,7 @@ class ExportToDirectory:
 
     @property
     def default_export_path(self) -> Path:
-        return DOWNLOAD_DIR / self.file
+        return EXPORT_DIR / self.file
 
     @property
     def export_path(self) -> Path:
