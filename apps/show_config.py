@@ -28,7 +28,7 @@ except KeyError:
     host_value, host_source = Missing(), None
 
 try:
-    download_dir_source = detected_config_files[detected_config["DOWNLOAD_DIR"][1]]
+    download_dir_source = detected_config_files[detected_config["EXPORT_DIR"][1]]
 except KeyError:
     download_dir_source = FALLBACK
 
