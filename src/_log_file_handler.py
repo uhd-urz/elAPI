@@ -1,24 +1,26 @@
 from pathlib import Path
 
-from src._names import APP_DATA_DIR, LOG_DIR_ROOT, LOG_FILE_NAME, APP_NAME
+from src._names import (
+    FALLBACK_DIR,
+    LOG_DIR_ROOT,
+    LOG_FILE_NAME,
+    APP_NAME,
+    XDG_DATA_HOME,
+)
+from src.validators import Validate, ValidationError, PathValidator
 from src.loggers import Logger
-from src.path import ProperPath
 
-logger = Logger()
+logger = Logger(suppress_stderr=True)
 
-initial_validation: dict[Path:Path] = {}
-_DIRS: tuple[Path, ...] = LOG_DIR_ROOT, APP_DATA_DIR
+_DIRS: tuple[Path, ...] = LOG_DIR_ROOT, XDG_DATA_HOME / APP_NAME, FALLBACK_DIR
 
-for loc in _DIRS:
-    if working_path := ProperPath(loc / LOG_FILE_NAME, err_logger=Logger(suppress_stderr=True)).create():
-        initial_validation[loc] = working_path
-        break
+validate_path = Validate(PathValidator(_DIRS, err_logger=logger))
 
 try:
-    LOG_FILE_PATH, *_ = initial_validation.values()
-except ValueError as e:
-    logger.critical(f'Permission to write logs in fallback path {APP_DATA_DIR}/{LOG_FILE_NAME} is denied as well! '
-                    f'This is a critical error. {APP_NAME} will not run!"')
+    LOG_FILE_PATH = validate_path() / LOG_FILE_NAME
+except ValidationError as e:
+    logger.critical(
+        f"{APP_NAME} couldn't validate fallback path {FALLBACK_DIR}/{LOG_FILE_NAME} to write logs! "
+        f"This is a critical error. {APP_NAME} will not run!"
+    )
     raise SystemExit() from e
-
-LOG_FILE_PATH: Path = LOG_FILE_PATH  # same variable but type annotated
