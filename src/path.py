@@ -262,6 +262,7 @@ class ProperPath:
                     )
                     self.err_logger.critical(message)
                     raise io_err
+                raise io_err
         finally:
             if file:
                 try:
@@ -281,3 +282,4 @@ class ProperPath:
                         )
                         self.err_logger.critical(message)
                         raise io_err
+                    raise io_err
