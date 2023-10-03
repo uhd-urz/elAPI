@@ -139,9 +139,10 @@ class ProperPath:
                     (path_parent / path_file).touch(exist_ok=True)
                 elif self.kind == "dir":
                     path.mkdir(parents=True, exist_ok=True)
-            except PermissionError:
+            except PermissionError as e:
                 message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
                 self.err_logger.critical(message)
+                raise e
             else:
                 return path
 
@@ -156,12 +157,13 @@ class ProperPath:
         output_handler: Any = kwargs.get("output_handler")
         try:
             file.unlink()
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             # unlink() throws FileNotFoundError when a directory is passed as it expects files only
-            raise ValueError(f"{file} doesn't exist or isn't a valid file!")
-        except PermissionError:
+            raise ValueError(f"{file} doesn't exist or isn't a valid file!") from e
+        except PermissionError as e:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.err_logger.warning(message)
+            raise e
 
         output_handler(f"Deleted: {file}") if output_handler else ...
 
@@ -194,17 +196,19 @@ class ProperPath:
                         # traceback message. I.e., which file or directory exactly
 
     @contextmanager
-    def open(self, mode="r", encoding="utf-8") -> None:
+    def open(self, mode="r", encoding: Union[str, None] = None) -> None:
         path = self.expanded
         file: Union[TextIO, None] = None
         try:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
             file: TextIO = path.open(mode=mode, encoding=encoding)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)
-        except PermissionError:
+            raise e
+
+        except PermissionError as e:
             message = (
                 f"Permission denied while trying to open file with mode '{mode}' for "
                 f"{self._error_helper_compare_path_source(self.name, path)}."
@@ -214,10 +218,10 @@ class ProperPath:
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
                 # I.e., contextmanager always expects a yield?
-            except AttributeError as e:
+            except AttributeError as attribute_err:
                 # However, yielding None leads to attribute calls to None
                 # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
-                attribute_in_error = str(e).split()[-1]
+                attribute_in_error = str(attribute_err).split()[-1]
                 message = (
                     f"An attempt to access attribute(s) (likely the attribute {attribute_in_error}) "
                     f"of the file object was made, "
@@ -225,12 +229,15 @@ class ProperPath:
                     f"No further operation is possible unless file can be opened."
                 )
                 self.err_logger.warning(message)
+                raise attribute_err
+            else:
+                raise e
 
         else:
             try:
                 # Now we yield the contextmanager expected yield
                 yield file
-            except AttributeError:
+            except AttributeError as e:
                 # This is useful for catching AttributeError when the file object is valid but the attributes accessed
                 # aren't valid/known/public.
                 message = (
@@ -238,20 +245,23 @@ class ProperPath:
                     f"No further operation is possible."
                 )
                 self.err_logger.warning(message)
-            except MemoryError:
+                raise e
+            except MemoryError as e:
                 message = (
                     f"Out of memory while trying to use mode '{mode}' with "
                     f"{self._error_helper_compare_path_source(self.name, path)}."
                 )
                 self.err_logger.critical(message)
-            except IOError as ioe:
+                raise e
+            except IOError as io_err:
                 # We catch "No disk space left" error which will likely trigger during a write attempt on the file
-                if ioe.errno == errno.ENOSPC:
+                if io_err.errno == errno.ENOSPC:
                     message = (
                         f"Not enough disk space left while trying to use mode '{mode}' with "
                         f"{self._error_helper_compare_path_source(self.name, path)}."
                     )
                     self.err_logger.critical(message)
+                    raise io_err
         finally:
             if file:
                 try:
@@ -262,11 +272,12 @@ class ProperPath:
                 # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again,
                 # this will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
                 # Therefore, we need to catch the error again!
-                except IOError as ioe:
-                    if ioe.errno == errno.ENOSPC:
+                except IOError as io_err:
+                    if io_err.errno == errno.ENOSPC:
                         message = (
                             f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
                             f"close the file before using it with '{mode}'. Data may have been lost."
                             f"{self._error_helper_compare_path_source(self.name, path)}."
                         )
                         self.err_logger.critical(message)
+                        raise io_err
