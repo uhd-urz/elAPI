@@ -3,7 +3,7 @@ from pathlib import Path
 from dynaconf import Dynaconf
 
 from src.log_file import LOG_FILE_PATH
-from src._config_history_handler import InspectConfig
+from src._config_history import InspectConfig
 from src.validators import Validate, ValidationError, PathValidator
 from src._names import (
     APP_NAME,
