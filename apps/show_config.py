@@ -1,5 +1,5 @@
 from cli import Missing
-from src import LOG_FILE_PATH
+from src.log_file import LOG_FILE_PATH
 from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
                         TMP_DIR, CLEANUP_AFTER)
 from src.path import ProperPath
