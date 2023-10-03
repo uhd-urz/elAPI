@@ -112,9 +112,9 @@ class ProperPath:
         source: Union[Path, str], target: Union[Path, str]
     ) -> str:
         return (
-            f"PATH='{target}' from SOURCE='{source}'"
+            f"PATH={target} from SOURCE={source}"
             if str(source) != str(target)
-            else f"PATH='{target}'"
+            else f"PATH={target}"
         )
 
     def exists(self) -> Union[Path, None]:
@@ -141,7 +141,7 @@ class ProperPath:
                     path.mkdir(parents=True, exist_ok=True)
             except PermissionError as e:
                 message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
-                self.err_logger.critical(message)
+                self.err_logger.error(message)
                 raise e
             else:
                 return path
@@ -204,7 +204,7 @@ class ProperPath:
             # before the file is opened. E.g., FileNotFoundError
             file: TextIO = path.open(mode=mode, encoding=encoding)
         except FileNotFoundError as e:
-            message = f"File in '{path}' couldn't be found while trying to open it with mode '{mode}'!"
+            message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)
             raise e
 
@@ -213,7 +213,7 @@ class ProperPath:
                 f"Permission denied while trying to open file with mode '{mode}' for "
                 f"{self._error_helper_compare_path_source(self.name, path)}."
             )
-            self.err_logger.critical(message)
+            self.err_logger.error(message)
 
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
@@ -223,10 +223,9 @@ class ProperPath:
                 # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
                 attribute_in_error = str(attribute_err).split()[-1]
                 message = (
-                    f"An attempt to access attribute(s) (likely the attribute {attribute_in_error}) "
+                    f"An attempt to access attribute {attribute_in_error} "
                     f"of the file object was made, "
-                    f"but there was a problem opening the file '{path}'. "
-                    f"No further operation is possible unless file can be opened."
+                    f"but there was a problem opening the file {path}."
                 )
                 self.err_logger.warning(message)
                 raise attribute_err
@@ -240,9 +239,10 @@ class ProperPath:
             except AttributeError as e:
                 # This is useful for catching AttributeError when the file object is valid but the attributes accessed
                 # aren't valid/known/public.
+                attribute_in_error = str(e).split()[-1]
                 message = (
-                    f"An attempt to access unknown/private attribute of the file object {file} was made. "
-                    f"No further operation is possible."
+                    f"An attempt to access unknown/private attribute {attribute_in_error} "
+                    f"of the file object {file} was made."
                 )
                 self.err_logger.warning(message)
                 raise e
