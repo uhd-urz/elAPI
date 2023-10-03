@@ -17,9 +17,9 @@ cur_dir: Path = Path.cwd()
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # XDG and other convention variable definitions
-XDG_DATA_HOME: Union[Path, None] = ProperPath("XDG_DATA_HOME", env_var=True).expanded
-XDG_DOWNLOAD_DIR: Union[Path, None] = ProperPath("XDG_DOWNLOAD_DIR", env_var=True).expanded
-XDG_CONFIG_HOME: Union[Path, None] = ProperPath('XDG_CONFIG_HOME', env_var=True).expanded
+XDG_DATA_HOME: Union[ProperPath, Path, str] = ProperPath("XDG_DATA_HOME", env_var=True)
+XDG_DOWNLOAD_DIR: Union[ProperPath, Path, str] = ProperPath("XDG_DOWNLOAD_DIR", env_var=True)
+XDG_CONFIG_HOME: Union[ProperPath, Path, str] = ProperPath('XDG_CONFIG_HOME', env_var=True).expanded
 TMP_DIR: Path = Path(f"/var/tmp/{APP_NAME}")
 
 # Fallback definitions
@@ -34,12 +34,5 @@ LOCAL_CONFIG_LOC: Path = XDG_CONFIG_HOME / CONFIG_FILE_NAME if XDG_CONFIG_HOME \
 # In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yaml
 PROJECT_CONFIG_LOC: Path = cur_dir / CONFIG_FILE_NAME
 
-# App internal data directory
-APP_DATA_DIR: Path = XDG_DATA_HOME / APP_NAME if XDG_DATA_HOME else FALLBACK_DIR
-# In _log_file_handler.py the priority order is, _DIRS := LOG_DIR_ROOT > APP_DATA_DIR
-
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")
-
-# Download data directory
-LOCAL_EXPORT_DIR: Path = XDG_DOWNLOAD_DIR / APP_NAME if XDG_DOWNLOAD_DIR else FALLBACK_EXPORT_DIR
