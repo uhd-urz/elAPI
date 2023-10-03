@@ -1,4 +1,5 @@
 import errno
+import logging
 import os
 import re
 from contextlib import contextmanager
@@ -15,7 +16,7 @@ class ProperPath:
         name: Union[str, Path, None],
         env_var: bool = False,
         kind: Union[str, None] = "",
-        err_logger=SimpleLogger(),
+        err_logger: logging.Logger = SimpleLogger(),
     ):
         self.name = name
         self.env_var = env_var
@@ -61,8 +62,6 @@ class ProperPath:
 
     @err_logger.setter
     def err_logger(self, value):
-        import logging
-
         if not isinstance(value, logging.Logger):
             raise ValueError(f"'err_logger' must be a logging.Logger instance!")
         self._err_logger = value
