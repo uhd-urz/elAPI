@@ -79,7 +79,7 @@ def get(
     `$ elapi fetch users --id <id>` will return information about the specific user `<id>`.
     """
     from src.api import GETRequest
-    from src.validator import Validate, ConfigValidator
+    from src.validators import Validate, ConfigValidator
     from cli._export import ExportToDirectory
     from cli._format import Format, Highlight
 
@@ -144,7 +144,7 @@ def post(
     import ast
     from src.api import POSTRequest
     from json import JSONDecodeError
-    from src.validator import Validate, ConfigValidator
+    from src.validators import Validate, ConfigValidator
     from cli._format import Format, Highlight
 
     validate_config = Validate(ConfigValidator())
@@ -228,7 +228,7 @@ def bill_teams(
     """*Beta:* Generate billable teams data."""
 
     from src.config import CLEANUP_AFTER
-    from src.validator import Validate, ConfigValidator, PermissionValidator
+    from src.validators import Validate, ConfigValidator, PermissionValidator
 
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
     validate()
