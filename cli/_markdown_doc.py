@@ -11,14 +11,20 @@ from rich.console import group
 from rich.markdown import Markdown
 from rich.text import Text
 from typer.core import MarkupMode
-from typer.rich_utils import MARKUP_MODE_MARKDOWN, STYLE_HELPTEXT_FIRST_LINE, _make_rich_rext
+
+# noinspection PyProtectedMember
+from typer.rich_utils import (
+    MARKUP_MODE_MARKDOWN,
+    STYLE_HELPTEXT_FIRST_LINE,
+    _make_rich_rext,
+)
 
 
 @group()
 def _get_custom_help_text(
-        *,
-        obj: Union[click.Command, click.Group],
-        markup_mode: MarkupMode,
+    *,
+    obj: Union[click.Command, click.Group],
+    markup_mode: MarkupMode,
 ) -> Iterable[Union[Markdown, Text]]:
     # Fetch and dedent the help text
     help_text = inspect.cleandoc(obj.help or "")
@@ -40,7 +46,9 @@ def _get_custom_help_text(
     # Get remaining lines, remove single line breaks and format as dim
     remaining_paragraphs = help_text.split("\n\n")[1:]
     if remaining_paragraphs:
-        remaining_lines = inspect.cleandoc("\n\n".join(remaining_paragraphs).replace("<br/>", "\\"))
+        remaining_lines = inspect.cleandoc(
+            "\n\n".join(remaining_paragraphs).replace("<br/>", "\\")
+        )
         yield _make_rich_rext(
             text=remaining_lines,
             # style="cyan",
