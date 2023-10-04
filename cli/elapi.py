@@ -204,6 +204,10 @@ def bill_teams(
         Optional[bool],
         typer.Option("--async", "-a", help=docs["async"], show_default=True),
     ] = False,
+    generate_invoice: Annotated[
+        Optional[bool],
+        typer.Option("--invoice", "-i", help=docs["invoice"], show_default=False),
+    ] = False,
     clean: Annotated[
         Optional[bool],
         typer.Option("--cleanup", "-c", help=docs["clean"], show_default=False),
@@ -259,6 +263,18 @@ def bill_teams(
     else:
         highlight = Highlight(output)
         console.print(highlight(formatted_bill_teams_data))
+
+    if generate_invoice:
+        from apps.invoice import InvoiceGenerator
+
+        invoice = InvoiceGenerator(bill_teams_data)
+        export = ExportToDirectory(
+            _export_value,
+            file_name_prefix=f"invoice",
+            file_extension="md",
+        )
+        export(data=invoice.generate())
+        console.print(export.success_message)
 
     if clean or CLEANUP_AFTER:
         from time import sleep

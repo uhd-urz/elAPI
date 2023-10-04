@@ -19,6 +19,7 @@ __PARAMETERS__doc__ = {
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
             f"`{APP_NAME} post teams --name Alpha`.",
     "async": f"Beta: Make process asynchronous. This speeds up receiving data from eLabFTW server manyfold.",
+    "invoice": f"Generate an invoice as well. Invoice will be saved in Markdown format.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
     "export": f"Export output to a directory. If only _'--export-dir'_ is passed, "
