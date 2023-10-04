@@ -1,12 +1,27 @@
 from datetime import datetime
 
 from rich.console import Console
+
 console = Console()
 
 
 class InvoiceGenerator:
+    __slots__ = ("data",)
+
     def __init__(self, teams_data: dict):
         self.data = teams_data
+
+    @property
+    def MONTHLY_FEE(self) -> int:
+        return 8
+
+    @MONTHLY_FEE.setter
+    def MONTHLY_FEE(self, value):
+        raise AttributeError("MONTHLY_FEE cannot be modified!")
+
+    @MONTHLY_FEE.deleter
+    def MONTHLY_FEE(self):
+        raise TypeError("MONTHLY_FEE cannot be deleted!")
 
     @staticmethod
     def _template(
@@ -32,16 +47,30 @@ class InvoiceGenerator:
         
 **Number of members:** {member_count}
 
-**💲 Total amount due:** {member_count * bill_amount} EUR
+**💲 Amount due:** {member_count * bill_amount:.2f} EUR
 
 ---
 
 """
 
-    def generate(self):
-        invoice = f"""# Invoice
+    @staticmethod
+    def _header(total_teams_count: int, total_bill_amount: int):
+        return f"""# Invoice
 
-*Generated on:* {datetime.today().strftime("%Y-%m-%d")}
+*Generated on: {datetime.today().strftime("%Y-%m-%d")}*
+
+## Overview
+
+```yaml
+Total number of teams: {total_teams_count}
+Total amount due: {total_bill_amount: .2f} EUR
+```
+
+"""
+
+    def generate(self):
+        total_bill_amount = 0
+        breakdown = f"""## Breakdown
 
 """
         with console.status(status="Generating invoice..."):
@@ -50,9 +79,10 @@ class InvoiceGenerator:
                 team_name = team["team_name"]
                 owners = team["owners"]
                 member_count = team["members"]["member_count"]
-                bill_amount = 0 if team["on_trial"] else 8
+                bill_amount = 0 if team["on_trial"] else self.MONTHLY_FEE
+                total_bill_amount += bill_amount * member_count
                 team_invoice = self._template(
                     team_id, team_name, owners, member_count, bill_amount
                 )
-                invoice += team_invoice
-        return invoice
+                breakdown += team_invoice
+        return self._header(len(self.data.values()), total_bill_amount) + breakdown
