@@ -52,15 +52,15 @@ class ExportToDirectory:
             if not self._export_path:
                 logger.info(
                     f"Falling back to writing export data "
-                    f"to '{self.default_export_path}'."
+                    f"to {self.default_export_path}."
                 )
                 self._export_path = self.default_export_path
 
     @property
     def success_message(self) -> str:
         return (
-            f"Data successfully exported to '{self.export_path}' "
-            f"in '{self.file_extension.upper()}' format."
+            f"[blue]{self.file_name_prefix}[/blue] data successfully exported to {self.export_path} "
+            f"in [b]{self.file_extension.upper()}[/b] format."
         )
 
     def __call__(self, data: Any) -> None:
