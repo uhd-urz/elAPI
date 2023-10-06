@@ -3,8 +3,9 @@ from pathlib import Path
 from typing import Any, Union
 
 from src.config import EXPORT_DIR
-from src.path import ProperPath
 from src.loggers import Logger
+from src.path import ProperPath
+from src.validators import Validate, PathValidator, ValidationError
 
 logger = Logger()
 
@@ -43,24 +44,20 @@ class ExportToDirectory:
 
     @export_path.setter
     def export_path(self, value):
+        validate_export_path = Validate(PathValidator(value, err_logger=logger))
         try:
-            export_path_ = ProperPath(value, kind="dir", err_logger=logger)
-        except ValueError:
+            self._export_path = validate_export_path() / self.file
+        except ValidationError:
+            logger.info(
+                f"Falling back to writing export data to {self.default_export_path}."
+            ) if value else ...
             self._export_path = self.default_export_path
-        else:
-            self._export_path = (export_path_ / self.file).create()
-            if not self._export_path:
-                logger.info(
-                    f"Falling back to writing export data "
-                    f"to {self.default_export_path}."
-                )
-                self._export_path = self.default_export_path
 
     @property
     def success_message(self) -> str:
         return (
-            f"[blue]{self.file_name_prefix}[/blue] data successfully exported to {self.export_path} "
-            f"in [b]{self.file_extension.upper()}[/b] format."
+            f"[blue]{self.file_name_prefix}[/blue] data successfully exported "
+            f"to {self.export_path} in [b]{self.file_extension.upper()}[/b] format."
         )
 
     def __call__(self, data: Any) -> None:
