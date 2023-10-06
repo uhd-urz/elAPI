@@ -37,10 +37,7 @@ class PathValidator(Validator):
         except TypeError:
             self._path = (value,)
         else:
-            if isinstance(value, (str, type(None), ProperPath, Path)):
-                self._path = (value,)
-            else:
-                self._path = value
+            self._path = (value,) if isinstance(value, str) else value
 
     def validate(self):
         for p in self.path:
