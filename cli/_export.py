@@ -56,7 +56,7 @@ class ExportToDirectory:
     @property
     def success_message(self) -> str:
         return (
-            f"[blue]{self.file_name_prefix}[/blue] data successfully exported "
+            f"[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
             f"to {self.export_path} in [b]{self.file_extension.upper()}[/b] format."
         )
 
