@@ -117,9 +117,6 @@ class ProperPath:
             else f"PATH={target}"
         )
 
-    def exists(self) -> Union[Path, None]:
-        return self.expanded if self.expanded.exists() else None
-
     def create(self) -> Union[Path, None]:
         if not (path := self.expanded.resolve(strict=False)).exists():
             # except FileNotFoundError:
