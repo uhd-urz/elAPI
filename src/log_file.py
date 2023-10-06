@@ -25,7 +25,7 @@ validate_path = Validate(
 )
 
 try:
-    LOG_FILE_PATH = validate_path() / LOG_FILE_NAME
+    LOG_FILE_PATH = validate_path.get() / LOG_FILE_NAME
 except ValidationError as e:
     logger.critical(
         f"{APP_NAME} couldn't validate fallback path {FALLBACK_DIR}/{LOG_FILE_NAME} to write logs! "

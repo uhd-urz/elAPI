@@ -46,7 +46,7 @@ class ExportToDirectory:
     def export_path(self, value):
         validate_export_path = Validate(PathValidator(value, err_logger=logger))
         try:
-            self._export_path = validate_export_path() / self.file
+            self._export_path = validate_export_path.get() / self.file
         except ValidationError:
             logger.info(
                 f"Falling back to writing export data to {self.default_export_path}."

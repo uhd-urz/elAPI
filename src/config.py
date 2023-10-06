@@ -87,7 +87,7 @@ validate_export_dir = Validate(
     )
 )
 try:
-    EXPORT_DIR = validate_export_dir()
+    EXPORT_DIR = validate_export_dir.get()
 except ValidationError:
     logger.critical(
         f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
@@ -105,7 +105,7 @@ else:
         PathValidator([XDG_DATA_HOME, FALLBACK_DIR], err_logger=logger)
     )
     try:
-        APP_DATA_DIR = validate_app_dir() / APP_NAME
+        APP_DATA_DIR = validate_app_dir.get() / APP_NAME
     except ValidationError:
         logger.critical(
             f"{APP_NAME} couldn't validate {FALLBACK_DIR} to store {APP_NAME} internal application data. "
