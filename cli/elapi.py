@@ -49,7 +49,7 @@ def get(
     output: Annotated[
         str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
     ] = "json",
-    export: Annotated[
+    export_dir: Annotated[
         Optional[bool],
         typer.Option(
             "--export-dir",
@@ -95,7 +95,7 @@ def get(
         format = Format("txt")  # Falls back to "txt"
     formatted_data = format(raw_response.json())
 
-    if export:
+    if export_dir:
         file_name_prefix = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
         export = ExportToDirectory(
             _export_value,
@@ -216,7 +216,7 @@ def bill_teams(
         Optional[str],
         typer.Option("--output", "-o", help=docs["output"], show_default=False),
     ] = "json",
-    export: Annotated[
+    export_dir: Annotated[
         Optional[bool],
         typer.Option(
             "--export-dir",
@@ -227,7 +227,7 @@ def bill_teams(
             show_default=False,
         ),
     ] = False,
-    _export_value: Annotated[str, typer.Argument(hidden=True)] = "",
+    _export_value: Annotated[str, typer.Argument(hidden=True)] = None,
 ) -> None:
     """*Beta:* Generate billable teams data."""
 
@@ -252,7 +252,7 @@ def bill_teams(
         format = Format("txt")  # Falls back to "txt"
     formatted_bill_teams_data = format(bill_teams_data)
 
-    if export:
+    if export_dir:
         export = ExportToDirectory(
             _export_value,
             file_name_prefix=bill_teams.__name__,
