@@ -5,7 +5,7 @@ import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, Any, TextIO
+from typing import Union, TextIO
 
 from src.loggers import SimpleLogger
 
@@ -139,7 +139,7 @@ class ProperPath:
         else:
             return path
 
-    def _remove_file(self, _file: Path = None, **kwargs) -> None:
+    def _remove_file(self, _file: Path = None, verbose: bool = False) -> None:
         file = _file if _file else self.expanded
         if not isinstance(file, Path):
             raise ValueError(
@@ -147,7 +147,6 @@ class ProperPath:
                 f"Check instance attribute 'expanded'."
             )
 
-        output_handler: Any = kwargs.get("output_handler")
         try:
             file.unlink()
         except FileNotFoundError as e:
@@ -157,16 +156,14 @@ class ProperPath:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.err_logger.warning(message)
             raise e
+        if verbose:
+            self.err_logger.info(f"Deleted: {file}")
 
-        output_handler(f"Deleted: {file}") if output_handler else ...
-
-    def remove(
-        self, parent_only: bool = False, output_handler: Union[None, Any] = None
-    ) -> None:
+    def remove(self, parent_only: bool = False, verbose: bool = False) -> None:
         # removes everything (if parent_only is False) found inside a ProperPath except the parent directory of the path
         # if the ProperPath isn't a directory then it just removes the file
         if self.kind == "file":
-            self._remove_file(output_handler=output_handler)
+            self._remove_file(verbose=verbose)
         elif self.kind == "dir":
             ls_ref = (
                 self.expanded.glob(r"**/*")
@@ -175,14 +172,13 @@ class ProperPath:
             )
             for ref in ls_ref:
                 try:
-                    self._remove_file(_file=ref, output_handler=output_handler)
-                except (
-                    ValueError
-                ):  # ValueError occurring means most likely the file is a directory
+                    self._remove_file(_file=ref, verbose=verbose)
+                except ValueError:
+                    # ValueError occurring means most likely the file is a directory
                     rmtree(ref)
-                    output_handler(
+                    self.err_logger.info(
                         f"Deleted directory (recursively): {ref}"
-                    ) if output_handler else ...
+                    ) if verbose else ...
                     # rmtree deletes files and directories recursively.
                     # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
                     # traceback message. I.e., which file or directory exactly
