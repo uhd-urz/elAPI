@@ -69,10 +69,13 @@ class ProperPath:
     @property
     def expanded(self) -> Path:
         if self.env_var:
-            env_var_val: Union[str, None] = os.getenv(self.name)
-            return Path(env_var_val).expanduser() if env_var_val else None
-        else:
-            return Path(self.name).expanduser() if self.name else None
+            try:
+                return Path(os.environ[self.name]).expanduser()
+            except KeyError as e:
+                raise ValueError(
+                    f"Environment variable {self.name} doesn't exist."
+                ) from e
+        return Path(self.name).expanduser()
 
     @expanded.setter
     def expanded(self, value) -> None:
@@ -84,27 +87,25 @@ class ProperPath:
 
     @kind.setter
     def kind(self, value) -> None:
-        if self.expanded:
-            if not value:
-                self._kind = (
-                    "dir"
-                    if self.expanded.is_dir()
-                    else "file"
-                    if (self.expanded.is_file() or self.expanded.suffix)
-                    else "dir"
-                )
+        if not value:
+            self._kind = (
+                "dir"
+                if self.expanded.is_dir()
+                else "file"
+                if (self.expanded.is_file() or self.expanded.suffix)
+                else "dir"
+            )
+        else:
+            # TODO: Python pattern matching doesn't support regex matching yet.
+            if re.match(r"\bfile\b", value, flags=re.IGNORECASE):
+                self._kind = "file"
+            elif re.match(r"\bdir(ectory)?\b|\b(folder)\b", value, flags=re.IGNORECASE):
+                self._kind = "dir"
             else:
-                # TODO: Python pattern matching doesn't support regex matching yet.
-                if re.match(r"\bfile\b", value, flags=re.IGNORECASE):
-                    self._kind = "file"
-                elif re.match(
-                    r"\bdir(ectory)?\b|\b(folder)\b", value, flags=re.IGNORECASE
-                ):
-                    self._kind = "dir"
-                else:
-                    raise ValueError(
-                        "Invalid value for parameter 'kind'. The following values for 'kind' are allowed: file, dir."
-                    )
+                raise ValueError(
+                    "Invalid value for parameter 'kind'. The following values "
+                    "for 'kind' are allowed: file, dir."
+                )
 
     @staticmethod
     def _error_helper_compare_path_source(
@@ -120,30 +121,26 @@ class ProperPath:
         return self.expanded if self.expanded.exists() else None
 
     def create(self) -> Union[Path, None]:
-        # create() returns None if a path cannot be resolved.
-        path = self.expanded
-        if path:
-            if not (path := path.resolve(strict=False)).exists():
-                # except FileNotFoundError:
-                message = (
-                    f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
-                    f"An attempt to create PATH={path} will be made."
-                )
-                self.err_logger.warning(message)
-
-            try:
-                if self.kind == "file":
-                    path_parent, path_file = path.parent, path.name
-                    path_parent.mkdir(parents=True, exist_ok=True)
-                    (path_parent / path_file).touch(exist_ok=True)
-                elif self.kind == "dir":
-                    path.mkdir(parents=True, exist_ok=True)
-            except PermissionError as e:
-                message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
-                self.err_logger.error(message)
-                raise e
-            else:
-                return path
+        if not (path := self.expanded.resolve(strict=False)).exists():
+            # except FileNotFoundError:
+            message = (
+                f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
+                f"An attempt to create PATH={path} will be made."
+            )
+            self.err_logger.warning(message)
+        try:
+            if self.kind == "file":
+                path_parent, path_file = path.parent, path.name
+                path_parent.mkdir(parents=True, exist_ok=True)
+                (path_parent / path_file).touch(exist_ok=True)
+            elif self.kind == "dir":
+                path.mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
+            self.err_logger.error(message)
+            raise e
+        else:
+            return path
 
     def _remove_file(self, _file: Path = None, **kwargs) -> None:
         file = _file if _file else self.expanded
@@ -171,28 +168,27 @@ class ProperPath:
     ) -> None:
         # removes everything (if parent_only is False) found inside a ProperPath except the parent directory of the path
         # if the ProperPath isn't a directory then it just removes the file
-        if self.expanded:
-            if self.kind == "file":
-                self._remove_file(output_handler=output_handler)
-            elif self.kind == "dir":
-                ls_ref = (
-                    self.expanded.glob(r"**/*")
-                    if not parent_only
-                    else self.expanded.glob(r"*.*")
-                )
-                for ref in ls_ref:
-                    try:
-                        self._remove_file(_file=ref, output_handler=output_handler)
-                    except (
-                        ValueError
-                    ):  # ValueError occurring means most likely the file is a directory
-                        rmtree(ref)
-                        output_handler(
-                            f"Deleted directory (recursively): {ref}"
-                        ) if output_handler else ...
-                        # rmtree deletes files and directories recursively.
-                        # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
-                        # traceback message. I.e., which file or directory exactly
+        if self.kind == "file":
+            self._remove_file(output_handler=output_handler)
+        elif self.kind == "dir":
+            ls_ref = (
+                self.expanded.glob(r"**/*")
+                if not parent_only
+                else self.expanded.glob(r"*.*")
+            )
+            for ref in ls_ref:
+                try:
+                    self._remove_file(_file=ref, output_handler=output_handler)
+                except (
+                    ValueError
+                ):  # ValueError occurring means most likely the file is a directory
+                    rmtree(ref)
+                    output_handler(
+                        f"Deleted directory (recursively): {ref}"
+                    ) if output_handler else ...
+                    # rmtree deletes files and directories recursively.
+                    # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
+                    # traceback message. I.e., which file or directory exactly
 
     @contextmanager
     def open(self, mode="r", encoding: Union[str, None] = None) -> None:
