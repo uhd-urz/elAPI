@@ -5,7 +5,7 @@ from src._names import (
     LOG_DIR_ROOT,
     LOG_FILE_NAME,
     APP_NAME,
-    XDG_DATA_HOME,
+    ENV_XDG_DATA_HOME,
 )
 from src.loggers import Logger
 from src.path import ProperPath
@@ -17,7 +17,8 @@ validate_path = Validate(
     PathValidator(
         [
             LOG_DIR_ROOT,
-            (XDG_DATA_HOME := ProperPath(os.getenv(XDG_DATA_HOME, os.devnull))) / APP_NAME,
+            (ENV_XDG_DATA_HOME := ProperPath(os.getenv(ENV_XDG_DATA_HOME, os.devnull)))
+            / APP_NAME,
             FALLBACK_DIR,
         ],
         err_logger=logger,

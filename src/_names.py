@@ -17,9 +17,9 @@ cur_dir: Path = Path.cwd()
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # XDG and other convention variable definitions
-XDG_DATA_HOME: Union[ProperPath, Path, str] = "XDG_DATA_HOME"
-XDG_DOWNLOAD_DIR: Union[ProperPath, Path, str] = "XDG_DOWNLOAD_DIR"
-XDG_CONFIG_HOME: Union[ProperPath, Path, str] = "XDG_CONFIG_HOME"
+ENV_XDG_DATA_HOME: Union[ProperPath, Path, str] = "XDG_DATA_HOME"
+ENV_XDG_DOWNLOAD_DIR: Union[ProperPath, Path, str] = "XDG_DOWNLOAD_DIR"
+ENV_XDG_CONFIG_HOME: Union[ProperPath, Path, str] = "XDG_CONFIG_HOME"
 TMP_DIR: Path = Path(f"/var/tmp/{APP_NAME}")
 
 # Fallback definitions
@@ -30,7 +30,7 @@ FALLBACK_CONFIG_DIR: Path = user_home / ".config"
 # Configuration path definitions
 SYSTEM_CONFIG_LOC: Path = Path("/etc") / CONFIG_FILE_NAME
 LOCAL_CONFIG_LOC: Path = (
-    os.getenv(XDG_CONFIG_HOME) or FALLBACK_CONFIG_DIR
+    os.getenv(ENV_XDG_CONFIG_HOME) or FALLBACK_CONFIG_DIR
 ) / CONFIG_FILE_NAME
 # In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yaml
 PROJECT_CONFIG_LOC: Path = cur_dir / CONFIG_FILE_NAME

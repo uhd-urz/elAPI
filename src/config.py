@@ -3,12 +3,12 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from src.log_file import LOG_FILE_PATH, XDG_DATA_HOME
+from src.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
 from src._config_history import InspectConfig
 from src.validators import Validate, ValidationError, PathValidator
 from src._names import (
     APP_NAME,
-    XDG_DOWNLOAD_DIR,
+    ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
     FALLBACK_EXPORT_DIR,
     CONFIG_FILE_NAME,
@@ -80,7 +80,7 @@ validate_export_dir = Validate(
     PathValidator(
         [
             settings.get("export_dir"),
-            os.getenv(XDG_DOWNLOAD_DIR, os.devnull),
+            os.getenv(ENV_XDG_DOWNLOAD_DIR, os.devnull),
             FALLBACK_EXPORT_DIR,
         ],
         err_logger=logger,
@@ -102,7 +102,7 @@ if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
     APP_DATA_DIR = LOG_FILE_PATH.parent
 else:
     validate_app_dir = Validate(
-        PathValidator([XDG_DATA_HOME, FALLBACK_DIR], err_logger=logger)
+        PathValidator([ENV_XDG_DATA_HOME, FALLBACK_DIR], err_logger=logger)
     )
     try:
         APP_DATA_DIR = validate_app_dir.get() / APP_NAME
