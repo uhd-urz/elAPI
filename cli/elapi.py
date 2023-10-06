@@ -193,8 +193,12 @@ def cleanup() -> None:
     """
     from src.config import TMP_DIR
     from src.path import ProperPath
+    from time import sleep
 
-    ProperPath(TMP_DIR, err_logger=logger).remove(output_handler=console.print)
+    with console.status("Cleaning up...", refresh_per_second=15):
+        sleep(0.5)
+        typer.echo()  # mainly for a newline!
+        ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
     console.print("Done!", style="green")
 
 
@@ -277,10 +281,7 @@ def bill_teams(
         console.print(export.success_message)
 
     if clean or CLEANUP_AFTER:
-        from time import sleep
-
-        console.print("\nCleaning up...", style="yellow")
-        sleep(1)
+        typer.echo()  # mainly for a newline!
         cleanup()
 
 
