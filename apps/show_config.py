@@ -34,7 +34,7 @@ except KeyError:
     export_dir_source = FALLBACK
 else:
     # TODO: The following needs to refactored so ProperPath needs not to be applied again!
-    if ProperPath(export_dir_value := detected_config["EXPORT_DIR"][0]).expanded.resolve() != EXPORT_DIR:
+    if ProperPath(export_dir_value := detected_config["EXPORT_DIR"][0]).expanded != EXPORT_DIR:
         export_dir_source = FALLBACK
 
 try:
