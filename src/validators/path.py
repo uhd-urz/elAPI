@@ -28,7 +28,7 @@ class PathValidator(Validator):
 
     @path.setter
     def path(self, value):
-        if not isinstance(value, (str, ProperPath, Path, Iterable)):
+        if not isinstance(value, (str, type(None), ProperPath, Path, Iterable)):
             raise ValueError(
                 f"{value} must be an instance (or iterable of instances) of str, ProperPath, Path"
             )
@@ -37,7 +37,7 @@ class PathValidator(Validator):
         except TypeError:
             self._path = (value,)
         else:
-            if isinstance(value, (str, ProperPath, Path)):
+            if isinstance(value, (str, type(None), ProperPath, Path)):
                 self._path = (value,)
             else:
                 self._path = value
@@ -47,19 +47,16 @@ class PathValidator(Validator):
             if not isinstance(p, ProperPath):
                 try:
                     p = ProperPath(p, err_logger=self.err_logger)
-                except ValueError:
+                except (ValueError, TypeError):
                     continue
-            if p.expanded:
-                try:
-                    p.create()
-                    with (p / self.TMP_FILE if p.kind == "dir" else p).open(
-                        mode="ba"
-                    ) as f:
-                        f.write(b"\0")
-                        f.truncate(f.tell() - 1)
-                except COMMON_PATH_ERRORS:
-                    continue
-                else:
-                    (p / self.TMP_FILE).remove() if p.kind == "dir" else ...
-                    return p.expanded
+            try:
+                p.create()
+                with (p / self.TMP_FILE if p.kind == "dir" else p).open(mode="ba") as f:
+                    f.write(b"\0")
+                    f.truncate(f.tell() - 1)
+            except COMMON_PATH_ERRORS:
+                continue
+            else:
+                (p / self.TMP_FILE).remove() if p.kind == "dir" else ...
+                return p.expanded
         raise ValidationError(f"Given path(s) could not be validated!")
