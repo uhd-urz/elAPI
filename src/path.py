@@ -245,7 +245,6 @@ class ProperPath:
                         f"{self._error_helper_compare_path_source(self.name, path)}."
                     )
                     self.err_logger.critical(message)
-                    raise io_err
                 raise io_err
         finally:
             if file:
@@ -265,5 +264,4 @@ class ProperPath:
                             f"{self._error_helper_compare_path_source(self.name, path)}."
                         )
                         self.err_logger.critical(message)
-                        raise io_err
                     raise io_err
