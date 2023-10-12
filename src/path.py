@@ -93,9 +93,9 @@ class ProperPath:
             )
         else:
             # TODO: Python pattern matching doesn't support regex matching yet.
-            if re.match(r"\bfile\b", value, flags=re.IGNORECASE):
+            if re.match(r"^file$", value, flags=re.IGNORECASE):
                 self._kind = "file"
-            elif re.match(r"\bdir(ectory)?\b|\b(folder)\b", value, flags=re.IGNORECASE):
+            elif re.match(r"^dir(ectory)?$|^folder$", value, flags=re.IGNORECASE):
                 self._kind = "dir"
             else:
                 raise ValueError(
