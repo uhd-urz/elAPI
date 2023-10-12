@@ -46,7 +46,7 @@ class ProperPath:
     def name(self, value) -> None:
         if isinstance(
             value, ProperPath
-        ):  # We want to be able to pass a CustomPath() to CustomPath()
+        ):  # We want to be able to pass a ProperPath() to ProperPath()
             value = value.name
         if value == "":
             raise ValueError("Path cannot be an empty string!")
@@ -221,8 +221,8 @@ class ProperPath:
                 # Now we yield the contextmanager expected yield
                 yield file
             except AttributeError as e:
-                # This is useful for catching AttributeError when the file object is valid but the attributes accessed
-                # aren't valid/known/public.
+                # This is useful for catching AttributeError when the file object is valid but the attributes being
+                # attempted to access aren't valid/known/public.
                 attribute_in_error = str(e).split()[-1]
                 message = (
                     f"An attempt to access unknown/private attribute {attribute_in_error} "
@@ -238,7 +238,7 @@ class ProperPath:
                 self.err_logger.critical(message)
                 raise e
             except IOError as io_err:
-                # We catch "No disk space left" error which will likely trigger during a write attempt on the file
+                # We catch "No disk space left" error which will likely be triggered during a write attempt on the file
                 if io_err.errno == errno.ENOSPC:
                     message = (
                         f"Not enough disk space left while trying to use mode '{mode}' with "
@@ -250,12 +250,12 @@ class ProperPath:
             if file:
                 try:
                     file.close()
-                # This is a behavior that was noticed during experimenting with "/dev/full" on Debian/Linux.
-                # f = open("/dev/full", mode="w"); f.write("hello"); <- This won't trigger ENOSPC error yet!
-                # But the error is triggered when trying to close: f.close(); immediately after!
-                # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again,
-                # this will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
-                # Therefore, we need to catch the error again!
+                # This behavior was noticed during an experiment with "/dev/full" on Debian/Linux.
+                # f = open("/dev/full", mode="w"); f.write("hello"); <- This won't trigger ENOSPC error yet.
+                # But the error is triggered immediately after when closing with f.close()!*
+                # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again.
+                # The above will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
+                # Because of *, we again need to catch the error during close().
                 except IOError as io_err:
                     if io_err.errno == errno.ENOSPC:
                         message = (
