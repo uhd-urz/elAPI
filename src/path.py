@@ -36,11 +36,7 @@ class ProperPath:
         return self.expanded == ProperPath(to).expanded
 
     def __truediv__(self, other) -> "ProperPath":
-        return (
-            ProperPath(self.expanded / other, err_logger=self.err_logger)
-            if self.expanded
-            else None
-        )
+        return ProperPath(self.expanded / other, err_logger=self.err_logger)
 
     @property
     def name(self) -> str:
