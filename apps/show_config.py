@@ -1,7 +1,7 @@
 from cli import Missing
-from src.log_file import LOG_FILE_PATH
-from src.config import (APP_NAME, records, TOKEN_BEARER, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
+from src.config import (APP_NAME, records, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
                         TMP_DIR, CLEANUP_AFTER)
+from src.log_file import LOG_FILE_PATH
 from src.path import ProperPath
 
 detected_config = records.inspect_applied_config
@@ -57,7 +57,6 @@ The following debug information includes configuration values and their sources 
 """ if host_source else f"- **Host address:** _{host_value.colorize()}_\n") + (f"""
 - **API token:** {api_token_masked} ← `{api_token_source}`
 """ if api_token_source else f"- **API token:** _{api_token_masked.colorize()}_") + f"""
-- **Token bearer:** {TOKEN_BEARER}
 - **Export directory:** {EXPORT_DIR} ← `{export_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
 - **Caching directory:** {TMP_DIR}
