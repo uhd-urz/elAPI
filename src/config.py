@@ -3,9 +3,7 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from src.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
-from src._config_history import InspectConfig
-from src.validators import Validate, ValidationError, PathValidator
+from src._config_history import ConfigHistory, InspectConfigHistory
 from src._names import (
     APP_NAME,
     ENV_XDG_DOWNLOAD_DIR,
@@ -18,8 +16,10 @@ from src._names import (
     LOCAL_CONFIG_LOC,
     LOG_DIR_ROOT,
 )
+from src.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
 from src.loggers import Logger
 from src.path import ProperPath
+from src.validators import Validate, ValidationError, PathValidator
 
 logger = Logger()
 
@@ -40,6 +40,9 @@ settings = Dynaconf(
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
+history = ConfigHistory(settings)
+
+# Host URL
 HOST: str = settings.get(
     "host"
 )  # case-insensitive: settings.get("HOST") == settings.get("host")
@@ -49,6 +52,38 @@ if not HOST:
         f"Please make sure host (URL pointing to root API endpoint) is included."
     )
 
+
+# API token (api_key)
+class APIToken:
+    def __init__(self, token: str, /, mask_char: str = "*"):
+        self.token = token
+        self.mask_char = mask_char
+
+    def __str__(self):
+        return self.token and self._mask()
+
+    def __repr__(self):
+        return f"APIToken(token={self.__str__()})"
+
+    def __eq__(self, other):
+        return self.token == other
+
+    @property
+    def token(self) -> str:
+        return self._token
+
+    @token.setter
+    def token(self, value: str):
+        if value is None:
+            raise ValueError("token cannot be None!")
+        if not isinstance(value, str):
+            raise ValueError("token must be an instance of string!")
+        self._token = value
+
+    def _mask(self):
+        return f"{self.token[:5]}{self.mask_char * 5}{self.token[-5:]}"
+
+
 API_TOKEN: str = settings.get("api_token")
 if not API_TOKEN:
     logger.critical(
@@ -56,20 +91,8 @@ if not API_TOKEN:
         f"Please make sure api token with at least read access is included."
     )
     # Note elabftw-python uses the term "api_key" for "API_TOKEN"
-
-records = InspectConfig(setting_object=settings)
-
-# UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
-try:
-    settings["unsafe_api_token_warning"]
-except KeyError:
-    UNSAFE_TOKEN_WARNING: bool = True
 else:
-    UNSAFE_TOKEN_WARNING: bool = settings.as_bool("unsafe_api_token_warning")
-    # equivalent to settings.get(<key>, cast='@bool')
-
-if UNSAFE_TOKEN_WARNING:
-    records.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
+    history.patch("API_TOKEN", APIToken(API_TOKEN, mask_char="•"))
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
@@ -95,6 +118,8 @@ except ValidationError:
         f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
     )
     raise SystemExit()
+if EXPORT_DIR != ProperPath(history.get("EXPORT_DIR", os.devnull)).expanded:
+    history.delete("EXPORT_DIR")
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
@@ -112,6 +137,21 @@ else:
             f"{APP_NAME} will not run!"
         )
         raise SystemExit()
+
+# The history is ready to be inspected
+inspect = InspectConfigHistory(history)
+
+# UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
+try:
+    settings["unsafe_api_token_warning"]
+except KeyError:
+    UNSAFE_TOKEN_WARNING: bool = True
+else:
+    UNSAFE_TOKEN_WARNING: bool = settings.as_bool("unsafe_api_token_warning")
+    # equivalent to settings.get(<key>, cast='@bool')
+
+if UNSAFE_TOKEN_WARNING:
+    inspect.inspect_api_token_location(unsafe_path=PROJECT_CONFIG_LOC)
 
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
