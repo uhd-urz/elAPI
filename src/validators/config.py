@@ -20,12 +20,12 @@ class ConfigValidator(Validator):
         return session(endpoint="apikeys", unit_id="")
 
     def validate(self):
-        from src.config import records, HOST, API_TOKEN
+        from src.config import inspect, HOST, API_TOKEN
 
         _HOST_EXAMPLE: str = "host: 'https://demo.elabftw.net/api/v2'"
 
         try:
-            records.inspect_applied_config["HOST"]
+            inspect.applied_config["HOST"]
         except KeyError:
             print(
                 f"Host is missing from the config files! "
@@ -45,7 +45,7 @@ class ConfigValidator(Validator):
                 raise typer.Exit(1)
 
         try:
-            records.inspect_applied_config["API_TOKEN"]
+            inspect.applied_config["API_TOKEN"]
         except KeyError:
             print(
                 "API token is missing from the config files! "
@@ -62,7 +62,7 @@ class ConfigValidator(Validator):
                 )
                 raise typer.Exit(1)
 
-            API_TOKEN_MASKED = records.inspect_applied_config.get("API_TOKEN_MASKED")[0]
+            API_TOKEN_MASKED = inspect.applied_config.get("API_TOKEN")[0]
             try:
                 response: Response = self.check_endpoint()
                 response.json()
