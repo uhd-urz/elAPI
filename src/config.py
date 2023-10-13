@@ -80,8 +80,20 @@ class APIToken:
             raise ValueError("token must be an instance of string!")
         self._token = value
 
-    def _mask(self):
-        return f"{self.token[:5]}{self.mask_char * 5}{self.token[-5:]}"
+    def _mask(self) -> str:
+        expose_table = {
+            range(4): 0,
+            range(4, 7): 1,
+            range(7, 15): 2,
+            range(15, 20): 3,
+            range(16, 35): 4,
+        }
+        expose = 5
+        for r in expose_table:
+            if len(self._token) in r:
+                expose = expose_table[r]
+                break
+        return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[:-expose-1:-1][::-1]}"
 
 
 API_TOKEN: str = settings.get("api_token")
