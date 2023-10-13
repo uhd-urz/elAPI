@@ -1,16 +1,15 @@
 from cli import Missing
-from src.config import (APP_NAME, records, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
+from src.config import (APP_NAME, inspect, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
                         TMP_DIR, CLEANUP_AFTER)
 from src.log_file import LOG_FILE_PATH
-from src.path import ProperPath
 
-detected_config = records.inspect_applied_config
-detected_config_files = records.inspect_applied_config_files
+detected_config = inspect.applied_config
+detected_config_files = inspect.applied_config_files
 FALLBACK = "DEFAULT"
 
 try:
-    api_token_masked, api_token_source = detected_config["API_TOKEN_MASKED"]
-    api_token_source = detected_config_files[api_token_source]
+    api_token_masked = detected_config["API_TOKEN"][0] or "''"
+    api_token_source = detected_config_files[detected_config["API_TOKEN"][1]]
 except KeyError:
     api_token_masked, api_token_source = Missing(), None
 
@@ -23,7 +22,7 @@ finally:
     unsafe_token_use_value = "Yes" if UNSAFE_TOKEN_WARNING else "No"
 
 try:
-    host_value = detected_config["HOST"][0]
+    host_value = detected_config["HOST"][0] or "''"
     host_source = detected_config_files[detected_config["HOST"][1]]
 except KeyError:
     host_value, host_source = Missing(), None
@@ -32,10 +31,6 @@ try:
     export_dir_source = detected_config_files[detected_config["EXPORT_DIR"][1]]
 except KeyError:
     export_dir_source = FALLBACK
-else:
-    # TODO: The following needs to refactored so ProperPath needs not to be applied again!
-    if ProperPath(export_dir_value := detected_config["EXPORT_DIR"][0]).expanded != EXPORT_DIR:
-        export_dir_source = FALLBACK
 
 try:
     cleanup_source = detected_config_files[detected_config["CLEANUP_AFTER_FINISH"][1]]
