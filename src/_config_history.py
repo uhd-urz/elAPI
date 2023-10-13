@@ -1,75 +1,123 @@
-from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Union
 
 from dynaconf import Dynaconf
 from dynaconf.utils import inspect
 
-from src._names import (CONFIG_FILE_NAME, SYSTEM_CONFIG_LOC,
-                        LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC)
-
+from src._names import (
+    CONFIG_FILE_NAME,
+    SYSTEM_CONFIG_LOC,
+    LOCAL_CONFIG_LOC,
+    PROJECT_CONFIG_LOC,
+)
 from src.loggers import Logger
 
 logger = Logger()
 
 
-@dataclass
-class InspectConfig:
-    setting_object: Dynaconf
+class ConfigHistory:
+    def __init__(self, setting: Dynaconf, /):
+        self.setting = setting
+        self._history = inspect.get_history(self.setting)
+
+    @property
+    def setting(self) -> Dynaconf:
+        return self._setting
+
+    @setting.setter
+    def setting(self, value: Dynaconf):
+        if not isinstance(value, Dynaconf):
+            raise ValueError("settings must be a Dynaconf instance!")
+        self._setting = value
+
+    def get(self, key: str, /, default: Any = None) -> Any:
+        for config in self._history:
+            try:
+                return config["value"][key]
+            except KeyError:
+                continue
+        return default
+
+    def patch(self, key: str, /, value: Any) -> None:
+        for config in self._history:
+            try:
+                config["value"][key]
+            except KeyError:
+                continue
+            else:
+                config["value"][key] = value
+                return
+        raise KeyError(f"Key '{key}' couldn't be found.")
+
+    def delete(self, key: str, /) -> None:
+        for config in self._history:
+            try:
+                del config["value"][key]
+                return
+            except KeyError:
+                continue
+        raise KeyError(f"Key '{key}' couldn't be found.")
+
+    def items(self):
+        return self._history
+
+
+class InspectConfigHistory:
+    def __init__(self, history_obj: Union[ConfigHistory, Dynaconf], /):
+        self.history = history_obj
 
     @property
     def history(self) -> list[dict]:
-        return inspect.get_history(self.setting_object)
+        return self._history
 
     @history.setter
     def history(self, value) -> None:
-        raise AttributeError("Configuration history isn't meant to modified.")
+        if not isinstance(value, (ConfigHistory, Dynaconf)):
+            raise ValueError(
+                f"{self.__class__.__name__} only accepts instance of ConfigHistory or Dynaconf."
+            )
+        self._history = (
+            value.items()
+            if isinstance(value, ConfigHistory)
+            else inspect.get_history(value)
+        )
 
     @property
-    def inspect_applied_config_files(self) -> dict:
+    def applied_config_files(self) -> dict:
         config_files_with_tag: dict = {
             SYSTEM_CONFIG_LOC: "ROOT LEVEL",
             LOCAL_CONFIG_LOC: "USER LEVEL",
-            PROJECT_CONFIG_LOC: "PROJECT LEVEL"
+            PROJECT_CONFIG_LOC: "PROJECT LEVEL",
         }
 
         applied_config_files: list = [config["identifier"] for config in self.history]
-        config_files_with_tag: dict = {str(k): v for k, v in config_files_with_tag.items() if
-                                       str(k) in applied_config_files}
+        return {
+            str(k): v
+            for k, v in config_files_with_tag.items()
+            if str(k) in applied_config_files
+        }
 
-        return config_files_with_tag
-
-    @inspect_applied_config_files.setter
-    def inspect_applied_config_files(self, value) -> None:
-        raise AttributeError("Configuration history isn't meant to modified.")
+    @applied_config_files.setter
+    def applied_config_files(self, value) -> None:
+        raise AttributeError(
+            f"{self.__class__.__name__} instance cannot modify configuration history. "
+            "Use ConfigHistory to modify history."
+        )
 
     @property
-    def inspect_applied_config(self) -> dict:
+    def applied_config(self) -> dict:
         applied_config = {}
         for config in self.history:
             for k, v in config["value"].items():
-                config["value"][k] = v, config["identifier"]
-                applied_config.update(config["value"])
-        try:
-            token, token_source = applied_config["API_TOKEN"]
-        except KeyError:
-            ...
-        else:
-            applied_config["API_TOKEN_MASKED"] = (f"{token[:5]}*****{token[-5:]}", token_source) \
-                if token else ("''", token_source)
-
-        try:
-            host, host_source = applied_config["HOST"]
-        except KeyError:
-            ...
-        else:
-            if not host:
-                applied_config["HOST"] = "''", host_source
-
+                applied_config.update({k: (v, config["identifier"])})
         return applied_config
 
-    @inspect_applied_config.setter
-    def inspect_applied_config(self, value) -> None:
-        raise AttributeError("Configuration history isn't meant to modified.")
+    @applied_config.setter
+    def applied_config(self, value) -> None:
+        raise AttributeError(
+            f"{self.__class__.__name__} instance cannot modify configuration history. "
+            "Use ConfigHistory to modify history."
+        )
 
     def inspect_api_token_location(self, unsafe_path: Path):
         for d in self.history:
@@ -78,4 +126,5 @@ class InspectConfig:
                     logger.warning(
                         f"api_token in project-based configuration file found. This is highly discouraged. "
                         f"The api_token is at risk of being leaked into public repositories. If you still insist, "
-                        f"please make sure {CONFIG_FILE_NAME} is included in .gitignore.")
+                        f"please make sure {CONFIG_FILE_NAME} is included in .gitignore."
+                    )
