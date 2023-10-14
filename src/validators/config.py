@@ -1,12 +1,23 @@
-import sys
-
 import typer
 from httpx import Response
+from rich.console import Console
+from rich.padding import Padding
+from rich.text import Text
 
 from src.loggers import Logger
 from src.validators.base import Validator, COMMON_NETWORK_ERRORS
 
 logger = Logger()
+console = Console()
+
+
+class NoteText:
+    def __new__(
+        cls, text: str, /, stem: str = "P.S.", color: str = "yellow", indent: int = 3
+    ):
+        return Padding(
+            f"{Text(f'[b {color}]{stem}:[/b {color}]')} {text}", pad=(1, 0, 0, indent)
+        )
 
 
 class ConfigValidator(Validator):
@@ -23,42 +34,47 @@ class ConfigValidator(Validator):
         from src.config import inspect, HOST, API_TOKEN
 
         _HOST_EXAMPLE: str = "host: 'https://demo.elabftw.net/api/v2'"
+        # _PS: Text = Text("[b yellow]P.S.:[/b yellow]")
 
         try:
             inspect.applied_config["HOST"]
         except KeyError:
-            print(
-                f"Host is missing from the config files! "
-                f"Host contains the URL of the root API endpoint. Example:"
-                f"\n{_HOST_EXAMPLE}",
-                file=sys.stderr,
+            console.print(
+                NoteText(
+                    "Host is missing from the config files! "
+                    "Host contains the URL of the root API endpoint. Example:"
+                    f"\n{_HOST_EXAMPLE}",
+                )
             )
             raise typer.Exit(1)
         else:
             if not HOST:
-                print(
-                    f"Host is detected but it's empty! "
-                    f"Host contains the URL of the root API endpoint. Example:"
-                    f"\n{_HOST_EXAMPLE}",
-                    file=sys.stderr,
+                console.print(
+                    NoteText(
+                        "Host is detected but it's empty! "
+                        "Host contains the URL of the root API endpoint. Example:"
+                        f"\n{_HOST_EXAMPLE}",
+                    )
                 )
                 raise typer.Exit(1)
 
         try:
             inspect.applied_config["API_TOKEN"]
         except KeyError:
-            print(
-                "API token is missing from the config files! "
-                "An API token with at least read-access is required to make requests.",
-                file=sys.stderr,
+            console.print(
+                NoteText(
+                    "API token is missing from the config files! "
+                    "An API token with at least read-access is required to make requests.",
+                )
             )
             raise typer.Exit(1)
         else:
             if not API_TOKEN:
-                print(
-                    "API token is detected but it's empty! "
-                    "An API token with at least read-access is required to make requests.",
-                    file=sys.stderr,
+                console.print(
+                    NoteText(
+                        "API token is detected but it's empty! "
+                        "An API token with at least read-access is required to make requests.",
+                    )
                 )
                 raise typer.Exit(1)
 
@@ -88,11 +104,12 @@ class ConfigValidator(Validator):
                         f"Please contact an administrator."
                     )
                     raise typer.Exit(1)
-                print(
-                    "\nThere is likely nothing wrong with the host server. "
-                    "Possible reasons for failure:\n"
-                    "- Invalid/expired/incorrect API token.\n"
-                    "- Incorrect host URL.\n",
-                    file=sys.stderr,
+                console.print(
+                    NoteText(
+                        "There is likely nothing wrong with the host server. "
+                        "Possible reasons for failure:\n"
+                        "• Invalid/expired/incorrect API token\n"
+                        "• Incorrect host URL\n",
+                    )
                 )
                 raise typer.Exit(1)
