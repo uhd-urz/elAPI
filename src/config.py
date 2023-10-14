@@ -104,7 +104,7 @@ if not API_TOKEN:
     )
     # Note elabftw-python uses the term "api_key" for "API_TOKEN"
 else:
-    history.patch("API_TOKEN", APIToken(API_TOKEN, mask_char="•"))
+    history.patch("API_TOKEN", APIToken(API_TOKEN))
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
