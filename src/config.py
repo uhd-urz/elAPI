@@ -166,7 +166,7 @@ except KeyError:
 else:
     UNSAFE_TOKEN_WARNING: bool = settings.as_bool(KEY_UNSAFE_TOKEN_WARNING)
     # equivalent to settings.get(<key>, cast='@bool')
-if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN][1] == str(
+if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN].source == str(
     PROJECT_CONFIG_LOC
 ):
     logger.warning(

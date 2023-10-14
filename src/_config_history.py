@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Any, Union
 
 from dynaconf import Dynaconf
@@ -105,10 +106,14 @@ class InspectConfigHistory:
 
     @property
     def applied_config(self) -> dict:
-        applied_config = {}
+        applied_config, AppliedConfigIdentity = {}, namedtuple(
+            "AppliedConfigIdentity", ["value", "source"]
+        )
         for config in self.history:
             for k, v in config["value"].items():
-                applied_config.update({k: (v, config["identifier"])})
+                applied_config.update(
+                    {k: AppliedConfigIdentity(v, config["identifier"])}
+                )
         return applied_config
 
     @applied_config.setter

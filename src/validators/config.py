@@ -79,7 +79,7 @@ class ConfigValidator(Validator):
                 )
                 raise typer.Exit(1)
 
-            API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN)[0]
+            API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN).value
             try:
                 response: Response = self.check_endpoint()
                 response.json()

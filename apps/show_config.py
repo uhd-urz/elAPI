@@ -9,13 +9,13 @@ detected_config_files = inspect.applied_config_files
 FALLBACK = "DEFAULT"
 
 try:
-    api_token_masked = detected_config[KEY_API_TOKEN][0] or "''"
-    api_token_source = detected_config_files[detected_config[KEY_API_TOKEN][1]]
+    api_token_masked = detected_config[KEY_API_TOKEN].value or "''"
+    api_token_source = detected_config_files[detected_config[KEY_API_TOKEN].source]
 except KeyError:
     api_token_masked, api_token_source = Missing(), None
 
 try:
-    unsafe_token_use_source = detected_config[KEY_UNSAFE_TOKEN_WARNING][1]
+    unsafe_token_use_source = detected_config[KEY_UNSAFE_TOKEN_WARNING].source
     unsafe_token_use_source = detected_config_files[unsafe_token_use_source]
 except KeyError:
     unsafe_token_use_source = FALLBACK
@@ -23,18 +23,18 @@ finally:
     unsafe_token_use_value = "Yes" if UNSAFE_TOKEN_WARNING else "No"
 
 try:
-    host_value = detected_config[KEY_HOST][0] or "''"
-    host_source = detected_config_files[detected_config[KEY_HOST][1]]
+    host_value = detected_config[KEY_HOST].value or "''"
+    host_source = detected_config_files[detected_config[KEY_HOST].source]
 except KeyError:
     host_value, host_source = Missing(), None
 
 try:
-    export_dir_source = detected_config_files[detected_config[KEY_EXPORT_DIR][1]]
+    export_dir_source = detected_config_files[detected_config[KEY_EXPORT_DIR].source]
 except KeyError:
     export_dir_source = FALLBACK
 
 try:
-    cleanup_source = detected_config_files[detected_config[KEY_CLEANUP][1]]
+    cleanup_source = detected_config_files[detected_config[KEY_CLEANUP].source]
 except KeyError:
     cleanup_source = FALLBACK
 finally:
