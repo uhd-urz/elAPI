@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.padding import Padding
 from rich.text import Text
 
+from src.config import KEY_HOST, KEY_API_TOKEN
 from src.loggers import Logger
 from src.validators.base import Validator, COMMON_NETWORK_ERRORS
 
@@ -37,7 +38,7 @@ class ConfigValidator(Validator):
         # _PS: Text = Text("[b yellow]P.S.:[/b yellow]")
 
         try:
-            inspect.applied_config["HOST"]
+            inspect.applied_config[KEY_HOST]
         except KeyError:
             console.print(
                 NoteText(
@@ -59,7 +60,7 @@ class ConfigValidator(Validator):
                 raise typer.Exit(1)
 
         try:
-            inspect.applied_config["API_TOKEN"]
+            inspect.applied_config[KEY_API_TOKEN]
         except KeyError:
             console.print(
                 NoteText(
@@ -78,7 +79,7 @@ class ConfigValidator(Validator):
                 )
                 raise typer.Exit(1)
 
-            API_TOKEN_MASKED = inspect.applied_config.get("API_TOKEN")[0]
+            API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN)[0]
             try:
                 response: Response = self.check_endpoint()
                 response.json()

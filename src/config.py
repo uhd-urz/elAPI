@@ -15,6 +15,11 @@ from src._names import (
     PROJECT_CONFIG_LOC,
     LOCAL_CONFIG_LOC,
     LOG_DIR_ROOT,
+    KEY_HOST,
+    KEY_API_TOKEN,
+    KEY_EXPORT_DIR,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_CLEANUP,
 )
 from src.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
 from src.loggers import Logger
@@ -44,7 +49,7 @@ history = ConfigHistory(settings)
 
 # Host URL
 HOST: str = settings.get(
-    "host"
+    KEY_HOST
 )  # case-insensitive: settings.get("HOST") == settings.get("host")
 if not HOST:
     logger.critical(
@@ -96,7 +101,7 @@ class APIToken:
         return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[:-expose-1:-1][::-1]}"
 
 
-API_TOKEN: str = settings.get("api_token")
+API_TOKEN: str = settings.get(KEY_API_TOKEN)
 if not API_TOKEN:
     logger.critical(
         f"'api_token' is empty or missing from {CONFIG_FILE_NAME} file. "
@@ -104,7 +109,7 @@ if not API_TOKEN:
     )
     # Note elabftw-python uses the term "api_key" for "API_TOKEN"
 else:
-    history.patch("API_TOKEN", APIToken(API_TOKEN))
+    history.patch(KEY_API_TOKEN, APIToken(API_TOKEN))
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
@@ -114,7 +119,7 @@ TOKEN_BEARER: str = "Authorization"
 validate_export_dir = Validate(
     PathValidator(
         [
-            settings.get("export_dir"),
+            settings.get(KEY_EXPORT_DIR),
             os.getenv(ENV_XDG_DOWNLOAD_DIR, os.devnull),
             FALLBACK_EXPORT_DIR,
         ],
@@ -130,8 +135,8 @@ except ValidationError:
         f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
     )
     raise SystemExit()
-if EXPORT_DIR != ProperPath(history.get("EXPORT_DIR", os.devnull)).expanded:
-    history.delete("EXPORT_DIR")
+if EXPORT_DIR != ProperPath(history.get(KEY_EXPORT_DIR, os.devnull)).expanded:
+    history.delete(KEY_EXPORT_DIR)
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
@@ -155,11 +160,11 @@ inspect = InspectConfigHistory(history)
 
 # UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
 try:
-    settings["unsafe_api_token_warning"]
+    settings[KEY_UNSAFE_TOKEN_WARNING]
 except KeyError:
     UNSAFE_TOKEN_WARNING: bool = True
 else:
-    UNSAFE_TOKEN_WARNING: bool = settings.as_bool("unsafe_api_token_warning")
+    UNSAFE_TOKEN_WARNING: bool = settings.as_bool(KEY_UNSAFE_TOKEN_WARNING)
     # equivalent to settings.get(<key>, cast='@bool')
 
 if UNSAFE_TOKEN_WARNING:
@@ -170,5 +175,5 @@ if UNSAFE_TOKEN_WARNING:
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
 
 # Whether to run "cleanup" command on CLI after finishing a task (when available)
-CLEANUP_AFTER: bool = settings.as_bool("cleanup_after_finish")
+CLEANUP_AFTER: bool = settings.as_bool(KEY_CLEANUP)
 # Default value is False if cleanup_after_finish isn't defined in the config file

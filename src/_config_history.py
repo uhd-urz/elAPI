@@ -9,6 +9,7 @@ from src._names import (
     SYSTEM_CONFIG_LOC,
     LOCAL_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
+    KEY_API_TOKEN,
 )
 from src.loggers import Logger
 
@@ -123,7 +124,7 @@ class InspectConfigHistory:
     def inspect_api_token_location(self, unsafe_path: Path):
         for d in self.history:
             if Path(d["identifier"]).absolute() == unsafe_path.absolute():
-                if "API_TOKEN" in d["value"]:
+                if KEY_API_TOKEN in d["value"]:
                     logger.warning(
                         f"api_token in project-based configuration file found. This is highly discouraged. "
                         f"The api_token is at risk of being leaked into public repositories. If you still insist, "
