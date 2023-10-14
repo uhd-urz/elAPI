@@ -31,32 +31,33 @@ class ConfigHistory:
         self._setting = value
 
     def get(self, key: str, /, default: Any = None) -> Any:
+        _item = None
         for config in self._history:
             try:
-                return config["value"][key]
+                _item = config["value"][key]
             except KeyError:
                 continue
-        return default
+        return _item or default
 
     def patch(self, key: str, /, value: Any) -> None:
+        _item = None
         for config in self._history:
             try:
-                config["value"][key]
+                _item = config["value"][key] = value
             except KeyError:
                 continue
-            else:
-                config["value"][key] = value
-                return
-        raise KeyError(f"Key '{key}' couldn't be found.")
+        if not _item:
+            raise KeyError(f"Key '{key}' couldn't be found.")
 
     def delete(self, key: str, /) -> None:
+        _item = None
         for config in self._history:
             try:
-                del config["value"][key]
-                return
+                _item = config["value"].pop(key)
             except KeyError:
                 continue
-        raise KeyError(f"Key '{key}' couldn't be found.")
+        if not _item:
+            raise KeyError(f"Key '{key}' couldn't be found.")
 
     def items(self):
         return self._history
