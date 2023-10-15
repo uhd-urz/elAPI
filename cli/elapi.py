@@ -121,7 +121,7 @@ def post(
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
-    ] = None,
+    ] = "",
     data: typer.Context = None,
     output: Annotated[
         str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
