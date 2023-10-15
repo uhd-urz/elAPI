@@ -1,15 +1,32 @@
+from json import JSONDecodeError
+
 import typer
-from httpx import Response
+from httpx import (
+    Response,
+    UnsupportedProtocol,
+    InvalidURL,
+    ConnectError,
+    ConnectTimeout,
+)
 from rich.console import Console
 from rich.padding import Padding
 from rich.text import Text
 
 from src.config import KEY_HOST, KEY_API_TOKEN
 from src.loggers import Logger
-from src.validators.base import Validator, COMMON_NETWORK_ERRORS
+from src.validators.base import Validator
 
 logger = Logger()
 console = Console()
+
+COMMON_NETWORK_ERRORS: tuple = (
+    JSONDecodeError,
+    UnsupportedProtocol,
+    InvalidURL,
+    ConnectError,
+    ConnectTimeout,
+    TimeoutError,
+)
 
 
 class NoteText:

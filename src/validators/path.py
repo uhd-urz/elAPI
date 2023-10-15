@@ -5,9 +5,18 @@ from typing import Union, Iterable
 
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators.base import Validator, ValidationError, COMMON_PATH_ERRORS
+from src.validators.base import Validator, ValidationError
 
 logger = Logger()
+
+COMMON_PATH_ERRORS: tuple = (
+    FileNotFoundError,
+    PermissionError,
+    MemoryError,
+    IOError,
+    ValueError,
+    AttributeError,
+)
 
 
 class PathValidator(Validator):

@@ -2,7 +2,8 @@ import typer
 from httpx import Response
 
 from src.loggers import Logger
-from src.validators.base import Validator, COMMON_NETWORK_ERRORS
+from src.validators.base import Validator
+from src.validators.config import COMMON_NETWORK_ERRORS
 
 logger = Logger()
 
