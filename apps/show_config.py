@@ -1,7 +1,18 @@
 from cli import Missing
-from src.configuration import (APP_NAME, inspect, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
-                               TMP_DIR, CLEANUP_AFTER, KEY_HOST, KEY_API_TOKEN, KEY_UNSAFE_TOKEN_WARNING,
-                               KEY_EXPORT_DIR, KEY_CLEANUP)
+from src.configuration import (
+    APP_NAME,
+    inspect,
+    UNSAFE_TOKEN_WARNING,
+    EXPORT_DIR,
+    APP_DATA_DIR,
+    TMP_DIR,
+    CLEANUP_AFTER,
+    KEY_HOST,
+    KEY_API_TOKEN,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_EXPORT_DIR,
+    KEY_CLEANUP,
+)
 from src.configuration.log_file import LOG_FILE_PATH
 
 detected_config = inspect.applied_config
@@ -40,19 +51,33 @@ except KeyError:
 finally:
     cleanup_value = "Yes" if CLEANUP_AFTER else "No"
 
-detected_config_files_formatted = "\n- " + "\n- ".join(f"`{v}`: {k}" for k, v in detected_config_files.items())
+detected_config_files_formatted = "\n- " + "\n- ".join(
+    f"`{v}`: {k}" for k, v in detected_config_files.items()
+)
 
-info = (f"""
+info = (
+    f"""
 ## {APP_NAME} configuration information
 The following debug information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name: Value ← Source
 
 - **Log file path:** {LOG_FILE_PATH}
-""" + (f"""
+"""
+    + (
+        f"""
 - **Host address:** {host_value} ← `{host_source}`
-""" if host_source else f"- **Host address:** _{host_value.colorize()}_\n") + (f"""
+"""
+        if host_source
+        else f"- **Host address:** _{host_value.colorize()}_\n"
+    )
+    + (
+        f"""
 - **API token:** {api_token_masked} ← `{api_token_source}`
-""" if api_token_source else f"- **API token:** _{api_token_masked.colorize()}_") + f"""
+"""
+        if api_token_source
+        else f"- **API token:** _{api_token_masked.colorize()}_"
+    )
+    + f"""
 - **Export directory:** {EXPORT_DIR} ← `{export_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
 - **Caching directory:** {TMP_DIR}
@@ -64,6 +89,12 @@ The following debug information includes configuration values and their sources 
 
 **_Detected configuration files that are in use:_**
 {detected_config_files_formatted}
-""" + (f"""
+"""
+    + (
+        f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
-""" if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source) else ""))
+"""
+        if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source)
+        else ""
+    )
+)
