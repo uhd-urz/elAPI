@@ -3,7 +3,7 @@ from httpx import Response
 
 from src.loggers import Logger
 from src.validators.base import Validator
-from src.validators.config import COMMON_NETWORK_ERRORS
+from src.validators.identity import COMMON_NETWORK_ERRORS
 
 logger = Logger()
 
@@ -55,7 +55,7 @@ class PermissionValidator(Validator):
         except COMMON_NETWORK_ERRORS:
             logger.critical(
                 "Something went wrong while trying to read user information! "
-                "Try to validate the configuration first with 'ConfigValidator' "
+                "Try to validate the configuration first with 'HostIdentityValidator' "
                 "to see what specifically went wrong."
             )
             raise typer.Exit(1)

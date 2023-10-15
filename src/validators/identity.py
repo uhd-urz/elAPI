@@ -38,7 +38,7 @@ class NoteText:
         )
 
 
-class ConfigValidator(Validator):
+class HostIdentityValidator(Validator):
     __slots__ = ()
 
     @staticmethod
