@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from src._config_history import ConfigHistory, InspectConfigHistory
+from src.configuration._config_history import ConfigHistory, InspectConfigHistory
 from src._names import (
     APP_NAME,
     ENV_XDG_DOWNLOAD_DIR,
@@ -21,7 +21,7 @@ from src._names import (
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_CLEANUP,
 )
-from src.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
+from src.configuration.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
 from src.loggers import Logger
 from src.path import ProperPath
 from src.validators import Validate, ValidationError, PathValidator

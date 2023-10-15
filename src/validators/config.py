@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.padding import Padding
 from rich.text import Text
 
-from src.config import KEY_HOST, KEY_API_TOKEN
+from src.configuration.config import KEY_HOST, KEY_API_TOKEN
 from src.loggers import Logger
 from src.validators.base import Validator
 
@@ -49,7 +49,7 @@ class ConfigValidator(Validator):
         return session(endpoint="apikeys", unit_id="")
 
     def validate(self):
-        from src.config import inspect, HOST, API_TOKEN
+        from src.configuration.config import inspect, HOST, API_TOKEN
 
         _HOST_EXAMPLE: str = "host: 'https://demo.elabftw.net/api/v2'"
         # _PS: Text = Text("[b yellow]P.S.:[/b yellow]")

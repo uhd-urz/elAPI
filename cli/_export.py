@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union
 
-from src.config import EXPORT_DIR
+from src.configuration import EXPORT_DIR
 from src.loggers import Logger
 from src.path import ProperPath
 from src.validators import Validate, PathValidator, ValidationError

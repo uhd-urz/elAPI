@@ -1,8 +1,8 @@
 from cli import Missing
-from src.config import (APP_NAME, inspect, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
-                        TMP_DIR, CLEANUP_AFTER, KEY_HOST, KEY_API_TOKEN, KEY_UNSAFE_TOKEN_WARNING,
-                        KEY_EXPORT_DIR, KEY_CLEANUP)
-from src.log_file import LOG_FILE_PATH
+from src.configuration import (APP_NAME, inspect, UNSAFE_TOKEN_WARNING, EXPORT_DIR, APP_DATA_DIR,
+                               TMP_DIR, CLEANUP_AFTER, KEY_HOST, KEY_API_TOKEN, KEY_UNSAFE_TOKEN_WARNING,
+                               KEY_EXPORT_DIR, KEY_CLEANUP)
+from src.configuration.log_file import LOG_FILE_PATH
 
 detected_config = inspect.applied_config
 detected_config_files = inspect.applied_config_files

@@ -191,7 +191,7 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
-    from src.config import TMP_DIR
+    from src.configuration import TMP_DIR
     from src.path import ProperPath
     from time import sleep
 
@@ -235,7 +235,7 @@ def bill_teams(
 ) -> None:
     """*Beta:* Generate billable teams data."""
 
-    from src.config import CLEANUP_AFTER
+    from src.configuration import CLEANUP_AFTER
     from src.validators import Validate, ConfigValidator, PermissionValidator
 
     validate = Validate(ConfigValidator(), PermissionValidator("sysadmin"))
