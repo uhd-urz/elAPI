@@ -30,23 +30,23 @@ class ConfigHistory:
         self._setting = value
 
     def get(self, key: str, /, default: Any = None) -> Any:
-        _item = None
-        for config in self._history:
+        for config in self._history[::-1]:
             try:
-                _item = config["value"][key]
+                return config["value"][key]
             except KeyError:
                 continue
-        return _item or default
+        return default
 
     def patch(self, key: str, /, value: Any) -> None:
-        _item = None
-        for config in self._history:
+        for config in self._history[::-1]:
             try:
-                _item = config["value"][key] = value
+                config["value"][key]
             except KeyError:
                 continue
-        if not _item:
-            raise KeyError(f"Key '{key}' couldn't be found.")
+            else:
+                config["value"][key] = value
+                return
+        raise KeyError(f"Key '{key}' couldn't be found.")
 
     def delete(self, key: str, /) -> None:
         _item = None
