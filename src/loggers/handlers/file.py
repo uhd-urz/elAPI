@@ -75,7 +75,7 @@ class FileHandler(Handler):
     def handler(self) -> logging.Handler:
         handler = FileHandler.CustomFileHandler(self.log_file_path)
         handler.setFormatter(self.formatter)
-        handler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.INFO)
         return handler
 
     @handler.setter
