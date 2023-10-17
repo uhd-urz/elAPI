@@ -21,7 +21,7 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
-from cli._export import ExportToDirectory
+from cli._export import Export
 from cli._markdown_doc import _get_custom_help_text
 from src.loggers import Logger
 
@@ -49,10 +49,10 @@ def get(
     output: Annotated[
         str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
     ] = "json",
-    export_dir: Annotated[
+    export: Annotated[
         Optional[bool],
         typer.Option(
-            "--export-dir",
+            "--export",
             "-e",
             help=docs["export"],
             is_flag=True,
@@ -80,7 +80,7 @@ def get(
     """
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
-    from cli._export import ExportToDirectory
+    from cli._export import Export
     from cli._format import Format, Highlight
 
     validate_config = Validate(HostIdentityValidator())
@@ -95,9 +95,9 @@ def get(
         format = Format("txt")  # Falls back to "txt"
     formatted_data = format(raw_response.json())
 
-    if export_dir:
+    if export:
         file_name_prefix = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
-        export = ExportToDirectory(
+        export = Export(
             _export_value,
             file_name_prefix=file_name_prefix,
             file_extension=format.name,
@@ -220,10 +220,10 @@ def bill_teams(
         Optional[str],
         typer.Option("--output", "-o", help=docs["output"], show_default=False),
     ] = "json",
-    export_dir: Annotated[
+    export: Annotated[
         Optional[bool],
         typer.Option(
-            "--export-dir",
+            "--export",
             "-e",
             help=docs["export"],
             is_flag=True,
@@ -256,8 +256,8 @@ def bill_teams(
         format = Format("txt")  # Falls back to "txt"
     formatted_bill_teams_data = format(bill_teams_data)
 
-    if export_dir:
-        export = ExportToDirectory(
+    if export:
+        export = Export(
             _export_value,
             file_name_prefix=bill_teams.__name__,
             file_extension=format.name,
@@ -272,7 +272,7 @@ def bill_teams(
         from apps.invoice import InvoiceGenerator
 
         invoice = InvoiceGenerator(bill_teams_data)
-        export = ExportToDirectory(
+        export = Export(
             _export_value,
             file_name_prefix=f"invoice",
             file_extension="md",

@@ -22,10 +22,18 @@ __PARAMETERS__doc__ = {
     "invoice": f"Generate an invoice as well. Invoice will be saved in Markdown format.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
-    "export": f"Export output to a directory. If only _'--export-dir'_ is passed, "
-              f"`export_dir` value from configuration file is used. If a directory path is provided as well, "
-              f"i.e., _'--export <path/to/directory>'_, then that path is used instead. "
-              f"The file name is auto-generated using the following scheme: *'\<FUNCTION\>_DATE_HHMMSS.EXT'*.",
+    "export": f"Export output to a location.\n"
+              f"- If only _'--export'_ is passed, then it acts as a flag, and "
+              f"`export_dir` value from configuration file is used. "
+              f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
+              f"- If a directory path is provided, "
+              f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+              f"When the path is a directory, "
+              f"the file name is auto-generated using the following scheme: *'\<FUNCTION\>_DATE_HHMMSS.EXT'*.\n"
+              f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_ "
+              f"then data is simply exported to that file. "
+              f"This allows custom file name scheme. The file extension however is ignored, "
+              f"and always the format defined with _--output/-o_ option applies for the data format.",
     "output": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               "The values are case insensitive. The default format is `JSON`. "
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "

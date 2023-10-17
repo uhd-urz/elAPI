@@ -10,7 +10,7 @@ from src.validators import Validate, PathValidator, ValidationError
 logger = Logger()
 
 
-class ExportToDirectory:
+class Export:
     __slots__ = ("file_extension", "file_name_prefix", "_file_name", "_export_path")
 
     def __init__(
@@ -44,22 +44,35 @@ class ExportToDirectory:
 
     @export_path.setter
     def export_path(self, value):
-        validate_export_path = Validate(PathValidator(value, err_logger=logger))
         try:
-            self._export_path = validate_export_path.get() / self.file
-        except ValidationError:
-            logger.info(
-                f"Falling back to writing export data to {self.default_export_path}."
-            ) if value else ...
+            value = ProperPath(value)
+        except (TypeError, ValueError):
             self._export_path = self.default_export_path
+        else:
+            validate_export_path = Validate(
+                PathValidator(
+                    value / (self.file if value.kind == "dir" else ""),
+                    err_logger=logger,
+                )
+            )
+            try:
+                self._export_path = validate_export_path.get()
+            except ValidationError:
+                logger.info(
+                    f"Failed to write to {value}. "
+                    f"Falling back to writing export data to {self.default_export_path}."
+                )
+                self._export_path = self.default_export_path
 
     @property
     def success_message(self) -> str:
         return (
-            f"[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
+            f"\n[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
             f"to {self.export_path} in [b]{self.file_extension.upper()}[/b] format."
         )
 
     def __call__(self, data: Any) -> None:
-        with ProperPath(self.export_path, err_logger=logger).open(mode="w") as file:
+        with ProperPath(self.export_path, err_logger=logger).open(
+            mode="w", encoding="utf-8"
+        ) as file:
             file.write(data)
