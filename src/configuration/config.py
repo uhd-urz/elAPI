@@ -3,7 +3,6 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from src.configuration._config_history import ConfigHistory, InspectConfigHistory
 from src._names import (
     APP_NAME,
     ENV_XDG_DOWNLOAD_DIR,
@@ -21,6 +20,7 @@ from src._names import (
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_CLEANUP,
 )
+from src.configuration._config_history import ConfigHistory, InspectConfigHistory
 from src.configuration.log_file import LOG_FILE_PATH, ENV_XDG_DATA_HOME
 from src.loggers import Logger
 from src.path import ProperPath
@@ -116,11 +116,16 @@ TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Export location
+CONFIG_EXPORT_DIR = ProperPath(settings.get(KEY_EXPORT_DIR))
+if CONFIG_EXPORT_DIR.kind != "dir":
+    logger.warning(f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} is not a directory!")
+    logger.debug("If you want to export to a file use '--export <path-to-file>'.")
+    CONFIG_EXPORT_DIR = None
 validate_export_dir = Validate(
     PathValidator(
         [
-            settings.get(KEY_EXPORT_DIR),
-            os.getenv(ENV_XDG_DOWNLOAD_DIR, os.devnull),
+            CONFIG_EXPORT_DIR,
+            os.getenv(ENV_XDG_DOWNLOAD_DIR, None),
             FALLBACK_EXPORT_DIR,
         ],
         err_logger=logger,
