@@ -141,8 +141,7 @@ def get(
             file_name_prefix=file_name_prefix,
             file_extension=format.name,
         )
-        export(data=formatted_data)
-        console.print(export.success_message)
+        export(data=formatted_data, verbose=True)
     else:
         highlight = Highlight(data_format)
         console.print(highlight(formatted_data))
@@ -303,8 +302,7 @@ def bill_teams(
             file_name_prefix=bill_teams.__name__,
             file_extension=format.name,
         )
-        export(data=formatted_bill_teams_data)
-        console.print(export.success_message)
+        export(data=formatted_bill_teams_data, verbose=True)
     else:
         highlight = Highlight(data_format)
         console.print(highlight(formatted_bill_teams_data))
@@ -318,8 +316,7 @@ def bill_teams(
             file_name_prefix="invoice",
             file_extension="md",
         )
-        export(data=invoice.generate())
-        console.print(export.success_message)
+        export(data=invoice.generate(), verbose=True)
 
     if clean or CLEANUP_AFTER:
         typer.echo()  # mainly for a newline!

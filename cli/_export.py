@@ -46,16 +46,18 @@ class Export:
                 raise ValueError("Export path is not valid!") from e
         self._destination = value / (self.file if value.kind == "dir" else "")
 
-    @property
-    def success_message(self) -> str:
-        return (
-            f"\n[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
-            f"to {self.destination} in [b]{self.file_extension.upper()}[/b] format."
-        )
-
-    def __call__(self, data: Any) -> None:
+    def __call__(self, data: Any, verbose: bool = False) -> None:
         with self.destination.open(mode="w", encoding="utf-8") as file:
             file.write(data)
+        if verbose:
+            from rich.console import Console
+
+            console = Console()
+            console.print(
+                f"\n"
+                f"[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
+                f"to {self.destination} in [b]{self.file_extension.upper()}[/b] format."
+            )
 
 
 class ExportValidator(PathValidator):
