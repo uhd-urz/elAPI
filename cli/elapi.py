@@ -42,7 +42,7 @@ typer.rich_utils._get_help_text = (
 
 
 class _CLIExport:
-    def __new__(cls, data_format: Optional[str] = None, export_dest: str = None):
+    def __new__(cls, data_format: Optional[str] = None, export_dest: Optional[str] = None):
         from collections import namedtuple
         from src.validators import Validate
         from cli._export import ExportValidator
@@ -63,7 +63,7 @@ class _CLIExport:
 
 
 class _CLIFormat:
-    def __new__(cls, data_format: Optional[str], export_file_ext: Optional[str] = None):
+    def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
         from cli._format import Format
 
         try:
@@ -100,7 +100,7 @@ def get(
             show_default=False,
         ),
     ] = False,
-    _export_dest: Annotated[str, typer.Argument(hidden=True)] = None,
+    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> None:
     """
     Make `GET` requests to elabftw endpoints as documented in
@@ -270,7 +270,7 @@ def bill_teams(
             show_default=False,
         ),
     ] = False,
-    _export_dest: Annotated[str, typer.Argument(hidden=True)] = None,
+    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> None:
     """*Beta:* Generate billable teams data."""
 
