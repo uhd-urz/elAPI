@@ -21,9 +21,10 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
-from cli._export import Export
 from cli._markdown_doc import _get_custom_help_text
+from src import APP_NAME
 from src.loggers import Logger
+from src.path import ProperPath
 
 logger = Logger()
 
@@ -40,6 +41,44 @@ typer.rich_utils._get_help_text = (
 )
 
 
+class _CLIExport:
+    def __new__(cls, output: Optional[str] = None, export_dest: str = None):
+        from collections import namedtuple
+        from src.validators import Validate
+        from cli._export import ExportValidator
+
+        validate_export = Validate(ExportValidator(export_dest))
+        export_dest: ProperPath = validate_export.get()
+
+        _export_file_ext: str = (
+            export_dest.expanded.suffix.removeprefix(".")
+            if export_dest.kind == "file"
+            else None
+        )
+        output = output or _export_file_ext or "json"  # default output format
+        ExportParams = namedtuple(
+            "ExportParams", ["output", "destination", "extension"]
+        )
+        return ExportParams(output, export_dest, _export_file_ext)
+
+
+class _CLIFormat:
+    def __new__(cls, output: Optional[str], export_file_ext: Optional[str] = None):
+        from cli._format import Format
+
+        try:
+            format = Format(output)
+        except ValueError as e:
+            logger.error(e)
+            logger.info(f"{APP_NAME} will fallback to 'txt' format.")
+            format = Format("txt")  # Falls back to "txt"
+        if export_file_ext and format.name != export_file_ext:
+            logger.info(
+                f"File extension is '{export_file_ext}' but data format will be '{format.name}'."
+            )
+        return format
+
+
 @app.command(short_help="Make `GET` requests to elabftw endpoints.")
 def get(
     endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
@@ -47,8 +86,9 @@ def get(
         str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)
     ] = None,
     output: Annotated[
-        str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
-    ] = "json",
+        Optional[str],
+        typer.Option("--output", "-o", help=docs["output"], show_default=False),
+    ] = None,
     export: Annotated[
         Optional[bool],
         typer.Option(
@@ -60,7 +100,7 @@ def get(
             show_default=False,
         ),
     ] = False,
-    _export_value: Annotated[str, typer.Argument(hidden=True)] = "",
+    _export_dest: Annotated[str, typer.Argument(hidden=True)] = None,
 ) -> None:
     """
     Make `GET` requests to elabftw endpoints as documented in
@@ -81,24 +121,23 @@ def get(
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
     from cli._export import Export
-    from cli._format import Format, Highlight
+    from cli._format import Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
+    output, export_dest, export_file_ext = _CLIExport(output, _export_dest)
+    format = _CLIFormat(output, export_file_ext)
+
     session = GETRequest()
     raw_response = session(endpoint, unit_id)
-    try:
-        format = Format(output)
-    except ValueError as e:
-        logger.error(e)
-        format = Format("txt")  # Falls back to "txt"
+
     formatted_data = format(raw_response.json())
 
     if export:
         file_name_prefix = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
         export = Export(
-            _export_value,
+            export_dest,
             file_name_prefix=file_name_prefix,
             file_extension=format.name,
         )
@@ -219,7 +258,7 @@ def bill_teams(
     output: Annotated[
         Optional[str],
         typer.Option("--output", "-o", help=docs["output"], show_default=False),
-    ] = "json",
+    ] = None,
     export: Annotated[
         Optional[bool],
         typer.Option(
@@ -231,34 +270,36 @@ def bill_teams(
             show_default=False,
         ),
     ] = False,
-    _export_value: Annotated[str, typer.Argument(hidden=True)] = None,
+    _export_dest: Annotated[str, typer.Argument(hidden=True)] = None,
 ) -> None:
     """*Beta:* Generate billable teams data."""
 
     from src.configuration import CLEANUP_AFTER
-    from src.validators import Validate, HostIdentityValidator, PermissionValidator
+    from cli._export import Export
+    from cli._format import Highlight
+    from src.validators import (
+        Validate,
+        HostIdentityValidator,
+        PermissionValidator,
+    )
 
     validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
     validate()
 
+    output, export_dest, export_file_ext = _CLIExport(output, _export_dest)
+    format = _CLIFormat(output, export_file_ext)
+
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
-    from cli._format import Format, Highlight
 
     users = UsersInformation(is_async_client)
     teams = TeamsInformation()
     bill_teams_ = BillTeams(users.items(), teams.items())
-
     bill_teams_data = bill_teams_.items()
-    try:
-        format = Format(output)
-    except ValueError as e:
-        logger.error(e)
-        format = Format("txt")  # Falls back to "txt"
     formatted_bill_teams_data = format(bill_teams_data)
 
     if export:
         export = Export(
-            _export_value,
+            export_dest,
             file_name_prefix=bill_teams.__name__,
             file_extension=format.name,
         )
@@ -273,8 +314,8 @@ def bill_teams(
 
         invoice = InvoiceGenerator(bill_teams_data)
         export = Export(
-            _export_value,
-            file_name_prefix=f"invoice",
+            _export_dest,
+            file_name_prefix="invoice",
             file_extension="md",
         )
         export(data=invoice.generate())
