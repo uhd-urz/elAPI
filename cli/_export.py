@@ -1,28 +1,27 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Iterable
 
-from src.configuration import EXPORT_DIR
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators import Validate, PathValidator, ValidationError
+from src.validators import PathValidator, ValidationError
 
 logger = Logger()
 
 
 class Export:
-    __slots__ = ("file_extension", "file_name_prefix", "_file_name", "_export_path")
+    __slots__ = ("file_extension", "file_name_prefix", "_file_name", "_destination")
 
     def __init__(
         self,
-        directory: Union[ProperPath, Path, str],
+        destination: Union[ProperPath, Path, str],
         /,
         file_name_prefix: str,
         file_extension: str,
     ):
         self.file_extension = file_extension.lower()
         self.file = self.file_name_prefix = file_name_prefix
-        self.export_path = directory
+        self.destination = destination
 
     @property
     def file(self) -> str:
@@ -35,44 +34,47 @@ class Export:
         self._file_name = f"{value}_{file_suffix}.{self.file_extension}"
 
     @property
-    def default_export_path(self) -> Path:
-        return EXPORT_DIR / self.file
+    def destination(self) -> ProperPath:
+        return self._destination
 
-    @property
-    def export_path(self) -> Path:
-        return self._export_path
-
-    @export_path.setter
-    def export_path(self, value):
-        try:
-            value = ProperPath(value)
-        except (TypeError, ValueError):
-            self._export_path = self.default_export_path
-        else:
-            validate_export_path = Validate(
-                PathValidator(
-                    value / (self.file if value.kind == "dir" else ""),
-                    err_logger=logger,
-                )
-            )
+    @destination.setter
+    def destination(self, value):
+        if not isinstance(value, ProperPath):
             try:
-                self._export_path = validate_export_path.get()
-            except ValidationError:
-                logger.info(
-                    f"Failed to write to {value}. "
-                    f"Falling back to writing export data to {self.default_export_path}."
-                )
-                self._export_path = self.default_export_path
+                value = ProperPath(value)
+            except (TypeError, ValueError) as e:
+                raise ValueError("Export path is not valid!") from e
+        self._destination = value / (self.file if value.kind == "dir" else "")
 
     @property
     def success_message(self) -> str:
         return (
             f"\n[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
-            f"to {self.export_path} in [b]{self.file_extension.upper()}[/b] format."
+            f"to {self.destination} in [b]{self.file_extension.upper()}[/b] format."
         )
 
     def __call__(self, data: Any) -> None:
-        with ProperPath(self.export_path, err_logger=logger).open(
-            mode="w", encoding="utf-8"
-        ) as file:
+        with self.destination.open(mode="w", encoding="utf-8") as file:
             file.write(data)
+
+
+class ExportValidator(PathValidator):
+    def __init__(
+        self, /, export_path: Union[Iterable[...], Union[None, str, ProperPath, Path]]
+    ):
+        self.export_path = export_path
+        super().__init__(export_path, err_logger=logger)
+
+    def validate(self) -> ProperPath:
+        from src import APP_NAME
+        from src.configuration import EXPORT_DIR
+
+        if self.export_path is not None:
+            try:
+                return ProperPath(super().validate(), err_logger=logger)
+            except ValidationError:
+                logger.warning(
+                    f"--export path '{self.export_path}' couldn't be validated! "
+                    f"{APP_NAME} will use fallback export location."
+                )
+        return ProperPath(EXPORT_DIR, err_logger=logger)
