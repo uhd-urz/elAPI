@@ -38,7 +38,7 @@ class BaseFormat(ABC):
 
 
 class JSONFormat(BaseFormat):
-    name: str = "JSON"
+    name: str = "json"
 
     @classmethod
     def pattern(cls) -> str:
@@ -51,7 +51,7 @@ class JSONFormat(BaseFormat):
 
 
 class YAMLFormat(BaseFormat):
-    name = "YAML"
+    name = "yaml"
 
     @classmethod
     def pattern(cls) -> str:
@@ -64,7 +64,7 @@ class YAMLFormat(BaseFormat):
 
 
 class TXTFormat(BaseFormat):
-    name = "TXT"
+    name = "txt"
 
     @classmethod
     def pattern(cls) -> str:
