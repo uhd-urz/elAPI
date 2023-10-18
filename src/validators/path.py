@@ -22,7 +22,7 @@ COMMON_PATH_ERRORS: tuple = (
 class PathValidator(Validator):
     def __init__(
         self,
-        path: Union[Iterable[...], Union[str, ProperPath, Path]],
+        path: Union[Iterable[...], Union[None, str, ProperPath, Path]],
         err_logger=logger,
     ):
         self.path = path
