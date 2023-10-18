@@ -42,7 +42,7 @@ typer.rich_utils._get_help_text = (
 
 
 class _CLIExport:
-    def __new__(cls, output: Optional[str] = None, export_dest: str = None):
+    def __new__(cls, data_format: Optional[str] = None, export_dest: str = None):
         from collections import namedtuple
         from src.validators import Validate
         from cli._export import ExportValidator
@@ -55,19 +55,19 @@ class _CLIExport:
             if export_dest.kind == "file"
             else None
         )
-        output = output or _export_file_ext or "json"  # default output format
+        data_format = data_format or _export_file_ext or "json"  # default data_format format
         ExportParams = namedtuple(
-            "ExportParams", ["output", "destination", "extension"]
+            "ExportParams", ["data_format", "destination", "extension"]
         )
-        return ExportParams(output, export_dest, _export_file_ext)
+        return ExportParams(data_format, export_dest, _export_file_ext)
 
 
 class _CLIFormat:
-    def __new__(cls, output: Optional[str], export_file_ext: Optional[str] = None):
+    def __new__(cls, data_format: Optional[str], export_file_ext: Optional[str] = None):
         from cli._format import Format
 
         try:
-            format = Format(output)
+            format = Format(data_format)
         except ValueError as e:
             logger.error(e)
             logger.info(f"{APP_NAME} will fallback to 'txt' format.")
@@ -85,9 +85,9 @@ def get(
     unit_id: Annotated[
         str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)
     ] = None,
-    output: Annotated[
+    data_format: Annotated[
         Optional[str],
-        typer.Option("--output", "-o", help=docs["output"], show_default=False),
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = None,
     export: Annotated[
         Optional[bool],
@@ -126,8 +126,8 @@ def get(
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
-    output, export_dest, export_file_ext = _CLIExport(output, _export_dest)
-    format = _CLIFormat(output, export_file_ext)
+    data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
+    format = _CLIFormat(data_format, export_file_ext)
 
     session = GETRequest()
     raw_response = session(endpoint, unit_id)
@@ -144,7 +144,7 @@ def get(
         export(data=formatted_data)
         console.print(export.success_message)
     else:
-        highlight = Highlight(output)
+        highlight = Highlight(data_format)
         console.print(highlight(formatted_data))
 
 
@@ -162,8 +162,8 @@ def post(
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
     ] = "",
     data: typer.Context = None,
-    output: Annotated[
-        str, typer.Option("--output", "-o", help=docs["output"], show_default=False)
+    data_format: Annotated[
+        str, typer.Option("--format", "-F", help=docs["data_format"], show_default=False)
     ] = "json",
 ) -> None:
     """
@@ -197,7 +197,7 @@ def post(
         valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     session = POSTRequest()
     raw_response = session(endpoint, unit_id, **valid_data)
-    format = Format(output)
+    format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
@@ -210,7 +210,7 @@ def post(
                 style="red",
             )
     else:
-        highlight = Highlight(output)
+        highlight = Highlight(data_format)
         console.print(highlight(formatted_data))
 
 
@@ -255,9 +255,9 @@ def bill_teams(
         Optional[bool],
         typer.Option("--cleanup", "-c", help=docs["clean"], show_default=False),
     ] = False,
-    output: Annotated[
+    data_format: Annotated[
         Optional[str],
-        typer.Option("--output", "-o", help=docs["output"], show_default=False),
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = None,
     export: Annotated[
         Optional[bool],
@@ -286,8 +286,8 @@ def bill_teams(
     validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
     validate()
 
-    output, export_dest, export_file_ext = _CLIExport(output, _export_dest)
-    format = _CLIFormat(output, export_file_ext)
+    data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
+    format = _CLIFormat(data_format, export_file_ext)
 
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
@@ -306,7 +306,7 @@ def bill_teams(
         export(data=formatted_bill_teams_data)
         console.print(export.success_message)
     else:
-        highlight = Highlight(output)
+        highlight = Highlight(data_format)
         console.print(highlight(formatted_bill_teams_data))
 
     if generate_invoice:
