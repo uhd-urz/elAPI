@@ -116,7 +116,7 @@ TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Export location
-CONFIG_EXPORT_DIR = ProperPath(settings.get(KEY_EXPORT_DIR))
+CONFIG_EXPORT_DIR = ProperPath(settings.get(KEY_EXPORT_DIR, os.devnull))
 if CONFIG_EXPORT_DIR.kind != "dir":
     logger.warning(f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} is not a directory!")
     logger.debug("If you want to export to a file use '--export <path-to-file>'.")
@@ -141,7 +141,10 @@ except ValidationError:
     )
     raise SystemExit()
 if EXPORT_DIR != ProperPath(history.get(KEY_EXPORT_DIR, os.devnull)).expanded:
-    history.delete(KEY_EXPORT_DIR)
+    try:
+        history.delete(KEY_EXPORT_DIR)
+    except KeyError:  # In case KEY_EXPORT_DIR is misspelled in the configuration
+        ...
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
