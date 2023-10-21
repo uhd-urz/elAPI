@@ -117,7 +117,8 @@ TOKEN_BEARER: str = "Authorization"
 
 # Export location
 CONFIG_EXPORT_DIR = ProperPath(
-    settings.get(KEY_EXPORT_DIR, os.devnull), err_logger=logger
+    (_CONFIG_EXPORT_DIR_ORIGINAL := settings.get(KEY_EXPORT_DIR)) or os.devnull,
+    err_logger=logger,
 )  # the default "os.devnull" saves ProperPath from TypeError, ValueError
 # for when settings.get(KEY_EXPORT_DIR) is None/"".
 if CONFIG_EXPORT_DIR.kind != "dir":
@@ -128,8 +129,7 @@ try:
     EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
 except ValidationError:
     logger.warning(
-        f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} from configuration file couldn't be validated! "
-        f"{APP_NAME} will use fallback export location."
+        f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
     )
     try:
         history.delete(KEY_EXPORT_DIR)
