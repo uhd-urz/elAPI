@@ -116,7 +116,9 @@ TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # Export location
-CONFIG_EXPORT_DIR = ProperPath(settings.get(KEY_EXPORT_DIR, os.devnull))
+CONFIG_EXPORT_DIR = ProperPath(
+    settings.get(KEY_EXPORT_DIR, os.devnull), err_logger=logger
+)
 if CONFIG_EXPORT_DIR.kind != "dir":
     logger.warning(f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} is not a directory!")
     logger.debug("If you want to export to a file use '--export <path-to-file>'.")
