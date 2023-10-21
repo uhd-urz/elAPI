@@ -18,8 +18,8 @@ __PARAMETERS__doc__ = {
             f"by the JSON content like with `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
             f"`{APP_NAME} post teams --name Alpha`.",
-    "async": f"Beta: Make process asynchronous. This speeds up receiving data from eLabFTW server manyfold.",
-    "invoice": f"Generate an invoice as well. Invoice will be saved in Markdown format.",
+    "async": "Beta: Make process asynchronous. This speeds up receiving data from eLabFTW server manyfold.",
+    "invoice": "Generate an invoice as well. Invoice will be saved in Markdown format.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
     "export": f"Export output to a location.\n"

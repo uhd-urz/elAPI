@@ -59,7 +59,7 @@ class ProperPath:
     @err_logger.setter
     def err_logger(self, value):
         if not isinstance(value, logging.Logger):
-            raise ValueError(f"'err_logger' must be a logging.Logger instance!")
+            raise ValueError("'err_logger' must be a logging.Logger instance!")
         self._err_logger = value
 
     @property

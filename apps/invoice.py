@@ -70,7 +70,7 @@ Total amount due: {total_bill_amount: .2f} EUR
 
     def generate(self):
         total_bill_amount = 0
-        breakdown = f"""## Breakdown
+        breakdown = """## Breakdown
 
 """
         with console.status(status="Generating invoice..."):

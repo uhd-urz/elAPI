@@ -68,4 +68,4 @@ class PathValidator(Validator):
             else:
                 (p / self.TMP_FILE).remove() if p.kind == "dir" else ...
                 return p.expanded
-        raise ValidationError(f"Given path(s) could not be validated!")
+        raise ValidationError("Given path(s) could not be validated!")
