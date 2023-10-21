@@ -1,4 +1,5 @@
 import os
+from contextlib import redirect_stderr, redirect_stdout
 
 from src._names import (
     FALLBACK_DIR,
@@ -11,7 +12,7 @@ from src.loggers import Logger
 from src.path import ProperPath
 from src.validators import Validate, ValidationError, PathValidator
 
-logger = Logger(suppress_stderr=True)
+logger = Logger()
 
 validate_path = Validate(
     PathValidator(
@@ -26,7 +27,9 @@ validate_path = Validate(
 )
 
 try:
-    LOG_FILE_PATH = validate_path.get() / LOG_FILE_NAME
+    with open(os.devnull, "w") as devnull:
+        with redirect_stderr(devnull), redirect_stdout(devnull):
+            LOG_FILE_PATH = validate_path.get() / LOG_FILE_NAME
 except ValidationError as e:
     logger.critical(
         f"{APP_NAME} couldn't validate fallback path {FALLBACK_DIR}/{LOG_FILE_NAME} to write logs! "
