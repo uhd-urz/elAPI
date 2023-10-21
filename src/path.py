@@ -88,7 +88,9 @@ class ProperPath:
                 "dir"
                 if self.expanded.is_dir()
                 else "file"
-                if (self.expanded.is_file() or self.expanded.suffix)
+                if (self.expanded.is_file() or self.expanded.suffix or self.expanded.exists())
+                # self.expanded.exists() for special files like /dev/null
+                # since is_file() doesn't consider /dev/null to be a file!
                 else "dir"
             )
         else:

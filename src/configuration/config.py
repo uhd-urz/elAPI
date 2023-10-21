@@ -121,16 +121,19 @@ CONFIG_EXPORT_DIR = ProperPath(
     err_logger=logger,
 )  # the default "os.devnull" saves ProperPath from TypeError, ValueError
 # for when settings.get(KEY_EXPORT_DIR) is None/"".
-if CONFIG_EXPORT_DIR.kind != "dir":
-    logger.warning(f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} is not a directory!")
+if _CONFIG_EXPORT_DIR_ORIGINAL and CONFIG_EXPORT_DIR.kind != "dir":
+    logger.warning(
+        f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} is not a directory!"
+    )
     logger.debug("If you want to export to a file use '--export <path-to-file>'.")
     CONFIG_EXPORT_DIR = None
 try:
     EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
 except ValidationError:
-    logger.warning(
-        f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
-    )
+    if _CONFIG_EXPORT_DIR_ORIGINAL:
+        logger.warning(
+            f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
+        )
     try:
         history.delete(KEY_EXPORT_DIR)
     except KeyError:
