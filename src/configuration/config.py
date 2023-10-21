@@ -118,35 +118,40 @@ TOKEN_BEARER: str = "Authorization"
 # Export location
 CONFIG_EXPORT_DIR = ProperPath(
     settings.get(KEY_EXPORT_DIR, os.devnull), err_logger=logger
-)
+)  # the default "os.devnull" saves ProperPath from TypeError, ValueError
+# for when settings.get(KEY_EXPORT_DIR) is None/"".
 if CONFIG_EXPORT_DIR.kind != "dir":
     logger.warning(f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} is not a directory!")
     logger.debug("If you want to export to a file use '--export <path-to-file>'.")
     CONFIG_EXPORT_DIR = None
-validate_export_dir = Validate(
-    PathValidator(
-        [
-            CONFIG_EXPORT_DIR,
-            os.getenv(ENV_XDG_DOWNLOAD_DIR, None),
-            FALLBACK_EXPORT_DIR,
-        ],
-        err_logger=logger,
-    )
-)
 try:
-    EXPORT_DIR = validate_export_dir.get()
+    EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
 except ValidationError:
-    logger.critical(
-        f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
-        f"This is a fatal error. To quickly fix this error define an export directory "
-        f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
+    logger.warning(
+        f"{KEY_EXPORT_DIR}: {CONFIG_EXPORT_DIR} from configuration file couldn't be validated! "
+        f"{APP_NAME} will use fallback export location."
     )
-    raise SystemExit()
-if EXPORT_DIR != ProperPath(history.get(KEY_EXPORT_DIR, os.devnull)).expanded:
     try:
         history.delete(KEY_EXPORT_DIR)
-    except KeyError:  # In case KEY_EXPORT_DIR is misspelled in the configuration
+    except KeyError:
         ...
+    try:
+        EXPORT_DIR = Validate(
+            PathValidator(
+                [
+                    os.getenv(ENV_XDG_DOWNLOAD_DIR, None),
+                    FALLBACK_EXPORT_DIR,
+                ],
+                err_logger=logger,
+            )
+        ).get()
+    except ValidationError:
+        logger.critical(
+            f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
+            f"This is a fatal error. To quickly fix this error define an export directory "
+            f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
+        )
+        raise SystemExit()
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
