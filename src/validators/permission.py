@@ -75,7 +75,7 @@ class PermissionValidator(Validator):
                             f"any of the teams the user is part of."
                         )
                         raise typer.Exit(1)
-                    if not team["usergroup"] in [
+                    if team["usergroup"] not in [
                         self.GROUPS[self.group],
                         self.GROUPS["sysadmin"],
                     ]:
