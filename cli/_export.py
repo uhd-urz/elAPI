@@ -71,12 +71,11 @@ class ExportValidator(PathValidator):
         from src import APP_NAME
         from src.configuration import EXPORT_DIR
 
-        if self.export_path is not None:
-            try:
-                return ProperPath(super().validate(), err_logger=logger)
-            except ValidationError:
-                logger.warning(
-                    f"--export path '{self.export_path}' couldn't be validated! "
-                    f"{APP_NAME} will use fallback export location."
-                )
+        try:
+            return ProperPath(super().validate(), err_logger=logger)
+        except ValidationError:
+            logger.warning(
+                f"--export path '{self.export_path}' couldn't be validated! "
+                f"{APP_NAME} will use fallback export location."
+            )
         return ProperPath(EXPORT_DIR, err_logger=logger)
