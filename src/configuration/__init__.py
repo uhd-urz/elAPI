@@ -1,4 +1,5 @@
 # noinspection PyUnresolvedReferences
+# ruff: noqa: F401
 from src.configuration.config import (
     APP_NAME,
     KEY_HOST,
