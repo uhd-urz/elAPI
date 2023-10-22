@@ -21,7 +21,7 @@ from typer.rich_utils import (
 
 
 @group()
-def _get_custom_help_text(
+def get_custom_help_text(
     *,
     obj: Union[click.Command, click.Group],
     markup_mode: MarkupMode,

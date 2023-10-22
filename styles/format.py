@@ -2,8 +2,6 @@ import re
 from abc import abstractmethod, ABC
 from typing import Any
 
-from rich.syntax import Syntax
-
 
 class BaseFormat(ABC):
     _registry = {}
@@ -106,23 +104,3 @@ class Format:
 
 
 BaseFormat.register(Format)
-
-
-class BaseHighlight(ABC):
-    @classmethod
-    def __subclasshook__(cls, subclass) -> bool:
-        return issubclass(subclass, Syntax) or super().__subclasshook__(cls, subclass)
-
-    @abstractmethod
-    def __call__(self, *args, **kwargs):
-        ...
-
-
-class Highlight(BaseHighlight):
-    def __init__(self, language: str, /, theme: str = "lightbulb"):
-        validator = ValidateLanguage(language)
-        self.name = validator.name
-        self.theme = theme
-
-    def __call__(self, data: str) -> Syntax:
-        return Syntax(data, self.name, background_color="default", theme=self.theme)
