@@ -29,7 +29,7 @@ __PARAMETERS__doc__ = {
               f"- If a directory path is provided as a value, "
               f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
               f"When the path is a directory, "
-              f"the file name is auto-generated using the following scheme: *'\<FUNCTION\>_DATE_HHMMSS.EXT'*.\n"
+              f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
               f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "
               f"then data is simply exported to that file. This allows custom file name scheme. "
               f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "

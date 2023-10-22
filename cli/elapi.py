@@ -135,10 +135,10 @@ def get(
     formatted_data = format(raw_response.json())
 
     if export:
-        file_name_prefix = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
+        file_name_stub = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
         export = Export(
             export_dest,
-            file_name_prefix=file_name_prefix,
+            file_name_stub=file_name_stub,
             file_extension=format.name,
         )
         export(data=formatted_data, verbose=True)
@@ -299,7 +299,7 @@ def bill_teams(
     if export:
         export = Export(
             export_dest,
-            file_name_prefix=bill_teams.__name__,
+            file_name_stub=bill_teams.__name__,
             file_extension=format.name,
         )
         export(data=formatted_bill_teams_data, verbose=True)
@@ -313,7 +313,7 @@ def bill_teams(
         invoice = InvoiceGenerator(bill_teams_data)
         export = Export(
             _export_dest,
-            file_name_prefix="invoice",
+            file_name_stub="invoice",
             file_extension="md",
         )
         export(data=invoice.generate(), verbose=True)

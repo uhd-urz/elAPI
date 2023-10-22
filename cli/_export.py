@@ -10,17 +10,17 @@ logger = Logger()
 
 
 class Export:
-    __slots__ = ("file_extension", "file_name_prefix", "_file_name", "_destination")
+    __slots__ = ("file_extension", "file_name_stub", "_file_name", "_destination")
 
     def __init__(
         self,
         destination: Union[ProperPath, Path, str],
         /,
-        file_name_prefix: str,
+        file_name_stub: str,
         file_extension: str,
     ):
         self.file_extension = file_extension.lower()
-        self.file = self.file_name_prefix = file_name_prefix
+        self.file = self.file_name_stub = file_name_stub
         self.destination = destination
 
     @property
@@ -30,8 +30,8 @@ class Export:
     @file.setter
     def file(self, value):
         date = datetime.now()
-        file_suffix: str = f'{date.strftime("%Y-%m-%d")}_{date.strftime("%H%M%S")}'
-        self._file_name = f"{value}_{file_suffix}.{self.file_extension}"
+        file_name_prefix: str = f'{date.strftime("%Y-%m-%d")}_{date.strftime("%H%M%S")}'
+        self._file_name = f"{file_name_prefix}_{value}.{self.file_extension}"
 
     @property
     def destination(self) -> ProperPath:
@@ -55,7 +55,7 @@ class Export:
             console = Console()
             console.print(
                 f"\n"
-                f"[italic blue]{self.file_name_prefix}[/italic blue] data successfully exported "
+                f"[italic blue]{self.file_name_stub}[/italic blue] data successfully exported "
                 f"to {self.destination} in [b]{self.file_extension.upper()}[/b] format."
             )
 
