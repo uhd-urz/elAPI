@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from colorama import Style
 from rich.padding import Padding
 from rich.syntax import Syntax
 from rich.text import Text
@@ -34,3 +35,11 @@ class NoteText:
         return Padding(
             f"{Text(f'[b {color}]{stem}:[/b {color}]')} {text}", pad=(1, 0, 0, indent)
         )
+
+
+class ColorText:
+    def __init__(self, text: str, /):
+        self.text = text
+
+    def colorize(self, ansi_color: str) -> str:
+        return f"{ansi_color}{self.text}{Style.RESET_ALL}"
