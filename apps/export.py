@@ -41,7 +41,7 @@ class Export:
     def destination(self, value):
         if not isinstance(value, ProperPath):
             try:
-                value = ProperPath(value)
+                value = ProperPath(value, err_logger=logger)
             except (TypeError, ValueError) as e:
                 raise ValueError("Export path is not valid!") from e
         self._destination = value / (self.file if value.kind == "dir" else "")
