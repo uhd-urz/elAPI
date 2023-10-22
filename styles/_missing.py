@@ -2,6 +2,10 @@ from colorama import Style, Fore
 
 
 class Missing:
+    """
+    Missing is a string representation of None object.
+    """
+
     __slots__ = "_message"
 
     def __init__(self, message: str = "MISSING!"):
