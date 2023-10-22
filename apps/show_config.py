@@ -55,29 +55,31 @@ detected_config_files_formatted = "\n- " + "\n- ".join(
     f"`{v}`: {k}" for k, v in detected_config_files.items()
 )
 
-info = (
-    f"""
+
+def show(show_keys: bool = False) -> str:
+    _info = (
+        f"""
 ## {APP_NAME} configuration information
 The following debug information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name: Value ← Source
 
 - **Log file path:** {LOG_FILE_PATH}
 """
-    + (
-        f"""
+        + (
+            f"""
 - **Host address:** {host_value} ← `{host_source}`
 """
-        if host_source
-        else f"- **Host address:** _{host_value.colorize()}_\n"
-    )
-    + (
-        f"""
+            if host_source
+            else f"- **Host address:** _{host_value.colorize()}_\n"
+        )
+        + (
+            f"""
 - **API token:** {api_token_masked} ← `{api_token_source}`
 """
-        if api_token_source
-        else f"- **API token:** _{api_token_masked.colorize()}_"
-    )
-    + f"""
+            if api_token_source
+            else f"- **API token:** _{api_token_masked.colorize()}_"
+        )
+        + f"""
 - **Export directory:** {EXPORT_DIR} ← `{export_dir_source}`
 - **App data directory:** {APP_DATA_DIR}
 - **Caching directory:** {TMP_DIR}
@@ -90,11 +92,13 @@ The following debug information includes configuration values and their sources 
 **_Detected configuration files that are in use:_**
 {detected_config_files_formatted}
 """
-    + (
-        f"""
+        + (
+            f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
 """
-        if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source)
-        else ""
+            if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source)
+            else ""
+        )
     )
-)
+
+    return _info

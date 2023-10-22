@@ -223,9 +223,9 @@ def show_config() -> None:
     """
     Get information about detected configuration values.
     """
-    from apps.show_config import info
+    from apps.show_config import show
 
-    md = Markdown(info)
+    md = Markdown(show())
     console.print(md)
 
 
