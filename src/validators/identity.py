@@ -9,11 +9,10 @@ from httpx import (
     ConnectTimeout,
 )
 from rich.console import Console
-from rich.padding import Padding
-from rich.text import Text
 
 from src.loggers import Logger
 from src.validators.base import Validator
+from styles.highlight import NoteText
 
 logger = Logger()
 console = Console()
@@ -26,15 +25,6 @@ COMMON_NETWORK_ERRORS: tuple = (
     ConnectTimeout,
     TimeoutError,
 )
-
-
-class NoteText:
-    def __new__(
-        cls, text: str, /, stem: str = "P.S.", color: str = "yellow", indent: int = 3
-    ):
-        return Padding(
-            f"{Text(f'[b {color}]{stem}:[/b {color}]')} {text}", pad=(1, 0, 0, indent)
-        )
 
 
 class HostIdentityValidator(Validator):

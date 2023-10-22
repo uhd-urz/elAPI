@@ -1,4 +1,3 @@
-from cli import Missing
 from src.configuration import (
     APP_NAME,
     inspect,
@@ -14,6 +13,7 @@ from src.configuration import (
     KEY_CLEANUP,
 )
 from src.configuration.log_file import LOG_FILE_PATH
+from styles import Missing
 
 detected_config = inspect.applied_config
 detected_config_files = inspect.applied_config_files

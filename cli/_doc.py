@@ -1,7 +1,7 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
-from cli._format import BaseFormat
+from styles import BaseFormat
 from src import APP_NAME
 
 supported_highlighting_formats = ", ".join(f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names())

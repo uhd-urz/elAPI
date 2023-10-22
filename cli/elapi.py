@@ -21,7 +21,7 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
-from cli._markdown_doc import _get_custom_help_text
+from styles import get_custom_help_text
 from src import APP_NAME
 from src.loggers import Logger
 from src.path import ProperPath
@@ -37,7 +37,7 @@ typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
 )
 typer.rich_utils._get_help_text = (
-    _get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
+    get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
 )
 
 
@@ -64,7 +64,7 @@ class _CLIExport:
 
 class _CLIFormat:
     def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
-        from cli._format import Format
+        from styles import Format
 
         try:
             format = Format(data_format)
@@ -121,7 +121,7 @@ def get(
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
     from apps.export import Export
-    from cli._format import Highlight
+    from styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -183,7 +183,7 @@ def post(
     from src.api import POSTRequest
     from json import JSONDecodeError
     from src.validators import Validate, HostIdentityValidator
-    from cli._format import Format, Highlight
+    from styles import Format, Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -275,7 +275,7 @@ def bill_teams(
 
     from src.configuration import CLEANUP_AFTER
     from apps.export import Export
-    from cli._format import Highlight
+    from styles import Highlight
     from src.validators import (
         Validate,
         HostIdentityValidator,
