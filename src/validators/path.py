@@ -57,10 +57,16 @@ class PathValidator(Validator):
                     continue
             try:
                 p.create()
-                with (p / self.TMP_FILE if p.kind == "dir" else p).open(mode="ba+") as f:
-                    f.write(b"\x06")  # Throwback: \x06 is the ASCII "Acknowledge" character
+                with (p / self.TMP_FILE if p.kind == "dir" else p).open(
+                    mode="ba+"
+                ) as f:
+                    f.write(
+                        b"\x06"
+                    )  # Throwback: \x06 is the ASCII "Acknowledge" character
                     f.seek(f.tell() - 1)
-                    if not f.read(1) == b"\x06":  # This checks for /dev/null-type special files!
+                    if (
+                        not f.read(1) == b"\x06"
+                    ):  # This checks for /dev/null-type special files!
                         continue  # It'd not be possible to read from those files.
                     f.truncate()
             except COMMON_PATH_ERRORS:

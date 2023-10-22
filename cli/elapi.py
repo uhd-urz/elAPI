@@ -42,7 +42,9 @@ typer.rich_utils._get_help_text = (
 
 
 class _CLIExport:
-    def __new__(cls, data_format: Optional[str] = None, export_dest: Optional[str] = None):
+    def __new__(
+        cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
+    ):
         from collections import namedtuple
         from src.validators import Validate
         from apps.export import ExportValidator
@@ -55,7 +57,9 @@ class _CLIExport:
             if export_dest.kind == "file"
             else None
         )
-        data_format = data_format or _export_file_ext or "json"  # default data_format format
+        data_format = (
+            data_format or _export_file_ext or "json"
+        )  # default data_format format
         ExportParams = namedtuple(
             "ExportParams", ["data_format", "destination", "extension"]
         )
@@ -162,7 +166,8 @@ def post(
     ] = "",
     data: typer.Context = None,
     data_format: Annotated[
-        str, typer.Option("--format", "-F", help=docs["data_format"], show_default=False)
+        str,
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
 ) -> None:
     """
