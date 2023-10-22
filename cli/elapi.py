@@ -45,7 +45,7 @@ class _CLIExport:
     def __new__(cls, data_format: Optional[str] = None, export_dest: Optional[str] = None):
         from collections import namedtuple
         from src.validators import Validate
-        from cli._export import ExportValidator
+        from apps.export import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()
@@ -120,7 +120,7 @@ def get(
     """
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
-    from cli._export import Export
+    from apps.export import Export
     from cli._format import Highlight
 
     validate_config = Validate(HostIdentityValidator())
@@ -274,7 +274,7 @@ def bill_teams(
     """*Beta:* Generate billable teams data."""
 
     from src.configuration import CLEANUP_AFTER
-    from cli._export import Export
+    from apps.export import Export
     from cli._format import Highlight
     from src.validators import (
         Validate,
