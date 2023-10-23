@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
-from colorama import Style
+from colorama import Fore
 from rich.padding import Padding
 from rich.syntax import Syntax
 from rich.text import Text
@@ -38,8 +39,20 @@ class NoteText:
 
 
 class ColorText:
-    def __init__(self, text: str, /):
+    def __init__(self, text: Any, /):
         self.text = text
 
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        if not hasattr(value, "__str__"):
+            raise TypeError(
+                "text value must be an object that implements '__str__' attribute!"
+            )
+        self._text = str(value)
+
     def colorize(self, ansi_color: str) -> str:
-        return f"{ansi_color}{self.text}{Style.RESET_ALL}"
+        return f"{ansi_color}{self.text}{Fore.RESET}"
