@@ -27,7 +27,7 @@ class UsersInformation:
             await task
             for task in track(
                 asyncio.as_completed(tasks),
-                description="Getting users_endpoint data:",
+                description="Getting users data:",
                 total=len(tasks),
             )
         ]
