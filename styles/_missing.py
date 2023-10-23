@@ -1,6 +1,3 @@
-from colorama import Style, Fore
-
-
 class Missing:
     """
     Missing is a string representation of None object.
@@ -33,6 +30,3 @@ class Missing:
 
     def __bool__(self) -> bool:
         return False
-
-    def colorize(self, ansi_color: str = Fore.RED) -> str:
-        return f"{ansi_color}{self.message}{Style.RESET_ALL}"
