@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from datetime import datetime
-from typing import ClassVar
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
@@ -8,7 +6,7 @@ from rich.progress import track
 
 
 class UsersInformation:
-    __slots__ = ("users", "user_id_prefix")
+    __slots__ = "users", "user_id_prefix"
     unit_name = "users"
     unit_id_prefix = "userid"
 
@@ -49,22 +47,32 @@ class TeamsInformation:
         return teams(endpoint=cls.unit_name, unit_id=None).json()
 
 
-@dataclass(slots=True)
 class BillTeams:
-    users_information: list[dict, ...]
-    teams_information: list[dict, ...]
-    launch_date: ClassVar[datetime] = datetime(2023, 8, 1, 0, 0, 0)
-    trial_period: ClassVar[relativedelta] = relativedelta(months=6)
+    __slots__ = "users", "teams"
+
+    def __init__(
+        self, users_information: list[dict, ...], teams_information: list[dict, ...]
+    ):
+        self.users = users_information
+        self.teams = teams_information
+
+    @property
+    def LAUNCH_DATE(self) -> datetime:
+        return datetime(2023, 8, 1, 0, 0, 0)
+
+    @property
+    def TRIAL_PERIOD(self) -> relativedelta:
+        return relativedelta(months=6)
 
     def team_trial_start_date(self, creation_date: datetime) -> datetime:
-        if creation_date < self.launch_date:
-            return self.launch_date
+        if creation_date < self.LAUNCH_DATE:
+            return self.LAUNCH_DATE
         return creation_date
 
     def _get_owners(self) -> dict:
         # Generate teams information with team owners
         team_members, team_owners = {}, {}
-        for u in self.users_information:
+        for u in self.users:
             for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
                 # Get teams user count
                 if not team_members.get(team["id"]):
@@ -89,7 +97,7 @@ class BillTeams:
                         team_owners[team["id"]]["owners"].append(owner)
 
         # Add team creation date to team_owners
-        for team in self.teams_information:
+        for team in self.teams:
             if team["id"] in team_owners.keys():
                 team_owners[team["id"]]["team_created_at"] = team["created_at"]
 
@@ -102,7 +110,7 @@ class BillTeams:
             trial_starts_at = self.team_trial_start_date(
                 parser.isoparse(team_owners[team_id]["team_created_at"])
             )
-            trial_ends_at = trial_starts_at + self.trial_period
+            trial_ends_at = trial_starts_at + self.TRIAL_PERIOD
             team_owners[team_id]["trial_ends_at"] = str(trial_ends_at)
             team_owners[team_id]["on_trial"] = trial_ends_at > datetime.now()
 
