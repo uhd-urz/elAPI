@@ -184,15 +184,17 @@ except KeyError:
 else:
     UNSAFE_TOKEN_WARNING: bool = settings.as_bool(KEY_UNSAFE_TOKEN_WARNING)
     # equivalent to settings.get(<key>, cast='@bool')
-if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN].source == str(
-    PROJECT_CONFIG_LOC
-):
-    logger.warning(
-        f"'{KEY_API_TOKEN}' field in project-based configuration file {PROJECT_CONFIG_LOC} found. "
-        f"This is highly discouraged. The token is at risk of being leaked into public repositories. "
-        f"If you still insist, please make sure {CONFIG_FILE_NAME} is included in .gitignore."
-    )
-
+try:
+    if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN].source == str(
+        PROJECT_CONFIG_LOC
+    ):
+        logger.warning(
+            f"'{KEY_API_TOKEN}' field in project-based configuration file {PROJECT_CONFIG_LOC} found. "
+            f"This is highly discouraged. The token is at risk of being leaked into public repositories. "
+            f"If you still insist, please make sure {CONFIG_FILE_NAME} is included in .gitignore."
+        )
+except KeyError:
+    ...
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
