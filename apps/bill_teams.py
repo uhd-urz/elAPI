@@ -37,14 +37,16 @@ class UsersInformation:
         return recursive_users_data
 
 
-@dataclass(slots=True)
 class TeamsInformation:
-    @staticmethod
-    def items() -> list[dict, ...]:
+    __slots__ = "teams"
+    unit_name = "teams"
+
+    @classmethod
+    def items(cls) -> list[dict, ...]:
         from src.api import GETRequest
 
         teams = GETRequest()
-        return teams(endpoint="teams", unit_id="").json()
+        return teams(endpoint=cls.unit_name, unit_id=None).json()
 
 
 @dataclass(slots=True)
