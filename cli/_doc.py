@@ -1,8 +1,8 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
-from styles import BaseFormat
 from src import APP_NAME
+from styles import BaseFormat
 
 supported_highlighting_formats = ", ".join(f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names())
 
@@ -39,5 +39,6 @@ __PARAMETERS__doc__ = {
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
               "without syntax highlighting. This can be utilized if one wishes to pipe the output "
               " to some external formatting program like `less`. "
-              "If an unsupported format value is provided then the output falls back to 'txt'."
+              "If an unsupported format value is provided then the output falls back to 'txt'.",
+    "show_keys": "Show names of configuration keywords as well.",
 }

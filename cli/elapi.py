@@ -21,10 +21,10 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
-from styles import get_custom_help_text
 from src import APP_NAME
 from src.loggers import Logger
 from src.path import ProperPath
+from styles import get_custom_help_text
 
 logger = Logger()
 
@@ -219,13 +219,18 @@ def post(
 
 
 @app.command(name="show-config")
-def show_config() -> None:
+def show_config(
+    show_keys: Annotated[
+        Optional[bool],
+        typer.Option("--show-keys", "-k", help=docs["show_keys"], show_default=True),
+    ] = False,
+) -> None:
     """
     Get information about detected configuration values.
     """
     from apps.show_config import show
 
-    md = Markdown(show())
+    md = Markdown(show(show_keys))
     console.print(md)
 
 

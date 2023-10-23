@@ -13,17 +13,19 @@ from src.configuration import (
     KEY_CLEANUP,
 )
 from src.configuration.log_file import LOG_FILE_PATH
-from styles import Missing
+from styles import Missing, ColorText
+from styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
 
 detected_config = inspect.applied_config
 detected_config_files = inspect.applied_config_files
 FALLBACK = "DEFAULT"
+missing = ColorText(Missing())
 
 try:
     api_token_masked = detected_config[KEY_API_TOKEN].value or "''"
     api_token_source = detected_config_files[detected_config[KEY_API_TOKEN].source]
 except KeyError:
-    api_token_masked, api_token_source = Missing(), None
+    api_token_masked, api_token_source = missing, None
 
 try:
     unsafe_token_use_source = detected_config[KEY_UNSAFE_TOKEN_WARNING].source
@@ -37,7 +39,7 @@ try:
     host_value = detected_config[KEY_HOST].value or "''"
     host_source = detected_config_files[detected_config[KEY_HOST].source]
 except KeyError:
-    host_value, host_source = Missing(), None
+    host_value, host_source = missing, None
 
 try:
     export_dir_source = detected_config_files[detected_config[KEY_EXPORT_DIR].source]
@@ -56,40 +58,72 @@ detected_config_files_formatted = "\n- " + "\n- ".join(
 )
 
 
-def show(show_keys: bool = False) -> str:
+def show(show_keys: bool) -> str:
     _info = (
         f"""
 ## {APP_NAME} configuration information
 The following debug information includes configuration values and their sources as detected by {APP_NAME}. 
-> Name: Value ← Source
+> Name [Key]: Value ← Source
 
-- **Log file path:** {LOG_FILE_PATH}
+- {ColorText('Log file path').colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
 """
         + (
-            f"""
-- **Host address:** {host_value} ← `{host_source}`
-"""
-            if host_source
-            else f"- **Host address:** _{host_value.colorize()}_\n"
+            f"- {ColorText('Host address').colorize(LIGHTGREEN)}"
+            + (
+                f" [{ColorText(KEY_HOST.lower()).colorize(YELLOW)}]"
+                if show_keys
+                else ""
+            )
+            + ":"
+            + (
+                f" {host_value} ← `{host_source}`"
+                if host_source
+                else f" _{host_value.colorize(RED)}_\n"
+            )
         )
+        + "\n"
         + (
-            f"""
-- **API token:** {api_token_masked} ← `{api_token_source}`
-"""
-            if api_token_source
-            else f"- **API token:** _{api_token_masked.colorize()}_"
+            f"- {ColorText('API Token').colorize(LIGHTGREEN)}"
+            + (
+                f" [{ColorText(KEY_API_TOKEN.lower()).colorize(YELLOW)}]"
+                if show_keys
+                else ""
+            )
+            + ":"
+            + (
+                f" {api_token_masked} ← `{api_token_source}`"
+                if api_token_source
+                else f" _{api_token_masked.colorize(RED)}_\n"
+            )
         )
+        + "\n"
+        + f"- {ColorText('Export directory').colorize(LIGHTGREEN)}"
+        + (
+            f" [{ColorText(KEY_EXPORT_DIR.lower()).colorize(YELLOW)}]"
+            if show_keys
+            else ""
+        )
+        + f": {EXPORT_DIR} ← `{export_dir_source}`"
         + f"""
-- **Export directory:** {EXPORT_DIR} ← `{export_dir_source}`
-- **App data directory:** {APP_DATA_DIR}
-- **Caching directory:** {TMP_DIR}
-- **Unsafe API token use warning:** {unsafe_token_use_value} ← 
-`{unsafe_token_use_source}`
-- **Cleanup cache after finishing task:** {cleanup_value} ← 
-`{cleanup_source}`
+- {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR}
+"""
+        + "\n"
+        + f"- {ColorText('Unsafe API token use warning').colorize(LIGHTGREEN)}"
+        + (
+            f" [{ColorText(KEY_UNSAFE_TOKEN_WARNING.lower()).colorize(YELLOW)}]"
+            if show_keys
+            else ""
+        )
+        + f": {unsafe_token_use_value} ← `{unsafe_token_use_source}`"
+        + "\n"
+        + f"- {ColorText('Cleanup cache after finishing task').colorize(LIGHTGREEN)}"
+        + (f" [{ColorText(KEY_CLEANUP.lower()).colorize(YELLOW)}]" if show_keys else "")
+        + f": {cleanup_value} ← `{cleanup_source}`"
+        + f"""
 
 
-**_Detected configuration files that are in use:_**
+{ColorText("Detected configuration files that are in use:").colorize(BLUE)}
 {detected_config_files_formatted}
 """
         + (
