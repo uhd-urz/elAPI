@@ -4,20 +4,37 @@ from typing import ClassVar
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
+from rich.progress import track
 
 
-@dataclass(slots=True)
 class UsersInformation:
-    is_async_client: bool = False
+    __slots__ = ("users", "user_id_prefix")
+    unit_name = "users"
+    unit_id_prefix = "userid"
 
-    def items(self) -> list[dict, ...]:
-        if not self.is_async_client:
-            from src.information import Information, RecurseInformation
-        else:
-            from src.async_information import Information, RecurseInformation
-        users = Information(unit_name="users", keep_session_open=True)
-        recursive_users = RecurseInformation(users)
-        return recursive_users.items()
+    @classmethod
+    async def items(cls):
+        import asyncio
+        from src.endpoint import FixedEndpoint, RecursiveEndpoint
+
+        users_endpoint = FixedEndpoint(unit_name=cls.unit_name, keep_session_open=True)
+        users = await users_endpoint.json(
+            unit_id=None
+        )  # None gives a list of all users
+        recursive_users = RecursiveEndpoint(
+            users, cls.unit_id_prefix, target_endpoint=users_endpoint
+        )
+        tasks = [item for item in recursive_users.items()]
+        recursive_users_data = [
+            await task
+            for task in track(
+                asyncio.as_completed(tasks),
+                description="Getting users_endpoint data:",
+                total=len(tasks),
+            )
+        ]
+        await users_endpoint.session.close()
+        return recursive_users_data
 
 
 @dataclass(slots=True)

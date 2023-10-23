@@ -252,10 +252,6 @@ def cleanup() -> None:
 
 @app.command(name="bill-teams")
 def bill_teams(
-    is_async_client: Annotated[
-        Optional[bool],
-        typer.Option("--async", "-a", help=docs["async"], show_default=True),
-    ] = False,
     generate_invoice: Annotated[
         Optional[bool],
         typer.Option("--invoice", "-i", help=docs["invoice"], show_default=False),
@@ -298,12 +294,12 @@ def bill_teams(
     data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
     format = _CLIFormat(data_format, export_file_ext)
 
+    import asyncio
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
-    users = UsersInformation(is_async_client)
-    teams = TeamsInformation()
-    bill_teams_ = BillTeams(users.items(), teams.items())
-    bill_teams_data = bill_teams_.items()
+    users, teams = UsersInformation(), TeamsInformation()
+    bill = BillTeams(asyncio.run(users.items()), teams.items())
+    bill_teams_data = bill.items()
     formatted_bill_teams_data = format(bill_teams_data)
 
     if export:
