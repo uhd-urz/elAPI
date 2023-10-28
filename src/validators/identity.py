@@ -10,11 +10,9 @@ from httpx import (
 )
 from rich.console import Console
 
-from src.loggers import Logger
 from src.validators.base import Validator
 from styles.highlight import NoteText
 
-logger = Logger()
 console = Console()
 
 COMMON_NETWORK_ERRORS: tuple = (
@@ -38,6 +36,7 @@ class HostIdentityValidator(Validator):
         return session(endpoint="apikeys", unit_id="")
 
     def validate(self):
+        from src.loggers import Logger
         from src.configuration.config import (
             inspect,
             KEY_HOST,
@@ -46,8 +45,8 @@ class HostIdentityValidator(Validator):
             API_TOKEN,
         )
 
+        logger = Logger()
         _HOST_EXAMPLE: str = "host: 'https://demo.elabftw.net/api/v2'"
-        # _PS: Text = Text("[b yellow]P.S.:[/b yellow]")
 
         try:
             inspect.applied_config[KEY_HOST]

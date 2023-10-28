@@ -1,11 +1,8 @@
 import typer
 from httpx import Response
 
-from src.loggers import Logger
 from src.validators.base import Validator
 from src.validators.identity import COMMON_NETWORK_ERRORS
-
-logger = Logger()
 
 
 class PermissionValidator(Validator):
@@ -49,6 +46,9 @@ class PermissionValidator(Validator):
         return session(endpoint="users", unit_id="me")
 
     def validate(self) -> None:
+        from src.loggers import Logger
+
+        logger = Logger()
         try:
             response: Response = self.check_endpoint()
             caller_data: dict = response.json()
