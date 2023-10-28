@@ -64,7 +64,7 @@ class ExportValidator(PathValidator):
         self, /, export_path: Union[Iterable[...], Union[None, str, ProperPath, Path]]
     ):
         self.export_path = export_path
-        super().__init__(export_path, err_logger=logger)
+        super().__init__(export_path)
 
     def validate(self) -> ProperPath:
         from src import APP_NAME

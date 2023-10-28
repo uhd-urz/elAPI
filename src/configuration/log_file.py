@@ -21,8 +21,7 @@ validate_path = Validate(
             (XDG_DATA_HOME := ProperPath(os.getenv(ENV_XDG_DATA_HOME, os.devnull)))
             / APP_NAME,
             FALLBACK_DIR,
-        ],
-        err_logger=logger,
+        ]
     )
 )
 

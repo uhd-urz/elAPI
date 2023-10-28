@@ -1,8 +1,7 @@
-import logging
 import string
 from pathlib import Path
 from random import choices
-from typing import Union, Iterable, Optional
+from typing import Union, Iterable
 
 from src.path import ProperPath
 from src.validators.base import Validator, ValidationError
@@ -21,13 +20,12 @@ class PathValidator(Validator):
     def __init__(
         self,
         path: Union[Iterable[...], Union[None, str, ProperPath, Path]],
-        err_logger: Optional[logging.Logger] = None,
+        **kwargs,
     ):
         from src.loggers import Logger
 
-        logger = Logger()
         self.path = path
-        self.err_logger = err_logger or logger
+        self.err_logger = kwargs.get("err_logger", Logger())
         self.TMP_FILE = (
             f".tmp_{''.join(choices(string.ascii_lowercase + string.digits, k=16))}"
         )
