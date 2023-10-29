@@ -1,8 +1,13 @@
+import asyncio
 from datetime import datetime
 
+import typer
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
-from rich.progress import track
+
+from src.loggers import Logger
+
+logger = Logger()
 
 
 class UsersInformation:
@@ -12,9 +17,11 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        import asyncio
+        import httpx
+        from tqdm.asyncio import tqdm_asyncio
         from src.endpoint import FixedEndpoint, RecursiveEndpoint
 
+        event_loop = asyncio.get_running_loop()
         users_endpoint = FixedEndpoint(unit_name=cls.unit_name, keep_session_open=True)
         users = await users_endpoint.json(
             unit_id=None
@@ -23,16 +30,46 @@ class UsersInformation:
             users, cls.unit_id_prefix, target_endpoint=users_endpoint
         )
         tasks = [item for item in recursive_users.items()]
-        recursive_users_data = [
-            await task
-            for task in track(
-                asyncio.as_completed(tasks),
-                description="Getting users data:",
-                total=len(tasks),
+        try:
+            recursive_users_data = await tqdm_asyncio.gather(
+                *tasks,
+                desc="Getting user data",
+                ncols=80,  # default terminal width
+                miniters=1,  # recommended by the official documentation of tqdm
+                colour="red",
+                ascii=" ━",
+                bar_format="{desc} ({percentage:.0f}%): {bar} {elapsed}{postfix}",
+                # https://tqdm.github.io/docs/tqdm/#tqdm-objects
+                leave=False,  # leave == False fixes duplicate progressbar when
+                # progress is interrupted (Ctrl + C) while loading
             )
-        ]
-        await users_endpoint.session.close()
-        return recursive_users_data
+        except (
+            httpx.ReadTimeout,
+            httpx.ReadError,
+            httpx.ConnectTimeout,
+            httpx.ConnectError,
+            httpx.RemoteProtocolError,
+            TimeoutError,
+        ):
+            typer.echo()  # For a new line after the progressbar when progressbar leave == False.
+            logger.warning(
+                "Retrieving user data was interrupted due to a network error."
+            )
+            event_loop.set_exception_handler(lambda loop, context: ...)
+            # "lambda loop, context: ..." suppresses asyncio error emission:
+            # https://docs.python.org/3/library/asyncio-dev.html#detect-never-retrieved-exceptions
+            await users_endpoint.session.close()
+            if event_loop.is_running():
+                event_loop.stop()  # Will raise RuntimeError
+            raise InterruptedError  # This will likely never be reached,
+            # since this entire exception block will only trigger while event loop is still running
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            await users_endpoint.session.close()
+            event_loop.stop()
+            raise SystemExit(1)
+        else:
+            await users_endpoint.session.close()
+            return recursive_users_data
 
 
 class TeamsInformation:
