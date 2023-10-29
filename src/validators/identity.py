@@ -1,6 +1,5 @@
 from json import JSONDecodeError
 
-import typer
 from httpx import (
     Response,
     UnsupportedProtocol,
@@ -10,7 +9,7 @@ from httpx import (
 )
 from rich.console import Console
 
-from src.validators.base import Validator
+from src.validators.base import Validator, RuntimeValidationError
 from styles.highlight import NoteText
 
 console = Console()
@@ -58,7 +57,7 @@ class HostIdentityValidator(Validator):
                     f"\n{_HOST_EXAMPLE}",
                 )
             )
-            raise typer.Exit(1)
+            raise SystemExit(1)
         else:
             if not HOST:
                 console.print(
@@ -68,7 +67,7 @@ class HostIdentityValidator(Validator):
                         f"\n{_HOST_EXAMPLE}",
                     )
                 )
-                raise typer.Exit(1)
+                raise SystemExit(1)
 
         try:
             inspect.applied_config[KEY_API_TOKEN]
@@ -79,7 +78,7 @@ class HostIdentityValidator(Validator):
                     "An API token with at least read-access is required to make requests.",
                 )
             )
-            raise typer.Exit(1)
+            raise SystemExit(1)
         else:
             if not API_TOKEN:
                 console.print(
@@ -88,7 +87,7 @@ class HostIdentityValidator(Validator):
                         "An API token with at least read-access is required to make requests.",
                     )
                 )
-                raise typer.Exit(1)
+                raise SystemExit(1)
 
             API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN).value
             try:
@@ -108,14 +107,14 @@ class HostIdentityValidator(Validator):
                     logger.info(
                         f"No request was made to the host URL! Exception details: '{error!r}'"
                     )
-                    raise typer.Exit(1)
+                    raise RuntimeValidationError
 
                 if response.is_server_error:
                     logger.critical(
                         f"There was a problem with the host server: '{HOST}'. "
                         f"Please contact an administrator."
                     )
-                    raise typer.Exit(1)
+                    raise RuntimeValidationError
                 console.print(
                     NoteText(
                         "There is likely nothing wrong with the host server. "
@@ -124,4 +123,4 @@ class HostIdentityValidator(Validator):
                         "• Incorrect host URL\n",
                     )
                 )
-                raise typer.Exit(1)
+                raise RuntimeValidationError

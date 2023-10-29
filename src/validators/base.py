@@ -1,9 +1,16 @@
 from abc import abstractmethod, ABC
 from typing import Any
 
+import typer
+
 
 class ValidationError(Exception):
     ...
+
+
+class RuntimeValidationError(typer.Exit):
+    def __init__(self, *args) -> None:
+        super().__init__(*args or (1,))  # default error code is always 1
 
 
 class Validator(ABC):
