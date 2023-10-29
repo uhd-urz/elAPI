@@ -14,16 +14,19 @@ The script treats API endpoints as its arguments.
 """
 from typing import Optional
 
+import tenacity
 import typer
 from rich import pretty
 from rich.console import Console
 from rich.markdown import Markdown
+from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 from typing_extensions import Annotated
 
 from cli._doc import __PARAMETERS__doc__ as docs
 from src import APP_NAME
 from src.loggers import Logger
 from src.path import ProperPath
+from src.validators import RuntimeValidationError
 from styles import get_custom_help_text
 
 logger = Logger()
@@ -251,6 +254,12 @@ def cleanup() -> None:
 
 
 @app.command(name="bill-teams")
+@tenacity.retry(
+    retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
+    stop=stop_after_attempt(6),  # including the very first attempt
+    wait=wait_exponential(multiplier=60, min=5, max=4260),
+    retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
+)
 def bill_teams(
     generate_invoice: Annotated[
         Optional[bool],
@@ -298,7 +307,12 @@ def bill_teams(
     from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
     users, teams = UsersInformation(), TeamsInformation()
-    bill = BillTeams(asyncio.run(users.items()), teams.items())
+    try:
+        bill = BillTeams(asyncio.run(users.items()), teams.items())
+    except RuntimeError as e:
+        # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before all tasks are finished
+        logger.info(f"{APP_NAME} will try again.")
+        raise InterruptedError from e
     bill_teams_data = bill.items()
     formatted_bill_teams_data = format(bill_teams_data)
 
