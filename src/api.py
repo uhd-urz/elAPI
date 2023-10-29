@@ -111,9 +111,9 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
 
     def __init__(self, **kwargs):
         super().__init__(
-            timeout=None,
+            timeout=60,
             limits=Limits(
-                max_connections=100, max_keepalive_connections=50, keepalive_expiry=30
+                max_connections=100, max_keepalive_connections=50, keepalive_expiry=60
             ),
             **kwargs,
         )
