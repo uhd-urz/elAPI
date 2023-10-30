@@ -297,8 +297,9 @@ def bill_teams(
         PermissionValidator,
     )
 
-    validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
-    validate()
+    with console.status("Validating...\n", refresh_per_second=15):
+        validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
+        validate()
 
     data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
     format = _CLIFormat(data_format, export_file_ext)
