@@ -18,11 +18,11 @@ __PARAMETERS__doc__ = {
             f"by the JSON content like with `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
             f"`{APP_NAME} post teams --name Alpha`.",
-    "invoice": "Generate an invoice as well. Invoice will be saved in Markdown format.",
     "clean": "Remove cached data when finished. If `cleanup_after_finish` is 'true' in configuration file, "
              "_--cleanup_ is automatically applied.",
-    "export": f"Export output to a location.\n"
-              f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
+    "export": "Export output to a location.\n",
+    "invoice_export": "Export output to a location. Invoices are **always exported** by default.\n",
+    "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
               f"`export_dir` value from configuration file is used. "
               f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
               f"- If a directory path is provided as a value, "

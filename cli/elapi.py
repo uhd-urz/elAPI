@@ -35,6 +35,10 @@ logger = Logger()
 pretty.install()
 console = Console(color_system="truecolor")
 app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=False)
+bill_teams_app = typer.Typer(
+    rich_markup_mode="markdown", pretty_exceptions_show_locals=False
+)
+app.add_typer(bill_teams_app, name="bill-teams")
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
@@ -101,7 +105,7 @@ def get(
         typer.Option(
             "--export",
             "-e",
-            help=docs["export"],
+            help=docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
@@ -253,7 +257,7 @@ def cleanup() -> None:
     console.print("Done!", style="green")
 
 
-@app.command(name="bill-teams")
+@bill_teams_app.command(name="info")
 @tenacity.retry(
     retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
     stop=stop_after_attempt(6),  # including the very first attempt
@@ -261,10 +265,6 @@ def cleanup() -> None:
     retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
 )
 def bill_teams(
-    generate_invoice: Annotated[
-        Optional[bool],
-        typer.Option("--invoice", "-i", help=docs["invoice"], show_default=False),
-    ] = False,
     clean: Annotated[
         Optional[bool],
         typer.Option("--cleanup", "-c", help=docs["clean"], show_default=False),
@@ -278,15 +278,15 @@ def bill_teams(
         typer.Option(
             "--export",
             "-e",
-            help=docs["export"],
+            help=docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
-) -> None:
-    """*Beta:* Generate billable teams data."""
+) -> dict:
+    """Get billable teams data."""
 
     from src.configuration import CLEANUP_AFTER
     from apps.export import Export
@@ -328,20 +328,48 @@ def bill_teams(
         highlight = Highlight(data_format)
         console.print(highlight(formatted_bill_teams_data))
 
-    if generate_invoice:
-        from apps.invoice import InvoiceGenerator
-
-        invoice = InvoiceGenerator(bill_teams_data)
-        export = Export(
-            _export_dest,
-            file_name_stub="invoice",
-            file_extension="md",
-        )
-        export(data=invoice.generate(), verbose=True)
-
     if clean or CLEANUP_AFTER:
         typer.echo()  # mainly for a newline!
         cleanup()
+
+    return bill_teams_data
+
+
+@bill_teams_app.command("generate-invoice")
+def generate_invoice(
+    _bill_teams_data: Annotated[
+        Optional[str], typer.Option(hidden=True, show_default=False)
+    ] = None,
+    export: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--export",
+            "-e",
+            help=docs["invoice_export"] + docs["export_details"],
+            is_flag=True,
+            is_eager=True,
+            show_default=False,
+        ),
+    ] = True,
+    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+):
+    """
+    Generate invoice for billable teams.
+    """
+    from apps.export import Export
+    from apps.invoice import InvoiceGenerator
+
+    export = export or True  # equivalent to just True. Mainly exists to make use of export.
+    data_format, export_dest, _ = _CLIExport("md", _export_dest)
+    if _bill_teams_data is None:
+        _bill_teams_data = bill_teams(data_format="yaml", export=export)
+    invoice = InvoiceGenerator(_bill_teams_data)
+    export = Export(
+        export_dest,
+        file_name_stub="invoice",
+        file_extension=data_format,
+    )
+    export(data=invoice.generate(), verbose=True)
 
 
 if __name__ == "__main__":
