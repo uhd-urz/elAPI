@@ -24,7 +24,7 @@ from src.configuration._config_history import ConfigHistory, InspectConfigHistor
 from src.configuration.log_file import LOG_FILE_PATH, XDG_DATA_HOME
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators import Validate, ValidationError, PathValidator
+from src.validators import Validate, ValidationError, CriticalValidationError, PathValidator
 
 logger = Logger()
 
@@ -153,7 +153,7 @@ except ValidationError:
             f"This is a fatal error. To quickly fix this error define an export directory "
             f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
         )
-        raise SystemExit()
+        raise CriticalValidationError
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
@@ -170,7 +170,7 @@ else:
             f"{APP_NAME} couldn't validate {FALLBACK_DIR} to store {APP_NAME} internal application data. "
             f"{APP_NAME} will not run!"
         )
-        raise SystemExit()
+        raise CriticalValidationError
 
 # The history is ready to be inspected
 inspect = InspectConfigHistory(history)

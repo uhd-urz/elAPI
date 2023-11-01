@@ -9,7 +9,7 @@ from httpx import (
 )
 from rich.console import Console
 
-from src.validators.base import Validator, RuntimeValidationError
+from src.validators.base import Validator, RuntimeValidationError, CriticalValidationError
 from styles.highlight import NoteText
 
 console = Console()
@@ -57,7 +57,7 @@ class HostIdentityValidator(Validator):
                     f"\n{_HOST_EXAMPLE}",
                 )
             )
-            raise SystemExit(1)
+            raise CriticalValidationError
         else:
             if not HOST:
                 console.print(
@@ -67,7 +67,7 @@ class HostIdentityValidator(Validator):
                         f"\n{_HOST_EXAMPLE}",
                     )
                 )
-                raise SystemExit(1)
+                raise CriticalValidationError
 
         try:
             inspect.applied_config[KEY_API_TOKEN]
@@ -78,7 +78,7 @@ class HostIdentityValidator(Validator):
                     "An API token with at least read-access is required to make requests.",
                 )
             )
-            raise SystemExit(1)
+            raise CriticalValidationError
         else:
             if not API_TOKEN:
                 console.print(
@@ -87,7 +87,7 @@ class HostIdentityValidator(Validator):
                         "An API token with at least read-access is required to make requests.",
                     )
                 )
-                raise SystemExit(1)
+                raise CriticalValidationError
 
             API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN).value
             try:

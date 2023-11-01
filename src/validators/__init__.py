@@ -4,6 +4,7 @@ from src.validators.base import (
     Validate,
     ValidationError,
     RuntimeValidationError,
+    CriticalValidationError,
 )
 from src.validators.identity import HostIdentityValidator
 from src.validators.path import PathValidator

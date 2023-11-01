@@ -10,7 +10,7 @@ from src._names import (
 )
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators import Validate, ValidationError, PathValidator
+from src.validators import Validate, ValidationError, CriticalValidationError, PathValidator
 
 logger = Logger()
 
@@ -34,4 +34,4 @@ except ValidationError as e:
         f"{APP_NAME} couldn't validate fallback path {FALLBACK_DIR}/{LOG_FILE_NAME} to write logs! "
         f"This is a critical error. {APP_NAME} will not run!"
     )
-    raise SystemExit() from e
+    raise CriticalValidationError from e

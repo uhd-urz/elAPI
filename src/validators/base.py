@@ -13,6 +13,15 @@ class RuntimeValidationError(typer.Exit):
         super().__init__(*args or (1,))  # default error code is always 1
 
 
+class CriticalValidationError(BaseException):
+    SYSTEM_EXIT: bool = True
+
+    def __new__(cls, *args, **kwargs):
+        if cls.SYSTEM_EXIT:
+            return SystemExit(*args)
+        return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
+
+
 class Validator(ABC):
     @abstractmethod
     def validate(self):
