@@ -1,16 +1,15 @@
 #!.venv/bin/python3
 
-"""``elapi`` script is a wrapper around an HTTP client (called ``httpx``). The goal is to be able to send API
-queries from the command line following the API definitions from https://doc.elabftw.net/api/v2/ with ease.
-The script treats API endpoints as its arguments.
+"""``elAPI`` is a powerful API interface to eLabFTW. It supports serving almost all kinds of requests documented in
+https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW API endpoints as its arguments.
 
 **Example**::
 
     From https://doc.elabftw.net/api/v2/#/Users/read-user:
         > GET /users/{id}
 
-    With elapi you can do the following:
-        $ elapi fetch users <id>
+    With elAPI you can do the following:
+        $ elapi get users --id <id>
 """
 from typing import Optional
 
@@ -38,7 +37,7 @@ app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=Fal
 bill_teams_app = typer.Typer(
     rich_markup_mode="markdown", pretty_exceptions_show_locals=False
 )
-app.add_typer(bill_teams_app, name="bill-teams")
+app.add_typer(bill_teams_app, name="bill-teams", help="Manage bills incurred by teams.")
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
@@ -125,9 +124,9 @@ def get(
 
     With `elapi` you can do the following:
     <br/>
-    `$ elapi fetch users` will return list of all users.
+    `$ elapi get users` will return list of all users.
     <br/>
-    `$ elapi fetch users --id <id>` will return information about the specific user `<id>`.
+    `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
@@ -217,7 +216,7 @@ def post(
         else:
             console.print(
                 f"Warning: Something unexpected happened! "
-                f"The HTTP return was '{raw_response}'.",
+                f"The HTTP return was: '{raw_response}'.",
                 style="red",
             )
     else:
@@ -359,7 +358,9 @@ def generate_invoice(
     from apps.export import Export
     from apps.invoice import InvoiceGenerator
 
-    export = export or True  # equivalent to just True. Mainly exists to make use of export.
+    export = (
+        export or True
+    )  # equivalent to just True. Mainly exists to make use of function argument export.
     data_format, export_dest, _ = _CLIExport("md", _export_dest)
     if _bill_teams_data is None:
         _bill_teams_data = bill_teams(data_format="yaml", export=export)
