@@ -240,7 +240,9 @@ def show_config(
     console.print(md)
 
 
-@app.command()
+@app.command(
+    hidden=True, deprecated=True
+)  # deprecated instead of removing for future use
 def cleanup() -> None:
     """
     Remove cached data.
@@ -264,10 +266,6 @@ def cleanup() -> None:
     retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
 )
 def bill_teams(
-    clean: Annotated[
-        Optional[bool],
-        typer.Option("--cleanup", "-c", help=docs["clean"], show_default=False),
-    ] = False,
     data_format: Annotated[
         Optional[str],
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
@@ -287,7 +285,6 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
 
-    from src.configuration import CLEANUP_AFTER
     from apps.export import Export
     from styles import Highlight
     from src.validators import (
@@ -326,11 +323,6 @@ def bill_teams(
     else:
         highlight = Highlight(data_format)
         console.print(highlight(formatted_bill_teams_data))
-
-    if clean or CLEANUP_AFTER:
-        typer.echo()  # mainly for a newline!
-        cleanup()
-
     return bill_teams_data
 
 

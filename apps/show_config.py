@@ -5,12 +5,10 @@ from src.configuration import (
     EXPORT_DIR,
     APP_DATA_DIR,
     TMP_DIR,
-    CLEANUP_AFTER,
     KEY_HOST,
     KEY_API_TOKEN,
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_EXPORT_DIR,
-    KEY_CLEANUP,
 )
 from src.configuration.log_file import LOG_FILE_PATH
 from styles import Missing, ColorText
@@ -46,12 +44,6 @@ try:
 except KeyError:
     export_dir_source = FALLBACK
 
-try:
-    cleanup_source = detected_config_files[detected_config[KEY_CLEANUP].source]
-except KeyError:
-    cleanup_source = FALLBACK
-finally:
-    cleanup_value = "Yes" if CLEANUP_AFTER else "No"
 
 detected_config_files_formatted = "\n- " + "\n- ".join(
     f"`{v}`: {k}" for k, v in detected_config_files.items()
@@ -116,10 +108,6 @@ The following debug information includes configuration values and their sources 
             else ""
         )
         + f": {unsafe_token_use_value} ← `{unsafe_token_use_source}`"
-        + "\n"
-        + f"- {ColorText('Cleanup cache after finishing task').colorize(LIGHTGREEN)}"
-        + (f" [{ColorText(KEY_CLEANUP.lower()).colorize(YELLOW)}]" if show_keys else "")
-        + f": {cleanup_value} ← `{cleanup_source}`"
         + f"""
 
 
@@ -130,7 +118,7 @@ The following debug information includes configuration values and their sources 
             f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
 """
-            if FALLBACK in (export_dir_source, unsafe_token_use_source, cleanup_source)
+            if FALLBACK in (export_dir_source, unsafe_token_use_source)
             else ""
         )
     )

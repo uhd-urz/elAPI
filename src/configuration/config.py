@@ -18,13 +18,17 @@ from src._names import (
     KEY_API_TOKEN,
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
-    KEY_CLEANUP,
 )
 from src.configuration._config_history import ConfigHistory, InspectConfigHistory
 from src.configuration.log_file import LOG_FILE_PATH, XDG_DATA_HOME
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators import Validate, ValidationError, CriticalValidationError, PathValidator
+from src.validators import (
+    Validate,
+    ValidationError,
+    CriticalValidationError,
+    PathValidator,
+)
 
 logger = Logger()
 
@@ -41,7 +45,7 @@ settings = Dynaconf(
     core_loaders=["YAML"],  # will not read any file extensions except YAML
     # loaders=['conf'],  # will not work without properly defining a custom loader for .conf first
     yaml_loader="safe_load",  # safe load doesn't execute arbitrary Python code in YAML files
-    settings_files=[SYSTEM_CONFIG_LOC, LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC]
+    settings_files=[SYSTEM_CONFIG_LOC, LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC],
     # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
 )
 
@@ -160,9 +164,7 @@ except ValidationError:
 if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
     APP_DATA_DIR = LOG_FILE_PATH.parent
 else:
-    validate_app_dir = Validate(
-        PathValidator([XDG_DATA_HOME, FALLBACK_DIR])
-    )
+    validate_app_dir = Validate(PathValidator([XDG_DATA_HOME, FALLBACK_DIR]))
     try:
         APP_DATA_DIR = validate_app_dir.get() / APP_NAME
     except ValidationError:
@@ -197,7 +199,3 @@ except KeyError:
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
-
-# Whether to run "cleanup" command on CLI after finishing a task (when available)
-CLEANUP_AFTER: bool = settings.as_bool(KEY_CLEANUP)
-# Default value is False if cleanup_after_finish isn't defined in the config file

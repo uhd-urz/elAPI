@@ -6,7 +6,6 @@ from src.configuration.config import (
     KEY_API_TOKEN,
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_EXPORT_DIR,
-    KEY_CLEANUP,
     HOST,
     API_TOKEN,
     TOKEN_BEARER,
@@ -14,7 +13,6 @@ from src.configuration.config import (
     APP_DATA_DIR,
     UNSAFE_TOKEN_WARNING,
     TMP_DIR,
-    CLEANUP_AFTER,
     history,
     inspect,
 )
