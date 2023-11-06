@@ -7,8 +7,8 @@ from src.loggers.handlers import Handler
 
 
 class STDERRHandler(Handler):
-    def __init__(self, suppress_stderr=False):
-        self.suppress_stderr = suppress_stderr
+    def __init__(self, suppress=False):
+        self.suppress = suppress
         self.formatter: logging.Formatter = logging.Formatter("%(message)s")
 
     def __eq__(self, other) -> bool:
@@ -31,7 +31,7 @@ class STDERRHandler(Handler):
 
     @property
     def handler(self) -> logging.Handler:
-        if self.suppress_stderr:
+        if self.suppress:
             import os
 
             handler = logging.FileHandler(filename=os.devnull)
