@@ -2,8 +2,14 @@ from src.loggers.base import MainLogger, SimpleLogger
 
 
 class Logger:
-    def __new__(cls, suppress_stderr: bool = False):
+    suppress: bool = False
+    suppress_stderr: bool = False
+
+    def __new__(cls):
+        MainLogger.suppress = cls.suppress
+        MainLogger.suppress_stderr = cls.suppress_stderr
+        SimpleLogger.suppress = cls.suppress or cls.suppress_stderr
         try:
-            return MainLogger(suppress_stderr)
+            return MainLogger()
         except ImportError:
-            return SimpleLogger(suppress_stderr)
+            return SimpleLogger()

@@ -6,16 +6,21 @@ from src.loggers.handlers.stderr import STDERRHandler
 
 class MainLogger:
     logger: Optional[logging.Logger] = None
+    suppress: bool = False
+    suppress_stderr: bool = False
 
-    def __new__(cls, suppress_stderr=False):
+    def __new__(cls):
         from src.loggers.handlers.file import FileHandler
         from src.configuration.log_file import LOG_FILE_PATH
 
         if cls.logger is None:
             cls.logger = logging.Logger(cls.__name__)
-            file_handler = FileHandler(LOG_FILE_PATH).handler
-            cls.logger.addHandler(file_handler)
-            stdout_handler = STDERRHandler(suppress_stderr).handler
+            if not cls.suppress:
+                file_handler = FileHandler(LOG_FILE_PATH).handler
+                cls.logger.addHandler(file_handler)
+            stdout_handler = STDERRHandler(
+                suppress=cls.suppress or cls.suppress_stderr
+            ).handler
             cls.logger.addHandler(stdout_handler)
             cls.logger.setLevel(logging.DEBUG)
         return cls.logger
@@ -23,11 +28,12 @@ class MainLogger:
 
 class SimpleLogger:
     logger: Optional[logging.Logger] = None
+    suppress: bool = False
 
-    def __new__(cls, suppress_stderr=False):
+    def __new__(cls):
         if cls.logger is None:
             cls.logger = logging.Logger(cls.__name__)
-            stdout_handler = STDERRHandler(suppress_stderr).handler
+            stdout_handler = STDERRHandler(suppress=cls.suppress).handler
             cls.logger.addHandler(stdout_handler)
             cls.logger.setLevel(logging.DEBUG)
         return cls.logger
