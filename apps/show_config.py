@@ -62,7 +62,7 @@ The following debug information includes configuration values and their sources 
         + (
             f"- {ColorText('Host address').colorize(LIGHTGREEN)}"
             + (
-                f" [{ColorText(KEY_HOST.lower()).colorize(YELLOW)}]"
+                f" **[{ColorText(KEY_HOST.lower()).colorize(YELLOW)}]**"
                 if show_keys
                 else ""
             )
@@ -77,7 +77,7 @@ The following debug information includes configuration values and their sources 
         + (
             f"- {ColorText('API Token').colorize(LIGHTGREEN)}"
             + (
-                f" [{ColorText(KEY_API_TOKEN.lower()).colorize(YELLOW)}]"
+                f" **[{ColorText(KEY_API_TOKEN.lower()).colorize(YELLOW)}]**"
                 if show_keys
                 else ""
             )
@@ -91,7 +91,7 @@ The following debug information includes configuration values and their sources 
         + "\n"
         + f"- {ColorText('Export directory').colorize(LIGHTGREEN)}"
         + (
-            f" [{ColorText(KEY_EXPORT_DIR.lower()).colorize(YELLOW)}]"
+            f" **[{ColorText(KEY_EXPORT_DIR.lower()).colorize(YELLOW)}]**"
             if show_keys
             else ""
         )
@@ -103,7 +103,7 @@ The following debug information includes configuration values and their sources 
         + "\n"
         + f"- {ColorText('Unsafe API token use warning').colorize(LIGHTGREEN)}"
         + (
-            f" [{ColorText(KEY_UNSAFE_TOKEN_WARNING.lower()).colorize(YELLOW)}]"
+            f" **[{ColorText(KEY_UNSAFE_TOKEN_WARNING.lower()).colorize(YELLOW)}]**"
             if show_keys
             else ""
         )
