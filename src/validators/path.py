@@ -67,6 +67,7 @@ class PathValidator(Validator):
                         not f.read(1) == b"\x06"
                     ):  # This checks for /dev/null-type special files!
                         continue  # It'd not be possible to read from those files.
+                    f.seek(f.tell() - 1)
                     f.truncate()
             except COMMON_PATH_ERRORS:
                 continue
