@@ -10,17 +10,23 @@ from src._names import (
 )
 from src.loggers import Logger
 from src.path import ProperPath
-from src.validators import Validate, ValidationError, CriticalValidationError, PathValidator
+from src.validators import (
+    Validate,
+    ValidationError,
+    CriticalValidationError,
+    PathValidator,
+)
 
 logger = Logger()
 
 validate_path = Validate(
     PathValidator(
         [
-            LOG_DIR_ROOT,
+            LOG_DIR_ROOT / LOG_FILE_NAME,
             (XDG_DATA_HOME := ProperPath(os.getenv(ENV_XDG_DATA_HOME, os.devnull)))
-            / APP_NAME,
-            FALLBACK_DIR,
+            / APP_NAME
+            / LOG_FILE_NAME,
+            FALLBACK_DIR / LOG_FILE_NAME,
         ]
     )
 )
@@ -28,7 +34,7 @@ validate_path = Validate(
 try:
     with open(os.devnull, "w") as devnull:
         with redirect_stderr(devnull), redirect_stdout(devnull):
-            LOG_FILE_PATH = validate_path.get() / LOG_FILE_NAME
+            LOG_FILE_PATH = validate_path.get()
 except ValidationError as e:
     logger.critical(
         f"{APP_NAME} couldn't validate fallback path {FALLBACK_DIR}/{LOG_FILE_NAME} to write logs! "

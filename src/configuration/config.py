@@ -164,9 +164,11 @@ except ValidationError:
 if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
     APP_DATA_DIR = LOG_FILE_PATH.parent
 else:
-    validate_app_dir = Validate(PathValidator([XDG_DATA_HOME, FALLBACK_DIR]))
+    validate_app_dir = Validate(
+        PathValidator([XDG_DATA_HOME / APP_NAME, FALLBACK_DIR / APP_NAME])
+    )
     try:
-        APP_DATA_DIR = validate_app_dir.get() / APP_NAME
+        APP_DATA_DIR = validate_app_dir.get()
     except ValidationError:
         logger.critical(
             f"{APP_NAME} couldn't validate {FALLBACK_DIR} to store {APP_NAME} internal application data. "
