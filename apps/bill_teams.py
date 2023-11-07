@@ -1,13 +1,21 @@
 import asyncio
 from datetime import datetime
 
-import typer
+import httpx
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
 from src.loggers import Logger
 
 logger = Logger()
+_RETRY_TRIGGER_ERRORS = (
+    httpx.ReadTimeout,
+    httpx.ReadError,
+    httpx.ConnectTimeout,
+    httpx.ConnectError,
+    httpx.RemoteProtocolError,
+    TimeoutError,
+)
 
 
 class UsersInformation:
@@ -17,41 +25,27 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        import httpx
-        from tqdm.asyncio import tqdm_asyncio
         from src.endpoint import FixedEndpoint, RecursiveEndpoint
+        from rich.progress import track
 
         event_loop = asyncio.get_running_loop()
         users_endpoint = FixedEndpoint(unit_name=cls.unit_name, keep_session_open=True)
-        users = await users_endpoint.json(
-            unit_id=None
-        )  # None gives a list of all users
-        recursive_users = RecursiveEndpoint(
-            users, cls.unit_id_prefix, target_endpoint=users_endpoint
-        )
-        tasks = [item for item in recursive_users.items()]
         try:
-            recursive_users_data = await tqdm_asyncio.gather(
-                *tasks,
-                desc="Getting user data",
-                ncols=80,  # default terminal width
-                miniters=1,  # recommended by the official documentation of tqdm
-                colour="red",
-                ascii=" ━",
-                bar_format="{desc} ({percentage:.0f}%): {bar} {elapsed}{postfix}",
-                # https://tqdm.github.io/docs/tqdm/#tqdm-objects
-                leave=False,  # leave == False fixes duplicate progressbar when
-                # progress is interrupted (Ctrl + C) while loading
+            users = await users_endpoint.json(
+                unit_id=None
+            )  # None gives a list of all users
+            recursive_users = RecursiveEndpoint(
+                users, cls.unit_id_prefix, target_endpoint=users_endpoint
             )
-        except (
-            httpx.ReadTimeout,
-            httpx.ReadError,
-            httpx.ConnectTimeout,
-            httpx.ConnectError,
-            httpx.RemoteProtocolError,
-            TimeoutError,
-        ):
-            typer.echo()  # For a new line after the progressbar when progressbar leave == False.
+            tasks, recursive_users_data = [item for item in recursive_users.items()], []
+            for task in track(
+                asyncio.as_completed(tasks),
+                total=len(tasks),
+                description="Getting user data:",
+                transient=True,
+            ):
+                recursive_users_data.append(await task)
+        except _RETRY_TRIGGER_ERRORS:
             logger.warning(
                 "Retrieving user data was interrupted due to a network error."
             )
