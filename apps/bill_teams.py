@@ -41,13 +41,13 @@ class UsersInformation:
             for task in track(
                 asyncio.as_completed(tasks),
                 total=len(tasks),
-                description="Getting user data:",
+                description=f"Getting {cls.unit_name} data:",
                 transient=True,
             ):
                 recursive_users_data.append(await task)
         except _RETRY_TRIGGER_ERRORS:
             logger.warning(
-                "Retrieving user data was interrupted due to a network error."
+                f"Retrieving {cls.unit_name} data was interrupted due to a network error."
             )
             event_loop.set_exception_handler(lambda loop, context: ...)
             # "lambda loop, context: ..." suppresses asyncio error emission:
