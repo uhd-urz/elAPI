@@ -46,7 +46,8 @@ class APIRequest(ABC):
 
     @abstractmethod
     def close(self):
-        self.client.close()
+        if not self.client.is_closed:
+            self.client.close()
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
@@ -126,7 +127,8 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         )
 
     async def close(self):
-        await self.client.aclose()
+        if not self.client.is_closed:
+            await self.client.aclose()
 
     async def __call__(
         self, endpoint: str, unit_id: Union[str, int, None] = None
