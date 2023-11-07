@@ -75,7 +75,14 @@ class TeamsInformation:
         from src.api import GETRequest
 
         teams = GETRequest()
-        return teams(endpoint=cls.unit_name, unit_id=None).json()
+        try:
+            return teams(endpoint=cls.unit_name, unit_id=None).json()
+        except _RETRY_TRIGGER_ERRORS:
+            teams.close()
+            raise InterruptedError
+        except KeyboardInterrupt:
+            teams.close()
+            raise SystemExit(1)
 
 
 class BillTeams:
