@@ -136,6 +136,9 @@ def get(
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
+    if export is False:
+        _export_dest = None
+
     data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
     format = _CLIFormat(data_format, export_file_ext)
 
@@ -296,7 +299,8 @@ def bill_teams(
     with console.status("Validating...\n", refresh_per_second=15):
         validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
         validate()
-
+    if export is False:
+        _export_dest = None
     data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
     format = _CLIFormat(data_format, export_file_ext)
 
@@ -341,7 +345,7 @@ def generate_invoice(
             is_eager=True,
             show_default=False,
         ),
-    ] = True,
+    ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ):
     """
@@ -350,9 +354,10 @@ def generate_invoice(
     from apps.export import Export
     from apps.invoice import InvoiceGenerator
 
-    export = (
-        export or True
-    )  # equivalent to just True. Mainly exists to make use of function argument export.
+    if export is False:
+        _export_dest = None
+    export = True  # export is always true for generate-invoice
+
     data_format, export_dest, _ = _CLIExport("md", _export_dest)
     if _bill_teams_data is None:
         _bill_teams_data = bill_teams(data_format="yaml", export=export)
