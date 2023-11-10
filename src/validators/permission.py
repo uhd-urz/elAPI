@@ -1,6 +1,6 @@
 from httpx import Response
 
-from src.validators.base import Validator, RuntimeValidationError
+from src.validators.base import Validator, RuntimeValidationError, CriticalValidationError
 from src.validators.identity import COMMON_NETWORK_ERRORS
 
 
@@ -65,7 +65,7 @@ class PermissionValidator(Validator):
                         "Requesting user doesn't have elabftw 'sysadmin' permission "
                         "to be able to access the resource."
                     )
-                    raise RuntimeValidationError
+                    raise CriticalValidationError
             elif self.group in ["admin", "user"]:
                 for team in caller_data["teams"]:
                     if not team["id"] == self.team_id:
@@ -73,7 +73,7 @@ class PermissionValidator(Validator):
                             f"The provided team ID '{self.team_id}' didn't match "
                             f"any of the teams the user is part of."
                         )
-                        raise RuntimeValidationError
+                        raise CriticalValidationError
                     if team["usergroup"] not in [
                         self.GROUPS[self.group],
                         self.GROUPS["sysadmin"],
@@ -81,4 +81,4 @@ class PermissionValidator(Validator):
                         logger.critical(
                             f"Requesting user doesn't belong to the permission group '{self.group}'!"
                         )
-                        raise RuntimeValidationError
+                        raise CriticalValidationError
