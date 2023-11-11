@@ -1,71 +1,115 @@
-# elabftw API client extension
+# elAPI
 
-This package adds functionalities we need to manage [`elabftw`](https://github.com/elabftw/elabftw/) usage at the
-Heidelberg
-University.
+elAPI is a powerful API interface to eLabFTW. It supports serving almost all kinds of requests documented in
+[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI treats eLabFTW API endpoints as its
+arguments.
 
-## Development environment
+**Example:**
 
-To get started with the development of this extension, you need to
-install [Poetry](https://python-poetry.org/docs/#installation). Poetry utilizes `pyproject.toml` as suggested
-by [`PEP 518`](https://peps.python.org/pep-0518/).
+From [the documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
+> GET /users/{id}
 
-1. Install Poetry.
-2. Clone this repository to a preferred directory (e.g., `~/elabftw`). `cd` to `~/elabftw`.
-3. Run `poetry config virtualenvs.in-project --local true`. This will allow Poetry to install virtual environment in the
-   current directory, inside of `.venv`. This is necessary **for now** for one of the experimental CLI programs.
-4. Run `poetry shell`. This will initialize and automatically activate the virtual environment. Makes sure the virtual
-   environment is created
-   inside `./.venv`! See `poetry env info`.
-5. Run `poetry install`. This will install all the necessary dependencies.
-6. `elapi` supports the following configuration locations:
-    - `/etc/elapi.yaml` <- Lowest precedence
-    - `$HOME/.config/elapi.yaml`
-    - `<project directory of elapi (this repository)>/elapi.yaml` <- highest precedence
-
-   `elapi` expects to parse necessary authentication information from the `elapi.yaml`.
-   ```yaml
-   
-   # elapi.yaml example
-   ---
-   host: "https://elabftw-dev.uni-heidelberg.de/api/v2"
-   api_token: "<your api token>"
-   unsafe_api_token_warning: true
-   # when true elapi will show warning if api_token is included in the project-level configuration file
-   download_dir: "~/Downloads"  
-   # elapi uses /var/tmp/elapi to store response data from back from API requests. However, a user may wish to use those data and have them saved somewhere else. This field defines an export path for that purpose.  
-   ```
-
-7. Restart virtual environment for the changes to take effect.
-   ```bash
-   $ exit
-   $ poetry shell
-   Spawning shell within ./elabftw/.venv ...
-   ```
-
-## elapi CLI
-
-`elapi` also provides a CLI program for ease of making common requests. It needs to added to one of your
-paths.
-
-```bash
-$ export PYTHONPATH=".:$PYTHONPATH"
-$ ln -s <path to project directory>/cli/elapi.py  ~/.local/bin/elapi
-```
-
-Run `elabftw_get --help` to see the supported options. Exporting `PYTHONPATH=".:$PYTHONPATH"` will not be necessary for
-the final production version.
-
-## Apps
-
-`./apps` are where programs with business logic reside. `apps/bill_teams.py` generates a dictionary that contains
-information about active team owners. To run an app from the command line, first make sure your working directory
-is `<path to project directory>`, and Poetry virtual environment is activated (`poetry shell`). Then run:
+With elAPI you can do the following:
 
 ```sh
-# python -m apps.<app name> 
-# Example:
-python -m apps.bill_teams 
+$ elapi get users --id <id>
 ```
 
-Activating a virtual environment will not be necessary for the final production-ready version.
+## Installation
+
+elAPI can be installed from PyPI. Make sure `pip` is not invoked from an active virtual environment.
+
+```sh
+$ python3 -m pip --user install elapi
+```
+
+## Configuration
+
+elAPI needs to be configured first before we can do anything useful with it. elAPI supports a YAML configuration file in
+the following locations.
+
+- Current directory: `./elapi.yaml`
+- User directory: `$HOME/.config/elapi.yaml`
+- Root directory: `/etc/elapi.yaml`
+
+elAPI supports configuration overloading. I.e., a keyword set in root configuration file `/etc/elapi.yaml` can be
+overriden by setting a different value in user configuration file `$HOME/.config/elapi.yaml`. In terms of precedence,
+configuration file present in the currently active directory has the highest priority, and configuration in root
+directory has the lowest.
+
+The following parameters are currently configurable, with `host` and `api_token` being the required fields. For testing
+purposes it would be safe to store everything in the user configuration file.
+
+```yaml
+# elAPI configuration
+# Saved in `$HOME/.config/elapi.yaml`
+
+host: <host API url>
+# Example: https://demo.elabftw.net/api/v2/
+# Note the host URL ends with the API endpoint
+api_token: <token with at least read-access>
+# You can generate an API token from eLabFTW user panel -> API keys tab.
+export_dir: ~/Downloads/elAPI
+unsafe_api_token_warning: yes
+```
+
+We can get an overview of detected configurations.
+
+```shell
+$ elapi show-config
+```
+
+If both `host` and `api_token` are detected, we are good to go!
+
+## Usage
+
+elAPI can be invoked from the command-line.
+
+```shell
+$ elapi --help 
+```
+
+### `GET` requests
+
+We can request an overview of running eLabFTW server.
+
+```shell
+$ elapi get info -F yaml
+# Here -F (or --format) defines the output format
+```
+
+We can request a list o all active experiments and export it to a `JSON` file.
+
+```shell
+$ elapi get experiments --export ~/Downoads/experiments.json
+```
+
+### `POST` requests
+
+We can create a new user by the name 'John Doe'.
+
+```shell
+$ elapi post users --firstname John --lastname Doe --email "test_test@example.com" --usergroup 4
+# usergroup 4 refers to the user's permission group
+```
+
+### Bill teams
+
+We can generate invoice for eLabFTW teams.
+
+```shell
+$ elapi bill-teams generate-invoice
+```
+
+We may just want to have a look at the billing information without generating invoice.
+
+```shell
+$ elapi bill-teams info -F yaml
+```
+
+We can also export this information as a `YAML` file to the export directory defined in configuration
+file (`export_dir`).
+
+```shell
+elapi bill-teams info -F yaml --export
+```
