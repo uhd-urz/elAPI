@@ -2,8 +2,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union, Iterable
 
-import typer
-
 from src.loggers import Logger
 from src.path import ProperPath
 from src.validators import PathValidator, ValidationError
@@ -52,7 +50,6 @@ class Export:
         with self.destination.open(mode="w", encoding="utf-8") as file:
             file.write(data)
         if verbose:
-            typer.echo()
             logger.info(
                 f"{self.file_name_stub} data successfully exported to {self.destination} "
                 f"in {self.file_extension.upper()} format."
