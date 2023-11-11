@@ -111,7 +111,7 @@ def get(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
-) -> None:
+) -> dict:
     """
     Make `GET` requests to elabftw endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
@@ -145,7 +145,7 @@ def get(
     session = GETRequest()
     raw_response = session(endpoint, unit_id)
 
-    formatted_data = format(raw_response.json())
+    formatted_data = format(response_data := raw_response.json())
 
     if export:
         file_name_stub = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
@@ -158,6 +158,7 @@ def get(
     else:
         highlight = Highlight(data_format)
         console.print(highlight(formatted_data))
+    return response_data
 
 
 @app.command(
