@@ -22,7 +22,7 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 from typing_extensions import Annotated
 
 from ._doc import __PARAMETERS__doc__ as docs
-from .. import APP_NAME
+from ..configuration import APP_NAME
 from ..loggers import Logger
 from ..path import ProperPath
 from ..styles import get_custom_help_text

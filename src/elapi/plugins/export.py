@@ -64,8 +64,7 @@ class ExportValidator(PathValidator):
         super().__init__(export_path)
 
     def validate(self) -> ProperPath:
-        from .. import APP_NAME
-        from ..configuration import EXPORT_DIR
+        from ..configuration import APP_NAME, EXPORT_DIR
 
         if self.export_path is not None:
             try:
