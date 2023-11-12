@@ -1,6 +1,6 @@
 # elAPI
 
-elAPI is a powerful API interface to eLabFTW. It supports serving almost all kinds of requests documented in
+elAPI is a powerful, extensible API interface to eLabFTW. It supports serving almost all kinds of requests documented in
 [eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI treats eLabFTW API endpoints as its
 arguments.
 

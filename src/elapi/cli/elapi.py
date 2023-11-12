@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-"""``elAPI`` is a powerful API interface to eLabFTW. It supports serving almost all kinds of requests documented in
-https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW API endpoints as its arguments.
+"""``elAPI`` is a powerful, extensible API interface to eLabFTW. It supports serving almost all kinds of requests
+documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW API endpoints as its arguments.
 
 **Example**::
 
