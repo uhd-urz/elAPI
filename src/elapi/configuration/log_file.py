@@ -1,16 +1,16 @@
 import os
 from contextlib import redirect_stderr, redirect_stdout
 
-from src._names import (
+from src.elapi._names import (
     FALLBACK_DIR,
     LOG_DIR_ROOT,
     LOG_FILE_NAME,
     APP_NAME,
     ENV_XDG_DATA_HOME,
 )
-from src.loggers import Logger
-from src.path import ProperPath
-from src.validators import (
+from src.elapi.loggers import Logger
+from src.elapi.path import ProperPath
+from src.elapi.validators import (
     Validate,
     ValidationError,
     CriticalValidationError,

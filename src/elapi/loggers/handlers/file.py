@@ -3,8 +3,8 @@ from hashlib import md5
 from pathlib import Path
 from typing import Union, TextIO
 
-from src.loggers.handlers import Handler
-from src.path import ProperPath
+from src.elapi.loggers.handlers import Handler
+from src.elapi.path import ProperPath
 
 
 class FileHandler(Handler):

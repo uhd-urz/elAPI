@@ -1,4 +1,4 @@
-from src.configuration import (
+from src.elapi.configuration import (
     APP_NAME,
     inspect,
     UNSAFE_TOKEN_WARNING,
@@ -10,9 +10,9 @@ from src.configuration import (
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_EXPORT_DIR,
 )
-from src.configuration.log_file import LOG_FILE_PATH
-from src.styles import Missing, ColorText
-from src.styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
+from src.elapi.configuration.log_file import LOG_FILE_PATH
+from src.elapi.styles import Missing, ColorText
+from src.elapi.styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
 
 detected_config = inspect.applied_config
 detected_config_files = inspect.applied_config_files

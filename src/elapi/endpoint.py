@@ -1,6 +1,6 @@
 from typing import Union, Iterable
 
-from src.api import AsyncGETRequest
+from src.elapi.api import AsyncGETRequest
 
 
 class FixedEndpoint:

@@ -7,7 +7,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Union, TextIO
 
-from src.loggers import SimpleLogger
+from src.elapi.loggers import SimpleLogger
 
 
 class ProperPath:

@@ -5,7 +5,7 @@ import httpx
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
-from src.loggers import Logger
+from src.elapi.loggers import Logger
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -25,7 +25,7 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        from src.endpoint import FixedEndpoint, RecursiveEndpoint
+        from src.elapi.endpoint import FixedEndpoint, RecursiveEndpoint
         from rich.progress import track
 
         event_loop = asyncio.get_running_loop()
@@ -72,7 +72,7 @@ class TeamsInformation:
 
     @classmethod
     def items(cls) -> list[dict, ...]:
-        from src.api import GETRequest
+        from src.elapi.api import GETRequest
 
         teams = GETRequest()
         try:
