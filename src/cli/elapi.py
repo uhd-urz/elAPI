@@ -21,12 +21,12 @@ from rich.markdown import Markdown
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 from typing_extensions import Annotated
 
-from cli._doc import __PARAMETERS__doc__ as docs
+from src.cli._doc import __PARAMETERS__doc__ as docs
 from src import APP_NAME
 from src.loggers import Logger
 from src.path import ProperPath
 from src.validators import RuntimeValidationError
-from styles import get_custom_help_text
+from src.styles import get_custom_help_text
 
 logger = Logger()
 
@@ -53,7 +53,7 @@ class _CLIExport:
     ):
         from collections import namedtuple
         from src.validators import Validate
-        from apps.export import ExportValidator
+        from src.apps.export import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()
@@ -74,7 +74,7 @@ class _CLIExport:
 
 class _CLIFormat:
     def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
-        from styles import Format
+        from src.styles import Format
 
         try:
             format = Format(data_format)
@@ -130,8 +130,8 @@ def get(
     """
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
-    from apps.export import Export
-    from styles import Highlight
+    from src.apps.export import Export
+    from src.styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -198,7 +198,7 @@ def post(
     from src.api import POSTRequest
     from json import JSONDecodeError
     from src.validators import Validate, HostIdentityValidator
-    from styles import Format, Highlight
+    from src.styles import Format, Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -238,7 +238,7 @@ def show_config(
     """
     Get information about detected configuration values.
     """
-    from apps.show_config import show
+    from src.apps.show_config import show
 
     md = Markdown(show(show_keys))
     console.print(md)
@@ -289,8 +289,8 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
 
-    from apps.export import Export
-    from styles import Highlight
+    from src.apps.export import Export
+    from src.styles import Highlight
     from src.validators import (
         Validate,
         HostIdentityValidator,
@@ -306,7 +306,7 @@ def bill_teams(
     format = _CLIFormat(data_format, export_file_ext)
 
     import asyncio
-    from apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
+    from src.apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
     users, teams = UsersInformation(), TeamsInformation()
     try:
@@ -352,8 +352,8 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
-    from apps.export import Export
-    from apps.invoice import InvoiceGenerator
+    from src.apps.export import Export
+    from src.apps.invoice import InvoiceGenerator
 
     if export is False:
         _export_dest = None

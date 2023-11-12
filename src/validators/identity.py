@@ -10,7 +10,7 @@ from httpx import (
 from rich.console import Console
 
 from src.validators.base import Validator, RuntimeValidationError, CriticalValidationError
-from styles.highlight import NoteText
+from src.styles.highlight import NoteText
 
 console = Console()
 

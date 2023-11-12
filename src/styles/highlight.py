@@ -6,7 +6,7 @@ from rich.padding import Padding
 from rich.syntax import Syntax
 from rich.text import Text
 
-from styles.format import ValidateLanguage
+from src.styles.format import ValidateLanguage
 
 
 class BaseHighlight(ABC):

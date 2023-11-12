@@ -11,8 +11,8 @@ from src.configuration import (
     KEY_EXPORT_DIR,
 )
 from src.configuration.log_file import LOG_FILE_PATH
-from styles import Missing, ColorText
-from styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
+from src.styles import Missing, ColorText
+from src.styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
 
 detected_config = inspect.applied_config
 detected_config_files = inspect.applied_config_files
