@@ -1,4 +1,4 @@
-from src.elapi.loggers.base import MainLogger, SimpleLogger
+from .base import MainLogger, SimpleLogger
 
 
 class Logger:

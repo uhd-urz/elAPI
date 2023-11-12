@@ -2,9 +2,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union, Iterable
 
-from src.elapi.loggers import Logger
-from src.elapi.path import ProperPath
-from src.elapi.validators import PathValidator, ValidationError
+from ..loggers import Logger
+from ..path import ProperPath
+from ..validators import PathValidator, ValidationError
 
 logger = Logger()
 
@@ -64,8 +64,8 @@ class ExportValidator(PathValidator):
         super().__init__(export_path)
 
     def validate(self) -> ProperPath:
-        from src.elapi import APP_NAME
-        from src.elapi.configuration import EXPORT_DIR
+        from .. import APP_NAME
+        from ..configuration import EXPORT_DIR
 
         if self.export_path is not None:
             try:

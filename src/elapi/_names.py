@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Union
 
-from src.elapi.path import ProperPath
+from .path import ProperPath
 
 # variables with leading underscores here indicate that they are to be overwritten by config.py
 # In which case, import their counterparts from src/config.py

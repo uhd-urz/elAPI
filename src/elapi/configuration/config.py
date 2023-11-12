@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from src.elapi._names import (
+from .._names import (
     APP_NAME,
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
@@ -19,11 +19,11 @@ from src.elapi._names import (
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
 )
-from src.elapi.configuration._config_history import ConfigHistory, InspectConfigHistory
-from src.elapi.configuration.log_file import LOG_FILE_PATH, XDG_DATA_HOME
-from src.elapi.loggers import Logger
-from src.elapi.path import ProperPath
-from src.elapi.validators import (
+from ._config_history import ConfigHistory, InspectConfigHistory
+from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
+from ..loggers import Logger
+from ..path import ProperPath
+from ..validators import (
     Validate,
     ValidationError,
     CriticalValidationError,

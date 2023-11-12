@@ -3,7 +3,7 @@ from hashlib import md5
 
 from rich.logging import RichHandler
 
-from src.elapi.loggers.handlers import Handler
+from . import Handler
 
 
 class STDERRHandler(Handler):

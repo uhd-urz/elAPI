@@ -1,7 +1,7 @@
 from httpx import Response
 
-from src.elapi.validators.base import Validator, RuntimeValidationError, CriticalValidationError
-from src.elapi.validators.identity import COMMON_NETWORK_ERRORS
+from .base import Validator, RuntimeValidationError, CriticalValidationError
+from .identity import COMMON_NETWORK_ERRORS
 
 
 class PermissionValidator(Validator):
@@ -39,13 +39,13 @@ class PermissionValidator(Validator):
 
     @staticmethod
     def check_endpoint():
-        from src.elapi.api import GETRequest
+        from ..api import GETRequest
 
         session = GETRequest()
         return session(endpoint="users", unit_id="me")
 
     def validate(self) -> None:
-        from src.elapi.loggers import Logger
+        from ..loggers import Logger
 
         logger = Logger()
         try:

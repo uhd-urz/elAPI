@@ -1,6 +1,6 @@
 # noinspection PyUnresolvedReferences
 # ruff: noqa: F401
-from src.elapi.configuration.config import (
+from .config import (
     APP_NAME,
     KEY_HOST,
     KEY_API_TOKEN,
@@ -16,4 +16,4 @@ from src.elapi.configuration.config import (
     history,
     inspect,
 )
-from src.elapi.configuration.log_file import LOG_FILE_PATH
+from .log_file import LOG_FILE_PATH

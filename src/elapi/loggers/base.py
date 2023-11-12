@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from src.elapi.loggers.handlers.stderr import STDERRHandler
+from .handlers.stderr import STDERRHandler
 
 
 class MainLogger:
@@ -10,8 +10,8 @@ class MainLogger:
     suppress_stderr: bool = False
 
     def __new__(cls):
-        from src.elapi.loggers.handlers.file import FileHandler
-        from src.elapi.configuration.log_file import LOG_FILE_PATH
+        from .handlers.file import FileHandler
+        from ..configuration.log_file import LOG_FILE_PATH
 
         if cls.logger is None:
             cls.logger = logging.Logger(cls.__name__)

@@ -9,8 +9,8 @@ from httpx import (
 )
 from rich.console import Console
 
-from src.elapi.validators.base import Validator, RuntimeValidationError, CriticalValidationError
-from src.elapi.styles.highlight import NoteText
+from .base import Validator, RuntimeValidationError, CriticalValidationError
+from ..styles.highlight import NoteText
 
 console = Console()
 
@@ -29,14 +29,14 @@ class HostIdentityValidator(Validator):
 
     @staticmethod
     def check_endpoint():
-        from src.elapi.api import GETRequest
+        from ..api import GETRequest
 
         session = GETRequest()
         return session(endpoint="apikeys", unit_id="")
 
     def validate(self):
-        from src.elapi.loggers import Logger
-        from src.elapi.configuration.config import (
+        from ..loggers import Logger
+        from ..configuration.config import (
             inspect,
             KEY_HOST,
             KEY_API_TOKEN,

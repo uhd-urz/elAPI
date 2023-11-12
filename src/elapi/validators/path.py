@@ -3,8 +3,8 @@ from pathlib import Path
 from random import choices
 from typing import Union, Iterable
 
-from src.elapi.path import ProperPath
-from src.elapi.validators.base import Validator, ValidationError
+from ..path import ProperPath
+from .base import Validator, ValidationError
 
 COMMON_PATH_ERRORS: tuple = (
     FileNotFoundError,
@@ -22,7 +22,7 @@ class PathValidator(Validator):
         path: Union[Iterable[...], Union[None, str, ProperPath, Path]],
         **kwargs,
     ):
-        from src.elapi.loggers import Logger
+        from ..loggers import Logger
 
         self.path = path
         self.err_logger = kwargs.get("err_logger", Logger())

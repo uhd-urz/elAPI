@@ -4,12 +4,12 @@ from typing import Any, Union
 from dynaconf import Dynaconf
 from dynaconf.utils import inspect
 
-from src.elapi._names import (
+from .._names import (
     SYSTEM_CONFIG_LOC,
     LOCAL_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
 )
-from src.elapi.loggers import Logger
+from ..loggers import Logger
 
 logger = Logger()
 

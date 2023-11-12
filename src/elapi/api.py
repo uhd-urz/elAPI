@@ -4,7 +4,7 @@ from typing import Union
 from httpx import Response, Client, AsyncClient, Limits
 from httpx_auth import HeaderApiKey
 
-from src.elapi.configuration import API_TOKEN, TOKEN_BEARER, HOST
+from .configuration import API_TOKEN, TOKEN_BEARER, HOST
 
 
 class APIRequest(ABC):

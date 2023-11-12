@@ -21,12 +21,12 @@ from rich.markdown import Markdown
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 from typing_extensions import Annotated
 
-from _doc import __PARAMETERS__doc__ as docs
-from src.elapi import APP_NAME
-from src.elapi.loggers import Logger
-from src.elapi.path import ProperPath
-from src.elapi.validators import RuntimeValidationError
-from src.elapi.styles import get_custom_help_text
+from ._doc import __PARAMETERS__doc__ as docs
+from .. import APP_NAME
+from ..loggers import Logger
+from ..path import ProperPath
+from ..styles import get_custom_help_text
+from ..validators import RuntimeValidationError
 
 logger = Logger()
 
@@ -52,8 +52,8 @@ class _CLIExport:
         cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
     ):
         from collections import namedtuple
-        from src.elapi.validators import Validate
-        from src.elapi.plugins.export import ExportValidator
+        from ..validators import Validate
+        from ..plugins.export import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()
@@ -74,7 +74,7 @@ class _CLIExport:
 
 class _CLIFormat:
     def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
-        from src.elapi.styles import Format
+        from ..styles import Format
 
         try:
             format = Format(data_format)
@@ -128,10 +128,10 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
-    from src.elapi.api import GETRequest
-    from src.elapi.validators import Validate, HostIdentityValidator
-    from src.elapi.plugins.export import Export
-    from src.elapi.styles import Highlight
+    from ..api import GETRequest
+    from ..validators import Validate, HostIdentityValidator
+    from ..plugins.export import Export
+    from ..styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -195,10 +195,10 @@ def post(
     `$ elapi post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
     """
     import ast
-    from src.elapi.api import POSTRequest
+    from ..api import POSTRequest
     from json import JSONDecodeError
-    from src.elapi.validators import Validate, HostIdentityValidator
-    from src.elapi.styles import Format, Highlight
+    from ..validators import Validate, HostIdentityValidator
+    from ..styles import Format, Highlight
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -238,7 +238,7 @@ def show_config(
     """
     Get information about detected configuration values.
     """
-    from src.elapi.plugins.show_config import show
+    from ..plugins.show_config import show
 
     md = Markdown(show(show_keys))
     console.print(md)
@@ -251,8 +251,8 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
-    from src.elapi.configuration import TMP_DIR
-    from src.elapi.path import ProperPath
+    from ..configuration import TMP_DIR
+    from ..path import ProperPath
     from time import sleep
 
     with console.status("Cleaning up...", refresh_per_second=15):
@@ -289,9 +289,9 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
 
-    from src.elapi.plugins.export import Export
-    from src.elapi.styles import Highlight
-    from src.elapi.validators import (
+    from ..plugins.export import Export
+    from ..styles import Highlight
+    from ..validators import (
         Validate,
         HostIdentityValidator,
         PermissionValidator,
@@ -306,7 +306,11 @@ def bill_teams(
     format = _CLIFormat(data_format, export_file_ext)
 
     import asyncio
-    from src.elapi.plugins.bill_teams import UsersInformation, TeamsInformation, BillTeams
+    from ..plugins.bill_teams import (
+        UsersInformation,
+        TeamsInformation,
+        BillTeams,
+    )
 
     users, teams = UsersInformation(), TeamsInformation()
     try:
@@ -352,8 +356,8 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
-    from src.elapi.plugins.export import Export
-    from src.elapi.plugins.invoice import InvoiceGenerator
+    from ..plugins.export import Export
+    from ..plugins.invoice import InvoiceGenerator
 
     if export is False:
         _export_dest = None
