@@ -373,7 +373,3 @@ def generate_invoice(
         file_extension=data_format,
     )
     export(data=invoice.generate(), verbose=True)
-
-
-if __name__ == "__main__":
-    app()
