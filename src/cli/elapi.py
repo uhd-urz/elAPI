@@ -53,7 +53,7 @@ class _CLIExport:
     ):
         from collections import namedtuple
         from src.validators import Validate
-        from src.apps.export import ExportValidator
+        from src.plugins.export import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()
@@ -130,7 +130,7 @@ def get(
     """
     from src.api import GETRequest
     from src.validators import Validate, HostIdentityValidator
-    from src.apps.export import Export
+    from src.plugins.export import Export
     from src.styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())
@@ -238,7 +238,7 @@ def show_config(
     """
     Get information about detected configuration values.
     """
-    from src.apps.show_config import show
+    from src.plugins.show_config import show
 
     md = Markdown(show(show_keys))
     console.print(md)
@@ -289,7 +289,7 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
 
-    from src.apps.export import Export
+    from src.plugins.export import Export
     from src.styles import Highlight
     from src.validators import (
         Validate,
@@ -306,7 +306,7 @@ def bill_teams(
     format = _CLIFormat(data_format, export_file_ext)
 
     import asyncio
-    from src.apps.bill_teams import UsersInformation, TeamsInformation, BillTeams
+    from src.plugins.bill_teams import UsersInformation, TeamsInformation, BillTeams
 
     users, teams = UsersInformation(), TeamsInformation()
     try:
@@ -352,8 +352,8 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
-    from src.apps.export import Export
-    from src.apps.invoice import InvoiceGenerator
+    from src.plugins.export import Export
+    from src.plugins.invoice import InvoiceGenerator
 
     if export is False:
         _export_dest = None
