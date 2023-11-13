@@ -8,6 +8,7 @@ authors = [
     "Alexander Haller <alexander.haller@urz.uni-heidelberg.de>"
 ]
 readme = "README.md"
+license = "AGPL-3.0-only"
 
 [tool.poetry.scripts]
 elapi = "elapi.cli.elapi:app"
