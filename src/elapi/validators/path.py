@@ -3,8 +3,8 @@ from pathlib import Path
 from random import choices
 from typing import Union, Iterable
 
-from ..path import ProperPath
 from .base import Validator, ValidationError
+from ..path import ProperPath
 
 COMMON_PATH_ERRORS: tuple = (
     FileNotFoundError,
@@ -19,7 +19,7 @@ COMMON_PATH_ERRORS: tuple = (
 class PathValidator(Validator):
     def __init__(
         self,
-        path: Union[Iterable[...], Union[None, str, ProperPath, Path]],
+        path: Union[Iterable, Union[None, str, ProperPath, Path]],
         **kwargs,
     ):
         from ..loggers import Logger

@@ -58,7 +58,7 @@ class Export:
 
 class ExportValidator(PathValidator):
     def __init__(
-        self, /, export_path: Union[Iterable[...], Union[None, str, ProperPath, Path]]
+        self, /, export_path: Union[Iterable, Union[None, str, ProperPath, Path]]
     ):
         self.export_path = export_path
         super().__init__(export_path)
