@@ -20,7 +20,7 @@ $ elapi get users --id <id>
 elAPI can be installed from PyPI. Make sure `pip` is not invoked from an active virtual environment.
 
 ```sh
-$ python3 -m pip --user install elapi
+$ python3 -m pip install --user elapi
 ```
 
 ## Configuration
