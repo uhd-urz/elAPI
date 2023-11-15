@@ -357,7 +357,7 @@ def generate_invoice(
     Generate invoice for billable teams.
     """
     from ..plugins.export import Export
-    from ..plugins.invoice import InvoiceGenerator
+    from ..plugins.bill_teams import InvoiceGenerator
 
     if export is False:
         _export_dest = None

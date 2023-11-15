@@ -5,7 +5,7 @@ import httpx
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
-from ..loggers import Logger
+from ...loggers import Logger
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -25,7 +25,7 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        from ..endpoint import FixedEndpoint, RecursiveEndpoint
+        from ...endpoint import FixedEndpoint, RecursiveEndpoint
         from rich.progress import track
 
         event_loop = asyncio.get_running_loop()
@@ -72,7 +72,7 @@ class TeamsInformation:
 
     @classmethod
     def items(cls) -> list[dict, ...]:
-        from ..api import GETRequest
+        from ...api import GETRequest
 
         teams = GETRequest()
         try:
