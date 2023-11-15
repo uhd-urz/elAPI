@@ -113,3 +113,10 @@ file (`export_dir`).
 ```shell
 elapi bill-teams info -F yaml --export
 ```
+
+## Open-source
+
+elAPI is open-source and published under AGPLv3 license. The repository is however hosted internally within
+Universität Heidelberg's network. The codebase can still be accessed from [PyPI](https://pypi.org/project/elapi/#files).
+If you express interest in having the repository made completely public, or if you have any question, feel free
+to [contact us](mailto:elabftw@uni-heidelberg.de).
