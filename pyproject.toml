@@ -4,11 +4,29 @@ version = "0.9"
 description = """elAPI is a powerful, extensible API interface to eLabFTW built for \
 the University Computing Centre (URZ, FIRE division) at Universität Heidelberg."""
 authors = [
+    "Alexander Haller <alexander.haller@urz.uni-heidelberg.de>",
     "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
-    "Alexander Haller <alexander.haller@urz.uni-heidelberg.de>"
+]
+maintainers = [
+    "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
 ]
 readme = "README.md"
+homepage = "https://www.urz.uni-heidelberg.de/en/service-catalogue/software-and-applications/elabftw"
 license = "AGPL-3.0-only"
+keywords = ["elabftw", "api"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AnyIO",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
 
 [tool.poetry.scripts]
 elapi = "elapi.cli.elapi:app"
