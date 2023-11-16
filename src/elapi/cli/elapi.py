@@ -173,8 +173,8 @@ def post(
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
-    ] = "",
-    data: typer.Context = None,
+    ],
+    # data: typer.Context = None,  TODO: To be re-enabled in Python 3.11
     data_format: Annotated[
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
@@ -192,7 +192,7 @@ def post(
 
     With `elapi` you can do the following:
     <br/>
-    `$ elapi post users --firstname John --lastname Doe --email "john_doe@email.com"` will create a new user.
+    `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'` will create a new user.
     """
     import ast
     from ..api import POSTRequest
@@ -203,12 +203,14 @@ def post(
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
-    if json_:
-        valid_data: dict = ast.literal_eval(json_)
-    else:
-        data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
-        data_values: list[str, ...] = data.args[1::2]
-        valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
+    # if json_:
+    valid_data: dict = ast.literal_eval(json_)
+    # else:
+    # TODO: Due to strange compatibility issue between typer.context and python 3.9,
+    #   passing json_ as arguments is temporarily deprecated.
+    # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
+    # data_values: list[str, ...] = data.args[1::2]
+    # valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     session = POSTRequest()
     raw_response = session(endpoint, unit_id, **valid_data)
     format = Format(data_format)

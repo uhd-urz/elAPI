@@ -89,8 +89,7 @@ $ elapi get experiments --export ~/Downoads/experiments.json
 We can create a new user by the name 'John Doe'.
 
 ```shell
-$ elapi post users --firstname John --lastname Doe --email "test_test@example.com" --usergroup 4
-# usergroup 4 refers to the user's permission group
+$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
 ```
 
 ### Bill teams

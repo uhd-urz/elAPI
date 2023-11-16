@@ -14,10 +14,12 @@ __PARAMETERS__doc__ = {
                    "ID will be returned. E.g., user ID, team ID, experiments ID.",
     "unit_id_post": "ID for one of the preceding endpoints. If provided, `POST` request will be made against that "
                     "specific ID. E.g., events ID,.",
-    "data": f"HTTP POST data. There are two ways to pass the data. 1. With `--data` or `-d` option followed "
-            f"by the JSON content like with `curl`. E.g., "
-            f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
-            f"`{APP_NAME} post teams --name Alpha`.",
+    # "data": f"HTTP POST data. There are two ways to pass the data. 1. With `--data` or `-d` option followed "
+    #         f"by the JSON content like with `curl`. E.g., "
+    #         f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
+    #         f"`{APP_NAME} post teams --name Alpha`.",
+    "data": f"HTTP POST data. This works similar to how data is passed to `curl`. E.g., "
+            f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`,",
     "export": "Export output to a location.\n",
     "invoice_export": "Export output to a location. Invoices are **always exported** by default.\n",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
