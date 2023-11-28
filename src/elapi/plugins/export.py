@@ -10,7 +10,13 @@ logger = Logger()
 
 
 class Export:
-    __slots__ = ("file_extension", "file_name_stub", "_file_name", "_destination")
+    __slots__ = (
+        "file_extension",
+        "format_name",
+        "file_name_stub",
+        "_file_name",
+        "_destination",
+    )
 
     def __init__(
         self,
@@ -18,8 +24,10 @@ class Export:
         /,
         file_name_stub: str,
         file_extension: str,
+        format_name: str,
     ):
         self.file_extension = file_extension.lower()
+        self.format_name = format_name.upper()
         self.file = self.file_name_stub = file_name_stub
         self.destination = destination
 
@@ -52,7 +60,7 @@ class Export:
         if verbose:
             logger.info(
                 f"{self.file_name_stub} data successfully exported to {self.destination} "
-                f"in {self.file_extension.upper()} format."
+                f"in {self.format_name} format."
             )
 
 
