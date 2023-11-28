@@ -4,7 +4,7 @@
 .keys
 notes.md
 poetry.lock
-elapi.yaml
+elapi.yml
 
 # Python .gitignore
 # Byte-compiled / optimized / DLL files

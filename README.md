@@ -28,12 +28,12 @@ $ python3 -m pip install --user elapi
 elAPI needs to be configured first before we can do anything useful with it. elAPI supports a YAML configuration file in
 the following locations.
 
-- Current directory: `./elapi.yaml`
-- User directory: `$HOME/.config/elapi.yaml`
-- Root directory: `/etc/elapi.yaml`
+- Current directory: `./elapi.yml`
+- User directory: `$HOME/.config/elapi.yml`
+- Root directory: `/etc/elapi.yml`
 
-elAPI supports configuration overloading. I.e., a keyword set in root configuration file `/etc/elapi.yaml` can be
-overriden by setting a different value in user configuration file `$HOME/.config/elapi.yaml`. In terms of precedence,
+elAPI supports configuration overloading. I.e., a keyword set in root configuration file `/etc/elapi.yml` can be
+overriden by setting a different value in user configuration file `$HOME/.config/elapi.yml`. In terms of precedence,
 configuration file present in the currently active directory has the highest priority, and configuration in root
 directory has the lowest.
 
@@ -42,7 +42,7 @@ purposes it would be safe to store everything in the user configuration file.
 
 ```yaml
 # elAPI configuration
-# Saved in `$HOME/.config/elapi.yaml`
+# Saved in `$HOME/.config/elapi.yml`
 
 host: <host API url>
 # Example: https://demo.elabftw.net/api/v2/
@@ -74,7 +74,7 @@ $ elapi --help
 We can request an overview of running eLabFTW server.
 
 ```shell
-$ elapi get info -F yaml
+$ elapi get info -F yml
 # Here -F (or --format) defines the output format
 ```
 

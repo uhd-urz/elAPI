@@ -9,7 +9,7 @@ from .path import ProperPath
 # name definitions
 APP_NAME: str = "elapi"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
-CONFIG_FILE_NAME: str = f"{APP_NAME}.yaml"
+CONFIG_FILE_NAME: str = f"{APP_NAME}.yml"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
 
@@ -32,7 +32,7 @@ SYSTEM_CONFIG_LOC: Path = Path("/etc") / CONFIG_FILE_NAME
 LOCAL_CONFIG_LOC: Path = (
     os.getenv(ENV_XDG_CONFIG_HOME) or FALLBACK_CONFIG_DIR
 ) / CONFIG_FILE_NAME
-# In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yaml
+# In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yml
 PROJECT_CONFIG_LOC: Path = cur_dir / CONFIG_FILE_NAME
 
 # Configuration field definitions
