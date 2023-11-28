@@ -1,20 +1,32 @@
 import re
 from abc import abstractmethod, ABC
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, Union
 
 
 class BaseFormat(ABC):
     _registry = {}
     _names = []
+    _conventions = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._registry[cls.pattern()] = cls
         cls._names.append(cls.name)
+        cls._conventions.append(cls.convention)
 
     @property
     @abstractmethod
     def name(self):
+        ...
+
+    @property
+    @abstractmethod
+    def convention(self) -> Union[str, Iterable[str, ...]]:
+        return self.name
+
+    @convention.setter
+    def convention(self, value):
         ...
 
     @classmethod
@@ -37,6 +49,7 @@ class BaseFormat(ABC):
 
 class JSONFormat(BaseFormat):
     name: str = "json"
+    convention: str = name
 
     @classmethod
     def pattern(cls) -> str:
@@ -49,7 +62,8 @@ class JSONFormat(BaseFormat):
 
 
 class YAMLFormat(BaseFormat):
-    name = "yaml"
+    name: str = "yaml"
+    convention: list[str, ...] = ["yml", "yaml"]
 
     @classmethod
     def pattern(cls) -> str:
@@ -62,7 +76,8 @@ class YAMLFormat(BaseFormat):
 
 
 class TXTFormat(BaseFormat):
-    name = "txt"
+    name: str = "txt"
+    convention: str = name
 
     @classmethod
     def pattern(cls) -> str:
@@ -89,6 +104,7 @@ class ValidateLanguage:
         for pattern, formatter in BaseFormat.supported_formatters().items():
             if re.match(rf"{pattern}", value, flags=re.IGNORECASE):
                 self.name: str = formatter.name
+                self.convention: Union[str, Iterable[str, ...]] = formatter.convention
                 self.formatter: type(BaseFormat) = formatter
                 return
         raise ValueError(
