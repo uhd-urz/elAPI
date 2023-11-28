@@ -11,6 +11,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
     With elAPI you can do the following:
         $ elapi get users --id <id>
 """
+from collections.abc import Iterable
 from typing import Optional
 
 import tenacity
@@ -73,6 +74,8 @@ class _CLIExport:
 
 
 class _CLIFormat:
+    FALLBACK_DATA_FORMAT = "txt"
+
     def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
         from ..styles import Format
 
@@ -81,11 +84,15 @@ class _CLIFormat:
         except ValueError as e:
             logger.error(e)
             logger.info(f"{APP_NAME} will fallback to 'txt' format.")
-            format = Format("txt")  # Falls back to "txt"
-        if export_file_ext and format.name != export_file_ext:
+            format = Format(cls.FALLBACK_DATA_FORMAT)  # Falls back to "txt"
+        if export_file_ext and export_file_ext not in format.convention:
             logger.info(
                 f"File extension is '{export_file_ext}' but data format will be '{format.name}'."
             )
+        if isinstance(format.convention, str):
+            ...
+        elif isinstance(format.convention, Iterable):
+            format.convention = format.convention[0]
         return format
 
 
@@ -152,7 +159,8 @@ def get(
         export = Export(
             export_dest,
             file_name_stub=file_name_stub,
-            file_extension=format.name,
+            file_extension=format.convention,
+            format_name=format.name,
         )
         export(data=formatted_data, verbose=True)
     else:
@@ -328,7 +336,8 @@ def bill_teams(
         export = Export(
             export_dest,
             file_name_stub=bill_teams.__name__,
-            file_extension=format.name,
+            file_extension=format.convention,
+            format_name=format.name,
         )
         export(data=formatted_bill_teams_data, verbose=True)
     else:
@@ -361,11 +370,12 @@ def generate_invoice(
     from ..plugins.export import Export
     from ..plugins.bill_teams import InvoiceGenerator
 
+    _INVOICE_FORMAT = "md"
     if export is False:
         _export_dest = None
     export = True  # export is always true for generate-invoice
 
-    data_format, export_dest, _ = _CLIExport("md", _export_dest)
+    data_format, export_dest, _ = _CLIExport(_INVOICE_FORMAT, _export_dest)
     if _bill_teams_data is None:
         _bill_teams_data = bill_teams(data_format="yaml", export=export)
     invoice = InvoiceGenerator(_bill_teams_data)
@@ -373,5 +383,6 @@ def generate_invoice(
         export_dest,
         file_name_stub="invoice",
         file_extension=data_format,
+        format_name=_INVOICE_FORMAT,
     )
     export(data=invoice.generate(), verbose=True)
