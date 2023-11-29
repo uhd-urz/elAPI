@@ -89,7 +89,7 @@ class _CLIFormat:
             format = Format(cls.FALLBACK_DATA_FORMAT)  # Falls back to "txt"
         if export_file_ext and export_file_ext not in format.convention:
             logger.info(
-                f"File extension is '{export_file_ext}' but data format will be '{format.name}'."
+                f"File extension is '{export_file_ext}' but data format will be '{format.name.upper()}'."
             )
         if isinstance(format.convention, str):
             ...
