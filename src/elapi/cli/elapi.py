@@ -34,7 +34,11 @@ logger = Logger()
 
 pretty.install()
 console = Console(color_system="truecolor")
-app = typer.Typer(rich_markup_mode="markdown", pretty_exceptions_show_locals=False)
+app = typer.Typer(
+    rich_markup_mode="markdown",
+    pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
+)
 bill_teams_app = typer.Typer(
     rich_markup_mode="markdown", pretty_exceptions_show_locals=False
 )
