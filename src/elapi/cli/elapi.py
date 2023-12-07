@@ -260,6 +260,18 @@ def show_config(
     console.print(md)
 
 
+@app.command()
+def version() -> str:
+    """
+    Show version number
+    """
+    from ..plugins.version import elapi_version
+
+    _version = elapi_version()
+    typer.echo(_version)
+    return _version
+
+
 @app.command(
     hidden=True, deprecated=True
 )  # deprecated instead of removing for future use
