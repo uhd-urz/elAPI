@@ -187,7 +187,7 @@ class ProperPath:
 
     @contextmanager
     def open(self, mode="r", encoding: Union[str, None] = None) -> None:
-        path = self.expanded
+        path = self.expanded.resolve()
         file: Union[TextIO, None] = None
         try:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
