@@ -3,6 +3,8 @@ from pathlib import Path
 
 from dynaconf import Dynaconf
 
+from ._config_history import ConfigHistory, InspectConfigHistory
+from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
 from .._names import (
     APP_NAME,
     ENV_XDG_DOWNLOAD_DIR,
@@ -19,8 +21,6 @@ from .._names import (
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
 )
-from ._config_history import ConfigHistory, InspectConfigHistory
-from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
 from ..loggers import Logger
 from ..path import ProperPath
 from ..validators import (
