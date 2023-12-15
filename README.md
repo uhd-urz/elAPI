@@ -92,6 +92,27 @@ We can create a new user by the name 'John Doe'.
 $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
 ```
 
+### `PATCH` requests
+
+We can update an existing user's email address.
+
+```shell
+$ elapi patch users --id id '{"email": "new_email@itnerd.de"}' <user >-d
+```
+
+`patch` command allows us to make changes to eLabFTW server settings. E.g., we can update the time (in minutes)
+after which the authentication cookie will expire.
+
+```shell
+$ elapi patch config -d '{"cookie_validity_time": 43200}'
+```
+
+We can publish an announcement to all the members.
+
+```shell
+$ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
+```
+
 ### Bill teams
 
 We can generate invoice for eLabFTW teams.
