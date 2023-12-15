@@ -177,7 +177,7 @@ def get(
 
 @app.command(
     short_help="Make `POST` request to elabftw endpoints.",
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def post(
     endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
@@ -193,7 +193,7 @@ def post(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
-) -> None:
+) -> Optional[dict]:
     """
     Make `POST` request to elabftw endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
@@ -206,7 +206,8 @@ def post(
 
     With `elapi` you can do the following:
     <br/>
-    `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'` will create a new user.
+    `$ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
+    will create a new user.
     """
     import ast
     from ..api import POSTRequest
@@ -239,9 +240,11 @@ def post(
                 f"The HTTP return was: '{raw_response}'.",
                 style="red",
             )
+            raise typer.Exit(1)
     else:
         highlight = Highlight(data_format)
         console.print(highlight(formatted_data))
+        return formatted_data
 
 
 @app.command(
