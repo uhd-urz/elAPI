@@ -89,7 +89,7 @@ $ elapi get experiments --export ~/Downoads/experiments.json
 We can create a new user by the name 'John Doe'.
 
 ```shell
-$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
+$ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
 ```
 
 ### Bill teams
