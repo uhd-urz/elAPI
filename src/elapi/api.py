@@ -151,7 +151,7 @@ class PATCHRequest(APIRequest):
         data = {k: v.strip() if isinstance(v, str) else v for k, v in kwargs.items()}
         return super().client.patch(
             f"{HOST}/{endpoint}/{unit_id}",
-            headers={"Accept": "*/*", "Content-Type": "application/json"},
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
             json=data,
         )
 
