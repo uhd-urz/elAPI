@@ -165,3 +165,36 @@ class PATCHRequest(APIRequest):
         **data: Union[str, int, None],
     ) -> Response:
         return super().__call__(endpoint, unit_id, **data)
+
+
+class AsyncPATCHRequest(APIRequest, is_async_client=True):
+    __slots__ = ()
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            timeout=180,
+            limits=Limits(
+                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+            ),
+            **kwargs,
+        )
+
+    async def _make(self, *args) -> Response:
+        endpoint, unit_id = args
+        unit_id = self.fix_none(unit_id)
+        return await super().client.patch(
+            f"{self.host}/{endpoint}/{unit_id}",
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+        )
+
+    async def close(self):
+        if not self.client.is_closed:
+            await self.client.aclose()
+
+    async def __call__(
+        self, endpoint: str, unit_id: Union[str, int, None] = None
+    ) -> Response:
+        response = await self._make(endpoint, unit_id)
+        if not self.keep_session_open:
+            await self.close()
+        return response
