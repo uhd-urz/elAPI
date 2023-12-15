@@ -244,6 +244,83 @@ def post(
         console.print(highlight(formatted_data))
 
 
+@app.command(
+    short_help="Make `PATCH` request to elabftw endpoints.",
+    # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def patch(
+    endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
+    *,
+    unit_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["unit_id_patch"], show_default=False)
+    ] = None,
+    json_: Annotated[
+        str, typer.Option("--data", "-d", help=docs["data_patch"], show_default=False)
+    ],
+    # data: typer.Context = None,  TODO: To be re-enabled in Python 3.11
+    data_format: Annotated[
+        str,
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
+    ] = "json",
+    suppress_response: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--suppress",
+            "-S",
+            help=docs["supress_response_patch"],
+            is_flag=True,
+            show_default=False,
+        ),
+    ] = False,
+) -> Optional[dict]:
+    """
+    Make `PATCH` request to elabftw endpoints as documented in
+    [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
+
+    <br/>
+    **Example**:
+    <br/>
+    From [the official documentation about `PATCH users`](https://doc.elabftw.net/api/v2/#/Users/patch-user),
+    > PATCH /users/{id}
+
+    With `elapi` you can run the following to change your email address:
+    <br/>
+    `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
+    """
+    import ast
+    from ..api import PATCHRequest
+    from json import JSONDecodeError
+    from ..validators import Validate, HostIdentityValidator
+    from ..styles import Format, Highlight
+
+    validate_config = Validate(HostIdentityValidator())
+    validate_config()
+
+    valid_data: dict = ast.literal_eval(json_)
+    session = PATCHRequest()
+    raw_response = session(endpoint, unit_id, **valid_data)
+    format = Format(data_format)
+    try:
+        formatted_data = format(raw_response.json())
+    except JSONDecodeError:
+        if raw_response.is_success:
+            console.print("Success: Resource modified!", style="green")
+        else:
+            console.print(
+                f"Warning: Something unexpected happened! "
+                f"The HTTP return was: '{raw_response}'.",
+                style="red",
+            )
+            raise typer.Exit(1)
+    else:
+        if not (suppress_response and raw_response.is_success):
+            highlight = Highlight(data_format)
+            console.print(highlight(formatted_data))
+        if not raw_response.is_success:
+            raise typer.Exit(1)
+        return formatted_data
+
+
 @app.command(name="show-config")
 def show_config(
     show_keys: Annotated[

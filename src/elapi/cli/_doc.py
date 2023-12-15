@@ -4,7 +4,9 @@ This script includes docstring for elapi. The docstrings are mainly meant to be 
 from ..configuration import APP_NAME
 from ..styles import BaseFormat
 
-supported_highlighting_formats = ", ".join(f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names())
+supported_highlighting_formats = ", ".join(
+    f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names()
+)
 
 __PARAMETERS__doc__ = {
     "endpoint": "Name of an endpoint. Valid endpoints are: apikeys, config, experiments, info, "
@@ -13,13 +15,20 @@ __PARAMETERS__doc__ = {
     "unit_id_get": "ID for one of the preceding endpoints. If provided, only information associated with that "
                    "ID will be returned. E.g., user ID, team ID, experiments ID.",
     "unit_id_post": "ID for one of the preceding endpoints. If provided, `POST` request will be made against that "
-                    "specific ID. E.g., events ID,.",
+    "specific ID. E.g., events ID,.",
+    "unit_id_patch": "ID for one of the preceding endpoints. If provided, `PATCH` request will be made against that "
+                    "specific ID. E.g., events ID.",
     # "data": f"HTTP POST data. There are two ways to pass the data. 1. With `--data` or `-d` option followed "
     #         f"by the JSON content like with `curl`. E.g., "
     #         f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
     #         f"`{APP_NAME} post teams --name Alpha`.",
     "data": f"HTTP POST data. This works similar to how data is passed to `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`,",
+    "data_patch": f"Modified data to be sent as HTTP PATCH data. This works similar to how data is passed to `curl`. "
+                  f'E.g., `{APP_NAME} patch teams --id <team id> -d \'{{"name": "New team name"}}\'`,',
+    "supress_response_patch": "Supress response message that shows the modified resource. "
+                              "If PATCH isn't successful, then suppress has no affect, "
+                              "and a proper error message is shown.",
     "export": "Export output to a location.\n",
     "invoice_export": "Export output to a location. Invoices are **always exported** by default.\n",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
