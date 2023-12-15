@@ -172,6 +172,9 @@ def get(
         export(data=formatted_data, verbose=True)
     else:
         highlight = Highlight(data_format)
+        if not raw_response.is_success:
+            stderr_console.print(highlight(formatted_data))
+            raise typer.Exit(1)
         console.print(highlight(formatted_data))
     return response_data
 
@@ -236,7 +239,7 @@ def post(
         if raw_response.is_success:
             console.print("Success: Resource created!", style="green")
         else:
-            console.print(
+            stderr_console.print(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'.",
                 style="red",
@@ -244,6 +247,9 @@ def post(
             raise typer.Exit(1)
     else:
         highlight = Highlight(data_format)
+        if not raw_response.is_success:
+            stderr_console.print(highlight(formatted_data))
+            raise typer.Exit(1)
         console.print(highlight(formatted_data))
         return formatted_data
 
