@@ -34,6 +34,7 @@ logger = Logger()
 
 pretty.install()
 console = Console(color_system="truecolor")
+stderr_console = Console(color_system="truecolor", stderr=True)
 app = typer.Typer(
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
@@ -265,16 +266,6 @@ def patch(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
-    suppress_response: Annotated[
-        Optional[bool],
-        typer.Option(
-            "--suppress",
-            "-S",
-            help=docs["supress_response_patch"],
-            is_flag=True,
-            show_default=False,
-        ),
-    ] = False,
 ) -> Optional[dict]:
     """
     Make `PATCH` request to elabftw endpoints as documented in
@@ -309,18 +300,18 @@ def patch(
         if raw_response.is_success:
             console.print("Success: Resource modified!", style="green")
         else:
-            console.print(
+            stderr_console.print(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'.",
                 style="red",
             )
             raise typer.Exit(1)
     else:
-        if not (suppress_response and raw_response.is_success):
-            highlight = Highlight(data_format)
-            console.print(highlight(formatted_data))
+        highlight = Highlight(data_format)
         if not raw_response.is_success:
+            stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
+        console.print(highlight(formatted_data))
         return formatted_data
 
 
