@@ -137,3 +137,31 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         if not self.keep_session_open:
             await self.close()
         return response
+
+
+class PATCHRequest(APIRequest):
+    __slots__ = ()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _make(self, *args, **kwargs) -> Response:
+        endpoint, unit_id = args
+        unit_id = self.fix_none(unit_id)
+        data = {k: v.strip() if isinstance(v, str) else v for k, v in kwargs.items()}
+        return super().client.patch(
+            f"{HOST}/{endpoint}/{unit_id}",
+            headers={"Accept": "*/*", "Content-Type": "application/json"},
+            json=data,
+        )
+
+    def close(self):
+        super().close()
+
+    def __call__(
+        self,
+        endpoint: str,
+        unit_id: Union[str, int, None] = None,
+        **data: Union[str, int, None],
+    ) -> Response:
+        return super().__call__(endpoint, unit_id, **data)
