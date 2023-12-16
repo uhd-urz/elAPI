@@ -1,8 +1,6 @@
 from datetime import datetime
 
-from rich.console import Console
-
-console = Console()
+from ...styles import stdin_console
 
 
 class InvoiceGenerator:
@@ -73,7 +71,7 @@ Total amount due: {total_bill_amount: .2f} EUR
         breakdown = """## Breakdown
 
 """
-        with console.status(status="Generating invoice..."):
+        with stdin_console.status(status="Generating invoice..."):
             for team in self.data.values():
                 team_id = team["team_id"]
                 team_name = team["team_name"]

@@ -7,12 +7,10 @@ from httpx import (
     ConnectError,
     ConnectTimeout,
 )
-from rich.console import Console
 
 from .base import Validator, RuntimeValidationError, CriticalValidationError
+from ..styles import stdin_console
 from ..styles.highlight import NoteText
-
-console = Console()
 
 COMMON_NETWORK_ERRORS: tuple = (
     JSONDecodeError,
@@ -50,7 +48,7 @@ class HostIdentityValidator(Validator):
         try:
             inspect.applied_config[KEY_HOST]
         except KeyError:
-            console.print(
+            stdin_console.print(
                 NoteText(
                     "Host is missing from the config files! "
                     "Host contains the URL of the root API endpoint. Example:"
@@ -60,7 +58,7 @@ class HostIdentityValidator(Validator):
             raise CriticalValidationError
         else:
             if not HOST:
-                console.print(
+                stdin_console.print(
                     NoteText(
                         "Host is detected but it's empty! "
                         "Host contains the URL of the root API endpoint. Example:"
@@ -72,7 +70,7 @@ class HostIdentityValidator(Validator):
         try:
             inspect.applied_config[KEY_API_TOKEN]
         except KeyError:
-            console.print(
+            stdin_console.print(
                 NoteText(
                     "API token is missing from the config files! "
                     "An API token with at least read-access is required to make requests.",
@@ -81,7 +79,7 @@ class HostIdentityValidator(Validator):
             raise CriticalValidationError
         else:
             if not API_TOKEN:
-                console.print(
+                stdin_console.print(
                     NoteText(
                         "API token is detected but it's empty! "
                         "An API token with at least read-access is required to make requests.",
@@ -115,7 +113,7 @@ class HostIdentityValidator(Validator):
                         f"Please contact an administrator."
                     )
                     raise RuntimeValidationError
-                console.print(
+                stdin_console.print(
                     NoteText(
                         "There is likely nothing wrong with the host server. "
                         "Possible reasons for failure:\n"

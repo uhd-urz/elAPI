@@ -17,7 +17,6 @@ from typing import Optional
 import tenacity
 import typer
 from rich import pretty
-from rich.console import Console
 from rich.markdown import Markdown
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 from typing_extensions import Annotated
@@ -27,14 +26,13 @@ from ..configuration import APP_NAME
 from ..loggers import Logger
 from ..path import ProperPath
 from ..styles import get_custom_help_text
+from ..styles import stdin_console, stderr_console
 from ..validators import RuntimeValidationError
 
 logger = Logger()
 
 
 pretty.install()
-console = Console(color_system="truecolor")
-stderr_console = Console(color_system="truecolor", stderr=True)
 app = typer.Typer(
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
@@ -175,7 +173,7 @@ def get(
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
-        console.print(highlight(formatted_data))
+        stdin_console.print(highlight(formatted_data))
     return response_data
 
 
@@ -237,7 +235,7 @@ def post(
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            console.print("Success: Resource created!", style="green")
+            stdin_console.print("Success: Resource created!", style="green")
         else:
             stderr_console.print(
                 f"Warning: Something unexpected happened! "
@@ -250,7 +248,7 @@ def post(
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
-        console.print(highlight(formatted_data))
+        stdin_console.print(highlight(formatted_data))
         return formatted_data
 
 
@@ -304,7 +302,7 @@ def patch(
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            console.print("Success: Resource modified!", style="green")
+            stdin_console.print("Success: Resource modified!", style="green")
         else:
             stderr_console.print(
                 f"Warning: Something unexpected happened! "
@@ -317,7 +315,7 @@ def patch(
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
-        console.print(highlight(formatted_data))
+        stdin_console.print(highlight(formatted_data))
         return formatted_data
 
 
@@ -334,7 +332,7 @@ def show_config(
     from ..plugins.show_config import show
 
     md = Markdown(show(show_keys))
-    console.print(md)
+    stdin_console.print(md)
 
 
 @app.command()
@@ -360,11 +358,11 @@ def cleanup() -> None:
     from ..path import ProperPath
     from time import sleep
 
-    with console.status("Cleaning up...", refresh_per_second=15):
+    with stdin_console.status("Cleaning up...", refresh_per_second=15):
         sleep(0.5)
         typer.echo()  # mainly for a newline!
         ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
-    console.print("Done!", style="green")
+    stdin_console.print("Done!", style="green")
 
 
 @bill_teams_app.command(name="info")
@@ -402,7 +400,7 @@ def bill_teams(
         PermissionValidator,
     )
 
-    with console.status("Validating...\n", refresh_per_second=15):
+    with stdin_console.status("Validating...\n", refresh_per_second=15):
         validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
         validate()
     if export is False:
@@ -437,7 +435,7 @@ def bill_teams(
         export(data=formatted_bill_teams_data, verbose=True)
     else:
         highlight = Highlight(data_format)
-        console.print(highlight(formatted_bill_teams_data))
+        stdin_console.print(highlight(formatted_bill_teams_data))
     return bill_teams_data
 
 
