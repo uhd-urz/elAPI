@@ -5,9 +5,9 @@ from typing import Any, Union
 
 
 class BaseFormat(ABC):
-    _registry = {}
-    _names = []
-    _conventions = []
+    _registry: dict[str:Any, ...] = {}
+    _names: list[str, ...] = []
+    _conventions: list[str, ...] = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
