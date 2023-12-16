@@ -5,8 +5,10 @@ from dynaconf import Dynaconf
 
 from ._config_history import ConfigHistory, InspectConfigHistory
 from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
+# noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
+    DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
     FALLBACK_EXPORT_DIR,

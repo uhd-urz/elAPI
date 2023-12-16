@@ -22,7 +22,7 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 from typing_extensions import Annotated
 
 from ._doc import __PARAMETERS__doc__ as docs
-from ..configuration import APP_NAME
+from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ..loggers import Logger
 from ..path import ProperPath
 from ..styles import get_custom_help_text
@@ -52,8 +52,6 @@ typer.rich_utils._get_help_text = (
 
 
 class _CLIExport:
-    DEFAULT_EXPORT_DATA_FORMAT = "json"
-
     def __new__(
         cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
     ):
@@ -70,7 +68,7 @@ class _CLIExport:
             else None
         )
         data_format = (
-            data_format or _export_file_ext or cls.DEFAULT_EXPORT_DATA_FORMAT
+            data_format or _export_file_ext or DEFAULT_EXPORT_DATA_FORMAT
         )  # default data_format format
         ExportParams = namedtuple(
             "ExportParams", ["data_format", "destination", "extension"]
@@ -471,7 +469,7 @@ def generate_invoice(
     data_format, export_dest, _ = _CLIExport(_INVOICE_FORMAT, _export_dest)
     if _bill_teams_data is None:
         _bill_teams_data = bill_teams(
-            data_format=_CLIExport.DEFAULT_EXPORT_DATA_FORMAT, export=export
+            data_format=DEFAULT_EXPORT_DATA_FORMAT, export=export
         )
     invoice = InvoiceGenerator(_bill_teams_data)
     export = Export(
