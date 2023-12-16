@@ -97,7 +97,7 @@ class _CLIFormat:
         if isinstance(format.convention, str):
             ...
         elif isinstance(format.convention, Iterable):
-            format.convention = format.convention[0]
+            format.convention = next(iter(format.convention))
         return format
 
 
