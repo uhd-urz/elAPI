@@ -97,7 +97,7 @@ $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "
 We can update an existing user's email address.
 
 ```shell
-$ elapi patch users --id id '{"email": "new_email@itnerd.de"}' <user >-d
+$ elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
 ```
 
 `patch` command allows us to make changes to eLabFTW server settings. E.g., we can update the time (in minutes)
