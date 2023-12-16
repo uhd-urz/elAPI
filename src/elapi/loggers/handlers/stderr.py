@@ -4,6 +4,7 @@ from hashlib import md5
 from rich.logging import RichHandler
 
 from . import Handler
+from ...styles import stderr_console
 
 
 class STDERRHandler(Handler):
@@ -36,7 +37,9 @@ class STDERRHandler(Handler):
 
             handler = logging.FileHandler(filename=os.devnull)
         else:
-            handler = RichHandler(show_time=False, enable_link_path=False)
+            handler = RichHandler(
+                show_time=False, enable_link_path=False, console=stderr_console
+            )
         handler.setFormatter(self.formatter)
         handler.setLevel(logging.DEBUG)
         return handler
