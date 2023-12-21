@@ -17,11 +17,14 @@ $ elapi get users --id <id>
 
 ## Installation
 
-elAPI can be installed from PyPI. Make sure `pip` is not invoked from an active virtual environment.
+Support for installing packages with `pip install --user` has been deprecated with the adoption of [PEP 688](https://peps.python.org/pep-0668/) on many systems like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
+We recommend [`pipx`](https://pipx.pypa.io/stable/) for installing elAPI.
 
-```sh
-$ python3 -m pip install --user elapi
+```shell
+$ pipx install elapi
 ```
+
+Of course, `pip install --user elapi` might continue to work on some systems.
 
 ## Configuration
 
