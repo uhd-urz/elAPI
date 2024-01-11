@@ -1,7 +1,7 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
-from ..configuration import APP_NAME
+from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ..styles import BaseFormat
 
 supported_highlighting_formats = ", ".join(
@@ -40,7 +40,7 @@ __PARAMETERS__doc__ = {
               f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "
               f"If _--format/-F_ is also present, then file extension is ignored, and --format value takes precedence.",
     "data_format": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
-              "The values are case insensitive. The default format is `JSON`. "
+              f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
               "without syntax highlighting. This can be utilized if one wishes to pipe the output "
               " to some external formatting program like `less`. "
