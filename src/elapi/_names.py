@@ -1,8 +1,5 @@
 import os
 from pathlib import Path
-from typing import Union
-
-from .path import ProperPath
 
 # variables with leading underscores here indicate that they are to be overwritten by config.py
 # In which case, import their counterparts from src/config.py
@@ -18,9 +15,9 @@ cur_dir: Path = Path.cwd()
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
 # XDG and other convention variable definitions
-ENV_XDG_DATA_HOME: Union[ProperPath, Path, str] = "XDG_DATA_HOME"
-ENV_XDG_DOWNLOAD_DIR: Union[ProperPath, Path, str] = "XDG_DOWNLOAD_DIR"
-ENV_XDG_CONFIG_HOME: Union[ProperPath, Path, str] = "XDG_CONFIG_HOME"
+ENV_XDG_DATA_HOME: str = "XDG_DATA_HOME"
+ENV_XDG_DOWNLOAD_DIR: str = "XDG_DOWNLOAD_DIR"
+ENV_XDG_CONFIG_HOME: str = "XDG_CONFIG_HOME"
 TMP_DIR: Path = Path(f"/var/tmp/{APP_NAME}")
 
 # Fallback definitions
@@ -31,8 +28,8 @@ FALLBACK_CONFIG_DIR: Path = user_home / ".config"
 # Configuration path definitions
 SYSTEM_CONFIG_LOC: Path = Path("/etc") / CONFIG_FILE_NAME
 LOCAL_CONFIG_LOC: Path = (
-    os.getenv(ENV_XDG_CONFIG_HOME) or FALLBACK_CONFIG_DIR
-) / CONFIG_FILE_NAME
+    Path(os.getenv(ENV_XDG_CONFIG_HOME, FALLBACK_CONFIG_DIR)) / CONFIG_FILE_NAME
+)
 # In case, $XDG_CONFIG_HOME isn't defined in the machine, it falls back to $HOME/.config/elapi.yml
 PROJECT_CONFIG_LOC: Path = cur_dir / CONFIG_FILE_NAME
 
