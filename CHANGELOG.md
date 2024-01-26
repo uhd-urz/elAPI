@@ -7,14 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.5] - 2023-12-07
 
-### Fixed
-
-- Fix timeout issue ([#7](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/7))
-
 ### Added
 
 - elAPI can be run without error when run with no arguments. I.e., running elapi will show the default help message.
 - New `version` command.
+- Formatter APIs (including base API `BaseFormat`) now supports multiple conventional names for formats. E.g., `yaml` and `yml` conventions for `YAMLFormat`.
+
+### Fixed
+
+- Fix timeout issue ([#7](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/7))
+
+### Changed
+
+- Change default export file extension from `.yaml` to `.yml` to align with eLabFTW convention
+- Change `generate-invoice`'s default `bill-teams` information format from `YAML` to `JSON`
 
 ## [1.0.2] - 2023-11-16
 
