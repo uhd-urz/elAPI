@@ -33,7 +33,7 @@ class PermissionValidator(Validator):
         try:
             self.GROUPS[value]
         except KeyError:
-            raise ValueError("Supported values are: 'sysadmin', 'admin', 'user'.")
+            raise ValueError(f"Supported values are: {', '.join(self.GROUPS.keys())}.")
         else:
             self._who = value
 
