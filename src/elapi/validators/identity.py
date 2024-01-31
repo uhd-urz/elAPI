@@ -1,12 +1,6 @@
 from json import JSONDecodeError
 
-from httpx import (
-    Response,
-    UnsupportedProtocol,
-    InvalidURL,
-    ConnectError,
-    ConnectTimeout,
-)
+import httpx
 
 from .base import Validator, RuntimeValidationError, CriticalValidationError
 from ..styles import stdin_console
@@ -14,10 +8,12 @@ from ..styles.highlight import NoteText
 
 COMMON_NETWORK_ERRORS: tuple = (
     JSONDecodeError,
-    UnsupportedProtocol,
-    InvalidURL,
-    ConnectError,
-    ConnectTimeout,
+    httpx.UnsupportedProtocol,
+    httpx.InvalidURL,
+    httpx.TimeoutException,
+    httpx.ReadError,
+    httpx.ConnectError,
+    httpx.RemoteProtocolError,
     TimeoutError,
 )
 
@@ -89,7 +85,7 @@ class HostIdentityValidator(Validator):
 
             API_TOKEN_MASKED = inspect.applied_config.get(KEY_API_TOKEN).value
             try:
-                response: Response = self.check_endpoint()
+                response: httpx.Response = self.check_endpoint()
                 response.json()
             except COMMON_NETWORK_ERRORS as error:
                 logger.critical(
