@@ -9,9 +9,8 @@ from ...loggers import Logger
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
-    httpx.ReadTimeout,
+    httpx.TimeoutException,
     httpx.ReadError,
-    httpx.ConnectTimeout,
     httpx.ConnectError,
     httpx.RemoteProtocolError,
     TimeoutError,
@@ -45,9 +44,10 @@ class UsersInformation:
                 transient=True,
             ):
                 recursive_users_data.append(await task)
-        except _RETRY_TRIGGER_ERRORS:
+        except _RETRY_TRIGGER_ERRORS as error:
             logger.warning(
-                f"Retrieving {cls.unit_name} data was interrupted due to a network error."
+                f"Retrieving {cls.unit_name} data was interrupted due to a network error. "
+                f"Exception details: '{error!r}'"
             )
             event_loop.set_exception_handler(lambda loop, context: ...)
             # "lambda loop, context: ..." suppresses asyncio error emission:
