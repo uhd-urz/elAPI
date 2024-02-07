@@ -39,7 +39,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 bill_teams_app = typer.Typer(
-    rich_markup_mode="markdown", pretty_exceptions_show_locals=False
+    rich_markup_mode="markdown",
+    pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
 )
 app.add_typer(bill_teams_app, name="bill-teams", help="Manage bills incurred by teams.")
 
