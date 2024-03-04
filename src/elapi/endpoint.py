@@ -1,36 +1,119 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Optional, Generator, Awaitable
 
-from .api import AsyncGETRequest
+from httpx import Response
+
+from .api import (
+    AsyncGETRequest,
+    GETRequest,
+    POSTRequest,
+    PATCHRequest,
+    AsyncPOSTRequest,
+    AsyncPATCHRequest,
+)
+
+
+class FixedAsyncEndpoint:
+    def __init__(self, unit_name: str):
+        self.unit_name = unit_name
+        self._get_session = AsyncGETRequest(keep_session_open=True)
+        self._post_session = AsyncPOSTRequest(keep_session_open=True)
+        self._patch_session = AsyncPATCHRequest(keep_session_open=True)
+
+    async def get(
+        self,
+        unit_id: Union[int, str, None] = None,
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        return await self._get_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query
+        )
+
+    async def post(
+        self,
+        unit_id: Union[int, str],
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+        **kwargs,
+    ) -> Response:
+        return await self._post_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+        )
+
+    async def patch(
+        self,
+        unit_id: Union[int, str],
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+        **kwargs,
+    ) -> Response:
+        return await self._patch_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+        )
+
+    async def close(self):
+        await self._get_session.close()
+        await self._post_session.close()
+        await self._patch_session.close()
 
 
 class FixedEndpoint:
-    def __init__(self, unit_name: str, keep_session_open: bool = False):
+    def __init__(self, unit_name: str):
         self.unit_name = unit_name
-        self._session = AsyncGETRequest(keep_session_open=keep_session_open)
+        self._get_session = GETRequest(keep_session_open=True)
+        self._post_session = POSTRequest(keep_session_open=True)
+        self._patch_session = PATCHRequest(keep_session_open=True)
 
-    @property
-    def session(self) -> AsyncGETRequest:
-        return self._session
+    def get(
+        self,
+        unit_id: Union[int, str, None] = None,
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        return self._get_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query
+        )
 
-    @session.setter
-    def session(self, value):
-        raise AttributeError("Session cannot be modified!")
+    def post(
+        self,
+        unit_id: Union[int, str],
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+        **kwargs,
+    ) -> Response:
+        return self._post_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+        )
 
-    @property
-    def DATA_FORMAT(self):
-        return "json"
+    def patch(
+        self,
+        unit_id: Union[int, str],
+        sub_endpoint: Optional[str] = None,
+        sub_unit_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+        **kwargs,
+    ) -> Response:
+        return self._patch_session(
+            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+        )
 
-    async def json(self, unit_id: Union[str, int, None] = None, **kwargs) -> dict:
-        response = await self.session(self.unit_name, unit_id)
-        return response.json(**kwargs)
+    def close(self):
+        self._get_session.close()
+        self._post_session.close()
+        self._patch_session.close()
 
 
-class RecursiveEndpoint:
+class RecursiveGETEndpoint:
     def __init__(
         self,
         source: Iterable[dict],
         source_id_prefix: str,
-        target_endpoint: FixedEndpoint,
+        target_endpoint: FixedAsyncEndpoint,
     ):
         self.source = source
         self.source_id_prefix = source_id_prefix
@@ -68,10 +151,12 @@ class RecursiveEndpoint:
 
     @target_endpoint.setter
     def target_endpoint(self, value):
-        if not isinstance(value, FixedEndpoint):
-            raise TypeError("target_endpoint must be an instance of FixedEndpoint!")
+        if not isinstance(value, FixedAsyncEndpoint):
+            raise TypeError(
+                f"target_endpoint must be an instance of '{FixedAsyncEndpoint.__name__}'!"
+            )
         self._target_endpoint = value
 
-    def items(self):
+    def endpoints(self, **kwargs) -> Generator[Awaitable[Response], None, None]:
         for item in self.source:
-            yield self.target_endpoint.json(unit_id=item[self.source_id_prefix])
+            yield self.target_endpoint.get(unit_id=item[self.source_id_prefix], **kwargs)
