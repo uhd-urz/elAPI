@@ -9,11 +9,11 @@ supported_highlighting_formats = ", ".join(
 )
 
 __PARAMETERS__doc__ = {
-    "endpoint": "Name of an endpoint. Valid endpoints are: apikeys, config, experiments, info, "
-                "items, experiments_templates, items_types, events, team_tags, teams, "
-                "todolist, unfinished_steps, users, idps.",
+    "endpoint_name": "Name of an endpoint. Valid endpoints are: apikeys, config, experiments, info, "
+                     "items, experiments_templates, items_types, events, team_tags, teams, "
+                     "todolist, unfinished_steps, users, idps.",
     "endpoint_id_get": "ID for one of the preceding endpoints. If provided, only information associated with that "
-                "ID will be returned. E.g., user ID, team ID, experiments ID.",
+                     "ID will be returned. E.g., user ID, team ID, experiments ID.",
     "endpoint_id_post": "ID for one of the preceding endpoints. If provided, `POST` request will be made against that "
     "specific ID. E.g., events ID,.",
     "endpoint_id_patch": "ID for one of the preceding endpoints. If provided, `PATCH` request will be made "

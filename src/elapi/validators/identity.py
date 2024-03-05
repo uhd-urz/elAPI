@@ -26,7 +26,7 @@ class HostIdentityValidator(Validator):
         from ..api import GETRequest
 
         session = GETRequest()
-        return session(endpoint="apikeys", endpoint_id=None)
+        return session(endpoint_name="apikeys", endpoint_id=None)
 
     def validate(self):
         from ..loggers import Logger

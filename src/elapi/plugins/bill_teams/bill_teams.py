@@ -82,7 +82,7 @@ class TeamsInformation:
 
         teams = GETRequest()
         try:
-            return teams(endpoint=cls.endpoint_name, endpoint_id=None).json()
+            return teams(endpoint_name=cls.endpoint_name, endpoint_id=None).json()
         except _RETRY_TRIGGER_ERRORS:
             teams.close()
             raise InterruptedError
