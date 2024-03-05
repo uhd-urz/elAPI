@@ -154,7 +154,7 @@ class ElabFTWURL:
             if not re.match(r"^\w+$", value := str(value)):
                 # Although, eLabFTW primarily supports integer-only IDs, there are exceptions, like the alias
                 # ID "me" for receiving one's own user information.
-                raise ValueError("Invalid unit ID (or entity ID)")
+                raise ValueError("Invalid endpoint ID (or entity ID)")
             self._endpoint_id = value
         else:
             self._endpoint_id = ""
@@ -167,11 +167,11 @@ class ElabFTWURL:
     def sub_endpoint_id(self, value):
         if self.sub_endpoint_name is None:
             raise ValueError(
-                "Sub-unit ID cannot be specified without specifying its sub-endpoint first."
+                "Sub-endpoint ID cannot be defined without first specifying its sub-endpoint name."
             )
         if value is not None:
             if not re.match(r"^\w+$", value := str(value)):
-                raise ValueError("Invalid sub-unit ID (or entity sub-ID)")
+                raise ValueError("Invalid sub-endpoint ID (or entity sub-ID)")
             self._sub_endpoint_id = value
         else:
             self._sub_endpoint_id = ""
