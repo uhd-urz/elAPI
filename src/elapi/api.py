@@ -174,7 +174,9 @@ class ElabFTWURL:
                 raise ValueError("Invalid sub-unit ID (or entity sub-ID)")
             self._sub_unit_id = value
         else:
-            self._sub_unit_id = ""  # TODO: what an empty sub unit ID does
+            self._sub_unit_id = ""
+            # Similar to an empty unit_id, an empty sub_unit_id sends back
+            # the whole list of available resources for a given sub-endpoint as response.
 
     @property
     def query(self) -> str:
