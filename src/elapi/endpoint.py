@@ -21,37 +21,37 @@ class FixedAsyncEndpoint:
 
     async def get(
         self,
-        unit_id: Union[int, str, None] = None,
+        endpoint_id: Union[int, str, None] = None,
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
         return await self._get_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
         )
 
     async def post(
         self,
-        unit_id: Union[int, str],
+        endpoint_id: Union[int, str],
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return await self._post_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     async def patch(
         self,
-        unit_id: Union[int, str],
+        endpoint_id: Union[int, str],
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return await self._patch_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     async def close(self):
@@ -69,37 +69,37 @@ class FixedEndpoint:
 
     def get(
         self,
-        unit_id: Union[int, str, None] = None,
+        endpoint_id: Union[int, str, None] = None,
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
         return self._get_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
         )
 
     def post(
         self,
-        unit_id: Union[int, str],
+        endpoint_id: Union[int, str],
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return self._post_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     def patch(
         self,
-        unit_id: Union[int, str],
+        endpoint_id: Union[int, str],
         sub_endpoint: Optional[str] = None,
-        sub_unit_id: Union[int, str, None] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return self._patch_session(
-            self.unit_name, unit_id, sub_endpoint, sub_unit_id, query, **kwargs
+            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     def close(self):
@@ -159,4 +159,4 @@ class RecursiveGETEndpoint:
 
     def endpoints(self, **kwargs) -> Generator[Awaitable[Response], None, None]:
         for item in self.source:
-            yield self.target_endpoint.get(unit_id=item[self.source_id_prefix], **kwargs)
+            yield self.target_endpoint.get(endpoint_id=item[self.source_id_prefix], **kwargs)

@@ -42,7 +42,7 @@ class PermissionValidator(Validator):
         from ..api import GETRequest
 
         session = GETRequest()
-        return session(endpoint="users", unit_id="me")
+        return session(endpoint="users", endpoint_id="me")
 
     def validate(self) -> None:
         from ..loggers import Logger

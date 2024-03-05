@@ -22,7 +22,7 @@ _RETRY_TRIGGER_ERRORS = (
 class UsersInformation:
     __slots__ = "users", "user_id_prefix"
     unit_name = "users"
-    unit_id_prefix = "userid"
+    endpoint_id_prefix = "userid"
 
     @classmethod
     async def items(cls):
@@ -33,10 +33,10 @@ class UsersInformation:
         users_endpoint = FixedAsyncEndpoint(unit_name=cls.unit_name)
         try:
             users = (
-                await users_endpoint.get(unit_id=None)
+                await users_endpoint.get(endpoint_id=None)
             ).json()  # None gives a list of all users
             recursive_users = RecursiveGETEndpoint(
-                users, cls.unit_id_prefix, target_endpoint=users_endpoint
+                users, cls.endpoint_id_prefix, target_endpoint=users_endpoint
             )
             tasks: list[Awaitable[Response]] = [
                 item for item in recursive_users.endpoints()
@@ -82,7 +82,7 @@ class TeamsInformation:
 
         teams = GETRequest()
         try:
-            return teams(endpoint=cls.unit_name, unit_id=None).json()
+            return teams(endpoint=cls.unit_name, endpoint_id=None).json()
         except _RETRY_TRIGGER_ERRORS:
             teams.close()
             raise InterruptedError

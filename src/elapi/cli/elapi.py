@@ -104,8 +104,8 @@ class _CLIFormat:
 @app.command(short_help="Make `GET` requests to elabftw endpoints.")
 def get(
     endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
-    unit_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["unit_id_get"], show_default=False)
+    endpoint_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["endpoint_id_get"], show_default=False)
     ] = None,
     data_format: Annotated[
         Optional[str],
@@ -155,12 +155,12 @@ def get(
     format = _CLIFormat(data_format, export_file_ext)
 
     session = GETRequest()
-    raw_response = session(endpoint, unit_id)
+    raw_response = session(endpoint, endpoint_id)
 
     formatted_data = format(response_data := raw_response.json())
 
     if export:
-        file_name_stub = f"{endpoint}_{unit_id}" if unit_id else f"{endpoint}"
+        file_name_stub = f"{endpoint}_{endpoint_id}" if endpoint_id else f"{endpoint}"
         export = Export(
             export_dest,
             file_name_stub=file_name_stub,
@@ -184,8 +184,8 @@ def get(
 def post(
     endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
     *,
-    unit_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["unit_id_post"], show_default=False)
+    endpoint_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["endpoint_id_post"], show_default=False)
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
@@ -229,7 +229,7 @@ def post(
     # data_values: list[str, ...] = data.args[1::2]
     # valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     session = POSTRequest()
-    raw_response = session(endpoint, unit_id, **valid_data)
+    raw_response = session(endpoint, endpoint_id, **valid_data)
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
@@ -259,8 +259,8 @@ def post(
 def patch(
     endpoint: Annotated[str, typer.Argument(help=docs["endpoint"], show_default=False)],
     *,
-    unit_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["unit_id_patch"], show_default=False)
+    endpoint_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False)
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data_patch"], show_default=False)
@@ -296,7 +296,7 @@ def patch(
 
     valid_data: dict = ast.literal_eval(json_)
     session = PATCHRequest()
-    raw_response = session(endpoint, unit_id, **valid_data)
+    raw_response = session(endpoint, endpoint_id, **valid_data)
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
