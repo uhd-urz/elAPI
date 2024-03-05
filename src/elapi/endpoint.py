@@ -22,36 +22,36 @@ class FixedAsyncEndpoint:
     async def get(
         self,
         endpoint_id: Union[int, str, None] = None,
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
         return await self._get_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
 
     async def post(
         self,
         endpoint_id: Union[int, str],
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return await self._post_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
         )
 
     async def patch(
         self,
         endpoint_id: Union[int, str],
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return await self._patch_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
         )
 
     async def close(self):
@@ -70,36 +70,36 @@ class FixedEndpoint:
     def get(
         self,
         endpoint_id: Union[int, str, None] = None,
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
         return self._get_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
 
     def post(
         self,
         endpoint_id: Union[int, str],
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return self._post_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
         )
 
     def patch(
         self,
         endpoint_id: Union[int, str],
-        sub_endpoint: Optional[str] = None,
+        sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
         return self._patch_session(
-            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
         )
 
     def close(self):
