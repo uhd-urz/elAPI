@@ -13,8 +13,8 @@ from .api import (
 
 
 class FixedAsyncEndpoint:
-    def __init__(self, unit_name: str):
-        self.unit_name = unit_name
+    def __init__(self, endpoint_name: str):
+        self.endpoint_name = endpoint_name
         self._get_session = AsyncGETRequest(keep_session_open=True)
         self._post_session = AsyncPOSTRequest(keep_session_open=True)
         self._patch_session = AsyncPATCHRequest(keep_session_open=True)
@@ -27,7 +27,7 @@ class FixedAsyncEndpoint:
         query: Optional[dict] = None,
     ) -> Response:
         return await self._get_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
         )
 
     async def post(
@@ -39,7 +39,7 @@ class FixedAsyncEndpoint:
         **kwargs,
     ) -> Response:
         return await self._post_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     async def patch(
@@ -51,7 +51,7 @@ class FixedAsyncEndpoint:
         **kwargs,
     ) -> Response:
         return await self._patch_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     async def close(self):
@@ -61,8 +61,8 @@ class FixedAsyncEndpoint:
 
 
 class FixedEndpoint:
-    def __init__(self, unit_name: str):
-        self.unit_name = unit_name
+    def __init__(self, endpoint_name: str):
+        self.endpoint_name = endpoint_name
         self._get_session = GETRequest(keep_session_open=True)
         self._post_session = POSTRequest(keep_session_open=True)
         self._patch_session = PATCHRequest(keep_session_open=True)
@@ -75,7 +75,7 @@ class FixedEndpoint:
         query: Optional[dict] = None,
     ) -> Response:
         return self._get_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query
         )
 
     def post(
@@ -87,7 +87,7 @@ class FixedEndpoint:
         **kwargs,
     ) -> Response:
         return self._post_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     def patch(
@@ -99,7 +99,7 @@ class FixedEndpoint:
         **kwargs,
     ) -> Response:
         return self._patch_session(
-            self.unit_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
+            self.endpoint_name, endpoint_id, sub_endpoint, sub_endpoint_id, query, **kwargs
         )
 
     def close(self):

@@ -21,7 +21,7 @@ _RETRY_TRIGGER_ERRORS = (
 
 class UsersInformation:
     __slots__ = "users", "user_id_prefix"
-    unit_name = "users"
+    endpoint_name = "users"
     endpoint_id_prefix = "userid"
 
     @classmethod
@@ -30,7 +30,7 @@ class UsersInformation:
         from rich.progress import track
 
         event_loop = asyncio.get_running_loop()
-        users_endpoint = FixedAsyncEndpoint(unit_name=cls.unit_name)
+        users_endpoint = FixedAsyncEndpoint(endpoint_name=cls.endpoint_name)
         try:
             users = (
                 await users_endpoint.get(endpoint_id=None)
@@ -46,13 +46,13 @@ class UsersInformation:
             for task in track(
                 asyncio.as_completed(tasks),
                 total=len(tasks),
-                description=f"Getting {cls.unit_name} data:",
+                description=f"Getting {cls.endpoint_name} data:",
                 transient=True,
             ):
                 recursive_users_data.append((await task).json())
         except _RETRY_TRIGGER_ERRORS as error:
             logger.warning(
-                f"Retrieving {cls.unit_name} data was interrupted due to a network error. "
+                f"Retrieving {cls.endpoint_name} data was interrupted due to a network error. "
                 f"Exception details: '{error!r}'"
             )
             event_loop.set_exception_handler(lambda loop, context: ...)
@@ -74,7 +74,7 @@ class UsersInformation:
 
 class TeamsInformation:
     __slots__ = "teams"
-    unit_name = "teams"
+    endpoint_name = "teams"
 
     @classmethod
     def items(cls) -> list[dict, ...]:
@@ -82,7 +82,7 @@ class TeamsInformation:
 
         teams = GETRequest()
         try:
-            return teams(endpoint=cls.unit_name, endpoint_id=None).json()
+            return teams(endpoint=cls.endpoint_name, endpoint_id=None).json()
         except _RETRY_TRIGGER_ERRORS:
             teams.close()
             raise InterruptedError
