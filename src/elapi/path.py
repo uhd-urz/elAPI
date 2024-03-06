@@ -5,7 +5,7 @@ import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, TextIO
+from typing import Union, TextIO, Generator
 
 from .loggers import SimpleLogger
 
@@ -186,7 +186,9 @@ class ProperPath:
                     # traceback message. I.e., which file or directory exactly
 
     @contextmanager
-    def open(self, mode="r", encoding: Union[str, None] = None) -> None:
+    def open(
+        self, mode="r", encoding: Union[str, None] = None
+    ) -> Generator[TextIO, None, None]:
         path = self.expanded.resolve()
         file: Union[TextIO, None] = None
         try:
