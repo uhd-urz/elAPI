@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union, Iterable
+from typing import Any, Union, Iterable, Optional
 
 from ..loggers import Logger
 from ..path import ProperPath
@@ -54,8 +54,18 @@ class Export:
                 raise ValueError("Export path is not valid!") from e
         self._destination = value / (self.file if value.kind == "dir" else "")
 
-    def __call__(self, data: Any, verbose: bool = False) -> None:
-        with self.destination.open(mode="w", encoding="utf-8") as file:
+    def __call__(
+        self,
+        data: Any,
+        encoding: Optional[str] = "utf-8",
+        append_only: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        mode: str = "w" if not append_only else "a"
+        if isinstance(data, bytes):
+            mode += "b"
+            encoding = None
+        with self.destination.open(mode=mode, encoding=encoding) as file:
             file.write(data)
         if verbose:
             logger.info(
