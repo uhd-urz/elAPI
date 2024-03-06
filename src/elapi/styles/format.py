@@ -17,8 +17,7 @@ class BaseFormat(ABC):
 
     @property
     @abstractmethod
-    def name(self):
-        ...
+    def name(self): ...
 
     @property
     @abstractmethod
@@ -26,8 +25,7 @@ class BaseFormat(ABC):
         return self.name
 
     @convention.setter
-    def convention(self, value):
-        ...
+    def convention(self, value): ...
 
     @classmethod
     def supported_formatters(cls) -> dict[str:"BaseFormat", ...]:
@@ -39,12 +37,10 @@ class BaseFormat(ABC):
 
     @classmethod
     @abstractmethod
-    def pattern(cls):
-        ...
+    def pattern(cls): ...
 
     @abstractmethod
-    def __call__(self, data: Any):
-        ...
+    def __call__(self, data: Any): ...
 
 
 class JSONFormat(BaseFormat):
