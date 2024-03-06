@@ -11,7 +11,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
     With elAPI you can do the following:
         $ elapi get users --id <id>
 """
-from collections.abc import Iterable
+
 from typing import Optional
 
 import tenacity
@@ -24,7 +24,6 @@ from typing_extensions import Annotated
 from ._doc import __PARAMETERS__doc__ as docs
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ..loggers import Logger
-from ..path import ProperPath
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
 from ..validators import RuntimeValidationError
@@ -53,59 +52,14 @@ typer.rich_utils._get_help_text = (
 )
 
 
-class _CLIExport:
-    def __new__(
-        cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
-    ):
-        from collections import namedtuple
-        from ..validators import Validate
-        from ..plugins.export import ExportValidator
-
-        validate_export = Validate(ExportValidator(export_dest))
-        export_dest: ProperPath = validate_export.get()
-
-        _export_file_ext: str = (
-            export_dest.expanded.suffix.removeprefix(".")
-            if export_dest.kind == "file"
-            else None
-        )
-        data_format = (
-            data_format or _export_file_ext or DEFAULT_EXPORT_DATA_FORMAT
-        )  # default data_format format
-        ExportParams = namedtuple(
-            "ExportParams", ["data_format", "destination", "extension"]
-        )
-        return ExportParams(data_format, export_dest, _export_file_ext)
-
-
-class _CLIFormat:
-    FALLBACK_DATA_FORMAT = "txt"
-
-    def __new__(cls, data_format: str, export_file_ext: Optional[str] = None):
-        from ..styles import Format
-
-        try:
-            format = Format(data_format)
-        except ValueError as e:
-            logger.error(e)
-            logger.info(f"{APP_NAME} will fallback to 'txt' format.")
-            format = Format(cls.FALLBACK_DATA_FORMAT)  # Falls back to "txt"
-        if export_file_ext and export_file_ext not in format.convention:
-            logger.info(
-                f"File extension is '{export_file_ext}' but data format will be '{format.name.upper()}'."
-            )
-        if isinstance(format.convention, str):
-            ...
-        elif isinstance(format.convention, Iterable):
-            format.convention = next(iter(format.convention))
-        return format
-
-
 @app.command(short_help="Make `GET` requests to elabftw endpoints.")
 def get(
-    endpoint_name: Annotated[str, typer.Argument(help=docs["endpoint_name"], show_default=False)],
+    endpoint_name: Annotated[
+        str, typer.Argument(help=docs["endpoint_name"], show_default=False)
+    ],
     endpoint_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["endpoint_id_get"], show_default=False)
+        str,
+        typer.Option("--id", "-i", help=docs["endpoint_id_get"], show_default=False),
     ] = None,
     data_format: Annotated[
         Optional[str],
@@ -141,6 +95,7 @@ def get(
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
     from ..api import GETRequest
+    from .helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.export import Export
     from ..styles import Highlight
@@ -151,8 +106,8 @@ def get(
     if export is False:
         _export_dest = None
 
-    data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
-    format = _CLIFormat(data_format, export_file_ext)
+    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    format = CLIFormat(data_format, export_file_ext)
 
     session = GETRequest()
     raw_response = session(endpoint_name, endpoint_id)
@@ -160,7 +115,9 @@ def get(
     formatted_data = format(response_data := raw_response.json())
 
     if export:
-        file_name_stub = f"{endpoint_name}_{endpoint_id}" if endpoint_id else f"{endpoint_name}"
+        file_name_stub = (
+            f"{endpoint_name}_{endpoint_id}" if endpoint_id else f"{endpoint_name}"
+        )
         export = Export(
             export_dest,
             file_name_stub=file_name_stub,
@@ -182,10 +139,13 @@ def get(
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def post(
-    endpoint_name: Annotated[str, typer.Argument(help=docs["endpoint_name"], show_default=False)],
+    endpoint_name: Annotated[
+        str, typer.Argument(help=docs["endpoint_name"], show_default=False)
+    ],
     *,
     endpoint_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["endpoint_id_post"], show_default=False)
+        str,
+        typer.Option("--id", "-i", help=docs["endpoint_id_post"], show_default=False),
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
@@ -257,10 +217,13 @@ def post(
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def patch(
-    endpoint_name: Annotated[str, typer.Argument(help=docs["endpoint_name"], show_default=False)],
+    endpoint_name: Annotated[
+        str, typer.Argument(help=docs["endpoint_name"], show_default=False)
+    ],
     *,
     endpoint_id: Annotated[
-        str, typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False)
+        str,
+        typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False),
     ] = None,
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data_patch"], show_default=False)
@@ -392,6 +355,7 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
 
+    from .helpers import CLIExport, CLIFormat
     from ..plugins.export import Export
     from ..styles import Highlight
     from ..validators import (
@@ -405,8 +369,8 @@ def bill_teams(
         validate()
     if export is False:
         _export_dest = None
-    data_format, export_dest, export_file_ext = _CLIExport(data_format, _export_dest)
-    format = _CLIFormat(data_format, export_file_ext)
+    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    format = CLIFormat(data_format, export_file_ext)
 
     import asyncio
     from ..plugins.bill_teams import (
@@ -460,6 +424,7 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
+    from .helpers import CLIExport
     from ..plugins.export import Export
     from ..plugins.bill_teams import InvoiceGenerator
 
@@ -468,7 +433,7 @@ def generate_invoice(
         _export_dest = None
     export = True  # export is always true for generate-invoice
 
-    data_format, export_dest, _ = _CLIExport(_INVOICE_FORMAT, _export_dest)
+    data_format, export_dest, _ = CLIExport(_INVOICE_FORMAT, _export_dest)
     if _bill_teams_data is None:
         _bill_teams_data = bill_teams(
             data_format=DEFAULT_EXPORT_DATA_FORMAT, export=export
