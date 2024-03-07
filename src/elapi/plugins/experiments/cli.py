@@ -195,3 +195,72 @@ def upload_attachment(
             comment=comment,
         )
         stdin_console.print("[green]Successfully attached to experiment.[/green]")
+
+
+@app.command(short_help="Download an attachment from an experiment")
+def download_attachment(
+    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    attachment_id: Annotated[
+        str,
+        typer.Option("--attachment-id", "-a", show_default=False),
+    ],
+    export: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--export",
+            is_flag=True,
+            is_eager=True,
+            show_default=False,
+        ),
+    ] = False,
+    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+) -> None:
+    """
+    Add a new attachment to an existing experiment.
+    """
+    from ...validators import Validate, HostIdentityValidator
+    from ...plugins.export import Export
+    from .experiments import download_attachment
+
+    validate_config = Validate(HostIdentityValidator())
+    validate_config()
+
+    if export is False:
+        _export_dest = None
+    export = True  # export is always true for downloading attachment
+    try:
+        experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
+    except ValidationError as e:
+        logger.error(e)
+        raise typer.Exit(1)
+    else:
+        try:
+            (
+                attachment,
+                attachment_real_id,
+                attachment_name,
+                attachment_extension,
+                attachment_hash,
+                attachment_creation_date,
+            ) = download_attachment(experiment_id, attachment_id)
+        except ValueError as e:
+            logger.error(e)
+            typer.Exit(1)
+        else:
+            data_format, export_dest, export_file_ext = CLIExport(
+                attachment_extension, _export_dest
+            )
+            _is_real_id = attachment_id == attachment_real_id
+            if export:
+                if export_file_ext and export_file_ext != attachment_extension:
+                    logger.info(
+                        f"File extension is '{export_file_ext}' but data format will be '{attachment_extension}'."
+                    )
+                file_name_stub = f"attachment_{attachment_real_id if _is_real_id else attachment_hash[:6]}_{attachment_name}"
+                export = Export(
+                    export_dest,
+                    file_name_stub=file_name_stub,
+                    file_extension=attachment_extension,
+                    format_name=data_format,
+                )
+                export(data=attachment, verbose=True)

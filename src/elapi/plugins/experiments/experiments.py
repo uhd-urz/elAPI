@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 from ...endpoint import FixedEndpoint
 from ...path import ProperPath
@@ -120,3 +120,33 @@ def attach_to_experiment(
             },
         )
     experiment_endpoint.close()
+
+
+def download_attachment(
+    experiment_id: Union[str, int], attachment_id: Union[str, int]
+) -> Tuple[bytes, str, str, str, str, str]:
+    session = FixedExperimentEndpoint()
+    response = session.get(experiment_id, sub_endpoint_name="uploads")
+    for attachment_metadata in response.json():
+        if re.match(rf"^{attachment_id}$", str(attachment_metadata["id"])) or (
+            len(attachment_id) >= 6
+            and re.match(rf"^{attachment_id}", attachment_metadata["hash"])
+        ):
+            real_id = str(attachment_metadata["id"])
+            _extension: str = "".join(Path(attachment_metadata["real_name"]).suffixes)
+            _name: str = attachment_metadata["real_name"].rstrip(_extension)
+            _extension = _extension.lstrip(".")
+            _hash: str = attachment_metadata["hash"]
+            _created_at: str = attachment_metadata["created_at"]
+            attachment = session.get(
+                experiment_id,
+                sub_endpoint_name="uploads",
+                sub_endpoint_id=real_id,
+                query={"format": "binary"},
+            ).content
+            session.close()
+            return attachment, real_id, _name, _extension, _hash, _created_at
+    session.close()
+    raise ValueError(
+        f"Attachment with ID '{attachment_id}' couldn't be found on experiment with ID '{experiment_id}'."
+    )
