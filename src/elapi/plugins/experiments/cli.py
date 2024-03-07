@@ -156,3 +156,42 @@ def append(
             "[green]Successfully appended content to experiment.[/green]"
         )
         return content
+
+
+@app.command(short_help="Attach a file to an experiment")
+def upload_attachment(
+    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    path: Annotated[
+        str,
+        typer.Option("--path", "-P", show_default=False),
+    ],
+    attachment_name: Annotated[
+        Optional[str],
+        typer.Option("--rename", "-n", show_default=False),
+    ] = None,
+    comment: Annotated[
+        Optional[str],
+        typer.Option("--comment", "-c", show_default=False),
+    ] = None,
+) -> None:
+    """
+    Add a new attachment to an existing experiment.
+    """
+    from ...validators import Validate, HostIdentityValidator
+    from .experiments import attach_to_experiment
+
+    validate_config = Validate(HostIdentityValidator())
+    validate_config()
+    try:
+        experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
+    except ValidationError as e:
+        logger.error(e)
+        raise typer.Exit(1)
+    else:
+        attach_to_experiment(
+            experiment_id,
+            file_path=path,
+            attachment_name=attachment_name,
+            comment=comment,
+        )
+        stdin_console.print("[green]Successfully attached to experiment.[/green]")

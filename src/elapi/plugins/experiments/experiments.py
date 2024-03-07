@@ -1,7 +1,9 @@
 import re
-from typing import Union
+from pathlib import Path
+from typing import Union, Optional
 
 from ...endpoint import FixedEndpoint
+from ...path import ProperPath
 from ...validators import ValidationError, Validator
 
 
@@ -97,3 +99,24 @@ def append_to_experiment(
         data={"body": current_body + content},
     )
     session.close()
+
+
+# noinspection PyArgumentList
+def attach_to_experiment(
+    experiment_id: Union[str, int],
+    *,
+    file_path: Union[str, Path],
+    attachment_name: Optional[str] = None,
+    comment: Optional[str] = None,
+) -> None:
+    experiment_endpoint = FixedExperimentEndpoint()
+    with (file_path := ProperPath(file_path)).open(mode="rb") as f:
+        experiment_endpoint.post(
+            endpoint_id=experiment_id,
+            sub_endpoint_name="uploads",
+            files={
+                "file": (attachment_name or file_path.expanded.name, f),
+                "comment": (None, comment or ""),
+            },
+        )
+    experiment_endpoint.close()
