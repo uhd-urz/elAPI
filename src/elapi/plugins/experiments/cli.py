@@ -8,6 +8,7 @@ from ...loggers import Logger
 from ...plugins.experiments.experiments import (
     ExperimentIDValidator,
     FixedExperimentEndpoint,
+    append_to_experiment,
 )
 from ...styles import stdin_console, stderr_console
 from ...validators import ValidationError
@@ -99,3 +100,59 @@ def read(
             stdin_console.print(highlight(formatted_data))
         response.close()
         return response_data
+
+
+@app.command(short_help="Add new content to an existing experiment")
+def append(
+    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    content_text: Annotated[
+        Optional[str],
+        typer.Option("--text", "-t", show_default=False),
+    ] = None,
+    content_path: Annotated[
+        Optional[str],
+        typer.Option("--path", "-P", show_default=False),
+    ] = None,
+    markdown_to_html: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--markdown-to-html",
+            "-M",
+            show_default=False,
+        ),
+    ] = False,
+) -> str:
+    """
+    Add a new attachment to an existing experiment.
+    """
+    from ...validators import Validate, HostIdentityValidator
+    from ...path import ProperPath
+
+    validate_config = Validate(HostIdentityValidator())
+    validate_config()
+    try:
+        experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
+    except ValidationError as e:
+        logger.error(e)
+        raise typer.Exit(1)
+    else:
+        if content_text and content_path:
+            logger.error("Either '--text/-t' or '--path/-p' can be defined, not both!")
+            raise typer.Exit(1)
+        if content_text is not None:
+            content: str = content_text
+        elif content_path is not None:
+            with ProperPath(content_path).open() as f:
+                content: str = f.read()
+        else:
+            content: str = ""
+        if not content:
+            stdin_console.print(
+                "[yellow]Content is empty. Nothing was appended to experiment.[/yellow]"
+            )
+            raise typer.Exit()
+        append_to_experiment(experiment_id, content, markdown_to_html)
+        stdin_console.print(
+            "[green]Successfully appended content to experiment.[/green]"
+        )
+        return content
