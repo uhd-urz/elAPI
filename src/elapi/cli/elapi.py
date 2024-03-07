@@ -24,6 +24,7 @@ from typing_extensions import Annotated
 from ._doc import __PARAMETERS__doc__ as docs
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ..loggers import Logger
+from ..plugins import experiments
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
 from ..validators import RuntimeValidationError
@@ -43,6 +44,7 @@ bill_teams_app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(bill_teams_app, name="bill-teams", help="Manage bills incurred by teams.")
+app.add_typer(experiments.app, name="experiments", help="Manage experiments.")
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
