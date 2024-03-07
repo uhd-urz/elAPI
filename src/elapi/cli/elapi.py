@@ -126,7 +126,7 @@ def get(
         )
         export(data=formatted_data, verbose=True)
     else:
-        highlight = Highlight(data_format)
+        highlight = Highlight(format.name)
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
@@ -204,7 +204,7 @@ def post(
             )
             raise typer.Exit(1)
     else:
-        highlight = Highlight(data_format)
+        highlight = Highlight(format.name)
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
@@ -274,7 +274,7 @@ def patch(
             )
             raise typer.Exit(1)
     else:
-        highlight = Highlight(data_format)
+        highlight = Highlight(format.name)
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
             raise typer.Exit(1)
@@ -398,7 +398,7 @@ def bill_teams(
         )
         export(data=formatted_bill_teams_data, verbose=True)
     else:
-        highlight = Highlight(data_format)
+        highlight = Highlight(format.name)
         stdin_console.print(highlight(formatted_bill_teams_data))
     return bill_teams_data
 
