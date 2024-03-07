@@ -1,6 +1,9 @@
 from collections.abc import Iterable
 from typing import Optional
 
+from click import Context
+from typer.core import TyperGroup
+
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ..loggers import Logger
 from ..path import ProperPath
@@ -62,3 +65,14 @@ class CLIFormat:
         elif isinstance(format.convention, Iterable):
             format.convention = next(iter(format.convention))
         return format
+
+
+class OrderedCommands(TyperGroup):
+    """
+    OrderedCommands is passed to typer.Typer app so that the list of the commands on the terminal
+    is shown in the order they are defined on the script instead of being shown alphabetically.
+    See: https://github.com/tiangolo/typer/issues/428#issuecomment-1238866548
+    """
+
+    def list_commands(self, ctx: Context) -> Iterable[str]:
+        return self.commands.keys()
