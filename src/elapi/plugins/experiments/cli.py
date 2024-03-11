@@ -136,7 +136,7 @@ def append(
         raise typer.Exit(1)
     else:
         if content_text and content_path:
-            logger.error("Either '--text/-t' or '--path/-p' can be defined, not both!")
+            logger.error("Either '--text/-t' or '--path/-P' can be defined, not both!")
             raise typer.Exit(1)
         if content_text is not None:
             content: str = content_text
