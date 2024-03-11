@@ -36,7 +36,7 @@ app = typer.Typer(
 )
 
 app.add_typer(bill_teams.app)
-app.add_typer(experiments.app, name="experiments", help="Manage experiments.")
+app.add_typer(experiments.app)
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437

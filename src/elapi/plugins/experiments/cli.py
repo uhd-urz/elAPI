@@ -16,10 +16,12 @@ logger = Logger()
 
 
 app = typer.Typer(
-    cls=OrderedCommands,
+    name="experiments",
+    help="Manage experiments.",
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
     no_args_is_help=True,
+    cls=OrderedCommands,
 )
 
 
