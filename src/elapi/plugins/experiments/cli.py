@@ -122,7 +122,7 @@ def append(
     ] = False,
 ) -> str:
     """
-    Add a new attachment to an existing experiment.
+    Add new content to an existing experiment.
     """
     from ...validators import Validate, HostIdentityValidator
     from ...path import ProperPath
@@ -215,7 +215,7 @@ def download_attachment(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> None:
     """
-    Add a new attachment to an existing experiment.
+    Download an attachment from an experiment.
     """
     from ...validators import Validate, HostIdentityValidator
     from ...plugins.export import Export
