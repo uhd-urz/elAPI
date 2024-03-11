@@ -141,8 +141,15 @@ def append(
         if content_text is not None:
             content: str = content_text
         elif content_path is not None:
-            with ProperPath(content_path).open() as f:
-                content: str = f.read()
+            if not (content_path := ProperPath(content_path)).kind == "file":
+                logger.error(f" Given path '{content_path}' must be a file!")
+                raise typer.Exit(1)
+            with content_path.open() as f:
+                try:
+                    content: str = f.read()
+                except UnicodeDecodeError:
+                    logger.error("File in given path must be UTF-8 encoded!")
+                    raise typer.Exit(1)
         else:
             content: str = ""
         if not content:
