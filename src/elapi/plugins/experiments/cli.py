@@ -25,7 +25,7 @@ app = typer.Typer(
 
 # noinspection PyCallingNonCallable,PyUnresolvedReferences
 @app.command(short_help="Read or download an experiment")
-def read(
+def get(
     experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
     data_format: Annotated[
         Optional[str],
