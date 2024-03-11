@@ -27,7 +27,6 @@ __PARAMETERS__doc__ = {
     "data_patch": f"Modified data to be sent as HTTP PATCH data. This works similar to how data is passed to `curl`. "
                   f'E.g., `{APP_NAME} patch teams --id <team id> -d \'{{"name": "New team name"}}\'`,',
     "export": "Export output to a location.\n",
-    "invoice_export": "Export output to a location. Invoices are **always exported** by default.\n",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
               f"`export_dir` value from configuration file is used. "
               f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"

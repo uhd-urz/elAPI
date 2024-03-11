@@ -14,20 +14,16 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
 
 from typing import Optional
 
-import tenacity
 import typer
 from rich import pretty
 from rich.markdown import Markdown
-from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 from typing_extensions import Annotated
 
-from ._doc import __PARAMETERS__doc__ as docs
-from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
+from .doc import __PARAMETERS__doc__ as docs
 from ..loggers import Logger
-from ..plugins import experiments
+from ..plugins import experiments, bill_teams
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
-from ..validators import RuntimeValidationError
 
 logger = Logger()
 
@@ -38,12 +34,8 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False,
     no_args_is_help=True,
 )
-bill_teams_app = typer.Typer(
-    rich_markup_mode="markdown",
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-)
-app.add_typer(bill_teams_app, name="bill-teams", help="Manage bills incurred by teams.")
+
+app.add_typer(bill_teams.app)
 app.add_typer(experiments.app, name="experiments", help="Manage experiments.")
 
 typer.rich_utils.STYLE_HELPTEXT = (
@@ -328,123 +320,3 @@ def cleanup() -> None:
         typer.echo()  # mainly for a newline!
         ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
     stdin_console.print("Done!", style="green")
-
-
-@bill_teams_app.command(name="info")
-@tenacity.retry(
-    retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
-    stop=stop_after_attempt(6),  # including the very first attempt
-    wait=wait_exponential(multiplier=60, min=5, max=4260),
-    retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
-)
-def bill_teams(
-    data_format: Annotated[
-        Optional[str],
-        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
-    ] = None,
-    export: Annotated[
-        Optional[bool],
-        typer.Option(
-            "--export",
-            "-e",
-            help=docs["export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
-            show_default=False,
-        ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
-) -> dict:
-    """Get billable teams data."""
-
-    from .helpers import CLIExport, CLIFormat
-    from ..plugins.export import Export
-    from ..styles import Highlight
-    from ..validators import (
-        Validate,
-        HostIdentityValidator,
-        PermissionValidator,
-    )
-
-    with stdin_console.status("Validating...\n", refresh_per_second=15):
-        validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
-        validate()
-    if export is False:
-        _export_dest = None
-    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
-    format = CLIFormat(data_format, export_file_ext)
-
-    import asyncio
-    from ..plugins.bill_teams import (
-        UsersInformation,
-        TeamsInformation,
-        BillTeams,
-    )
-
-    users, teams = UsersInformation(), TeamsInformation()
-    try:
-        bill = BillTeams(asyncio.run(users.items()), teams.items())
-    except RuntimeError as e:
-        # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before all tasks are finished
-        logger.info(f"{APP_NAME} will try again.")
-        raise InterruptedError from e
-    bill_teams_data = bill.items()
-    formatted_bill_teams_data = format(bill_teams_data)
-
-    if export:
-        export = Export(
-            export_dest,
-            file_name_stub=bill_teams.__name__,
-            file_extension=format.convention,
-            format_name=format.name,
-        )
-        export(data=formatted_bill_teams_data, verbose=True)
-    else:
-        highlight = Highlight(format.name)
-        stdin_console.print(highlight(formatted_bill_teams_data))
-    return bill_teams_data
-
-
-@bill_teams_app.command("generate-invoice")
-def generate_invoice(
-    _bill_teams_data: Annotated[
-        Optional[str], typer.Option(hidden=True, show_default=False)
-    ] = None,
-    export: Annotated[
-        Optional[bool],
-        typer.Option(
-            "--export",
-            "-e",
-            help=docs["invoice_export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
-            show_default=False,
-        ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
-):
-    """
-    Generate invoice for billable teams.
-    """
-    from .helpers import CLIExport
-    from ..plugins.export import Export
-    from ..plugins.bill_teams import InvoiceGenerator
-
-    _INVOICE_FORMAT = "md"
-    if export is False:
-        _export_dest = None
-    export = True  # export is always true for generate-invoice
-
-    data_format, export_dest, _ = CLIExport(_INVOICE_FORMAT, _export_dest)
-    if _bill_teams_data is None:
-        _bill_teams_data = bill_teams(
-            data_format=DEFAULT_EXPORT_DATA_FORMAT, export=export
-        )
-    invoice = InvoiceGenerator(_bill_teams_data)
-    export = Export(
-        export_dest,
-        file_name_stub="invoice",
-        file_extension=data_format,
-        format_name=_INVOICE_FORMAT,
-    )
-    export(data=invoice.generate(), verbose=True)
