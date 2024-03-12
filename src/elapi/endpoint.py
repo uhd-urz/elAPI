@@ -32,7 +32,7 @@ class FixedAsyncEndpoint:
 
     async def post(
         self,
-        endpoint_id: Union[int, str],
+        endpoint_id: Union[int, str, None],
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
@@ -80,7 +80,7 @@ class FixedEndpoint:
 
     def post(
         self,
-        endpoint_id: Union[int, str],
+        endpoint_id: Union[int, str, None],
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
