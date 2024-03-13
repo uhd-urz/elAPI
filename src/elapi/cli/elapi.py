@@ -436,6 +436,100 @@ def patch(
         return formatted_data
 
 
+@app.command(
+    short_help="Make `DELETE` request to elabftw endpoints.",
+    # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def delete(
+    endpoint_name: Annotated[
+        str, typer.Argument(help=docs["endpoint_name"], show_default=False)
+    ],
+    *,
+    endpoint_id: Annotated[
+        str,
+        typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False),
+    ] = None,
+    sub_endpoint_name: Annotated[
+        str,
+        typer.Option("--sub", show_default=False),
+    ] = None,
+    sub_endpoint_id: Annotated[
+        str,
+        typer.Option("--sub-id", show_default=False),
+    ] = None,
+    query: Annotated[
+        str,
+        typer.Option("--query", show_default=False),
+    ] = "{}",
+    data_format: Annotated[
+        str,
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
+    ] = "json",
+) -> Optional[dict]:
+    """
+    Make `DELETE` request to elabftw endpoints as documented in
+    [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
+
+    <br/>
+    **Example**:
+    <br/>
+    From [the official documentation about `Delete items`](https://doc.elabftw.net/api/v2/#/Items/delete-item),
+    > DELETE /items/{id}
+
+    With `elapi` you can run the following to delete an item:
+    <br/>
+    `$ elapi delete item --id <id of the item>`.
+    """
+    import ast
+    from .. import APP_NAME
+    from ..api import DELETERequest
+    from json import JSONDecodeError
+    from ..validators import Validate, HostIdentityValidator
+    from ..styles import Format, Highlight
+
+    validate_config = Validate(HostIdentityValidator())
+    validate_config()
+
+    try:
+        query: dict = ast.literal_eval(query)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
+            style="red",
+        )
+        raise typer.Exit(1)
+
+    session = DELETERequest()
+    raw_response = session(
+        endpoint_name,
+        endpoint_id,
+        sub_endpoint_name,
+        sub_endpoint_id,
+        query,
+    )
+    format = Format(data_format)
+    try:
+        formatted_data = format(raw_response.json())
+    except JSONDecodeError:
+        if raw_response.is_success:
+            stdin_console.print("Success: Resource deleted!", style="green")
+        else:
+            logger.error(
+                f"Warning: Something unexpected happened! "
+                f"The HTTP return was: '{raw_response}'.",
+                style="red",
+            )
+            raise typer.Exit(1)
+    else:
+        highlight = Highlight(format.name)
+        if not raw_response.is_success:
+            stderr_console.print(highlight(formatted_data))
+            raise typer.Exit(1)
+        stdin_console.print(highlight(formatted_data))
+        return formatted_data
+
+
 @app.command(name="show-config")
 def show_config(
     show_keys: Annotated[
