@@ -447,7 +447,7 @@ def delete(
     *,
     endpoint_id: Annotated[
         str,
-        typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False),
+        typer.Option("--id", "-i", help=docs["endpoint_id_delete"], show_default=False),
     ] = None,
     sub_endpoint_name: Annotated[
         str,

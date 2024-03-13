@@ -18,6 +18,8 @@ __PARAMETERS__doc__ = {
     "specific ID. E.g., events ID,.",
     "endpoint_id_patch": "ID for one of the preceding endpoints. If provided, `PATCH` request will be made "
                          "against that specific ID. E.g., events ID.",
+    "endpoint_id_delete": "ID for one of the preceding endpoints. If provided, `DELETE` request will be made "
+                         "against that specific ID. E.g., experiments ID.",
     # "data": f"HTTP POST data. There are two ways to pass the data. 1. With `--data` or `-d` option followed "
     #         f"by the JSON content like with `curl`. E.g., "
     #         f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
