@@ -314,7 +314,7 @@ def post(
         if raw_response.is_success:
             stdin_console.print("Success: Resource created!", style="green")
         else:
-            stderr_console.print(
+            logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'.",
                 style="red",
@@ -421,7 +421,7 @@ def patch(
         if raw_response.is_success:
             stdin_console.print("Success: Resource modified!", style="green")
         else:
-            stderr_console.print(
+            logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'.",
                 style="red",
