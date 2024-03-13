@@ -55,6 +55,18 @@ def get(
         str,
         typer.Option("--id", "-i", help=docs["endpoint_id_get"], show_default=False),
     ] = None,
+    sub_endpoint_name: Annotated[
+        str,
+        typer.Option("--sub", show_default=False),
+    ] = None,
+    sub_endpoint_id: Annotated[
+        str,
+        typer.Option("--sub-id", show_default=False),
+    ] = None,
+    query: Annotated[
+        str,
+        typer.Option("--query", show_default=False),
+    ] = "{}",
     data_format: Annotated[
         Optional[str],
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
@@ -88,6 +100,9 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
+    import ast
+    import re
+    from .. import APP_NAME
     from ..api import GETRequest
     from .helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
@@ -99,19 +114,46 @@ def get(
 
     if export is False:
         _export_dest = None
-
+    try:
+        query: dict = ast.literal_eval(query)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
+            f"See '{APP_NAME} get --help' for more on exactly how to use --query.",
+            style="red",
+        )
+        raise typer.Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
-    format = CLIFormat(data_format, export_file_ext)
+    if not query:
+        format = CLIFormat(data_format, export_file_ext)
+    else:
+        logger.warning(
+            "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
+        )
+        format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
 
     session = GETRequest()
-    raw_response = session(endpoint_name, endpoint_id)
-
-    formatted_data = format(response_data := raw_response.json())
-
-    if export:
-        file_name_stub = (
-            f"{endpoint_name}_{endpoint_id}" if endpoint_id else f"{endpoint_name}"
+    raw_response = session(
+        endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+    )
+    try:
+        formatted_data = format(response_data := raw_response.json())
+    except UnicodeDecodeError:
+        logger.warning(
+            "Response data is in binary (or not UTF-8 encoded). Data cannot be displayed properly. "
+            "--export/-e will not be able to infer the data format if export path is a directory."
         )
+        formatted_data = format(response_data := raw_response.content)
+    if export:
+        if isinstance(response_data, bytes):
+            format.name = "binary"
+            format.convention = "bin"
+            formatted_data = response_data
+        file_name_stub = f"{endpoint_name}_{endpoint_id or ''}_{sub_endpoint_name or ''}_{sub_endpoint_id or ''}"
+        if query:
+            _query_params = "_".join(map(lambda x: f"{x[0]}={x[1]}", query.items()))
+            file_name_stub += f"_query_{_query_params}" if query else ""
+        file_name_stub = re.sub(r"_{2,}", "_", file_name_stub).rstrip("_")
         export = Export(
             export_dest,
             file_name_stub=file_name_stub,
