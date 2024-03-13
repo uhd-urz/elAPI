@@ -472,3 +472,76 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         if not self.keep_session_open:
             await self.close()
         return response
+
+
+class DELETERequest(APIRequest):
+    __slots__ = ()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _make(self, *args) -> Response:
+        endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
+        return super().client.delete(
+            url.get(), headers={"Accept": "*/*", "Content-Type": "application/json"}
+        )
+
+    def close(self):
+        super().close()
+
+    def __call__(
+        self,
+        endpoint_name: str,
+        endpoint_id: Union[str, int, None] = None,
+        sub_endpoint_name: Optional[str] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        return super().__call__(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
+
+
+class AsyncDELETERequest(APIRequest, is_async_client=True):
+    __slots__ = ()
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            timeout=180,
+            limits=Limits(
+                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+            ),
+            **kwargs,
+        )
+
+    async def _make(self, *args) -> Response:
+        endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
+        return await super().client.delete(
+            url.get(),
+            headers={"Accept": "*/*", "Content-Type": "application/json"},
+        )
+
+    async def close(self):
+        if not self.client.is_closed:
+            await self.client.aclose()
+
+    async def __call__(
+        self,
+        endpoint_name: str,
+        endpoint_id: Union[str, int, None] = None,
+        sub_endpoint_name: Optional[str] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        response = await self._make(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
+        if not self.keep_session_open:
+            await self.close()
+        return response
