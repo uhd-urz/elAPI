@@ -183,10 +183,26 @@ def post(
         str,
         typer.Option("--id", "-i", help=docs["endpoint_id_post"], show_default=False),
     ] = None,
+    sub_endpoint_name: Annotated[
+        str,
+        typer.Option("--sub", show_default=False),
+    ] = None,
+    sub_endpoint_id: Annotated[
+        str,
+        typer.Option("--sub-id", show_default=False),
+    ] = None,
+    query: Annotated[
+        str,
+        typer.Option("--query", show_default=False),
+    ] = "{}",
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
-    ],
+    ] = "{}",
     # data: typer.Context = None,  TODO: To be re-enabled in Python 3.11
+    file: Annotated[
+        str,
+        typer.Option("--file", show_default=False),
+    ] = "{}",
     data_format: Annotated[
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
@@ -208,24 +224,89 @@ def post(
     will create a new user.
     """
     import ast
+    from .. import APP_NAME
     from ..api import POSTRequest
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..styles import Format, Highlight
+    from ..path import ProperPath
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
+    try:
+        query: dict = ast.literal_eval(query)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
+            f"See '{APP_NAME} post --help' for more on exactly how to use --query.",
+            style="red",
+        )
+        raise typer.Exit(1)
     # if json_:
-    valid_data: dict = ast.literal_eval(json_)
+    try:
+        data: dict = ast.literal_eval(json_)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
+            f"See '{APP_NAME} post --help' for more on exactly how to use --data.",
+            style="red",
+        )
+        raise typer.Exit(1)
     # else:
     # TODO: Due to strange compatibility issue between typer.context and python 3.9,
     #   passing json_ as arguments is temporarily deprecated.
     # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
     # data_values: list[str, ...] = data.args[1::2]
-    # valid_data: dict[str:str, ...] = dict(zip(data_keys, data_values))
+    # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
+    try:
+        file: Optional[dict] = ast.literal_eval(file)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --file has caused a syntax error. --file only supports JSON syntax. "
+            f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
+            style="red",
+        )
+        raise typer.Exit(1)
     session = POSTRequest()
-    raw_response = session(endpoint_name, endpoint_id, **valid_data)
+    if file:
+        try:
+            try:
+                _file_name, _file_path = file["file"]
+            except ValueError:
+                _file_name = None
+                _file_path = file["file"]
+            _file_comment = file["comment"]
+        except KeyError:
+            stderr_console.print(
+                f"Error: Given value with --file doesn't follow the expected pattern. "
+                f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
+                style="red",
+            )
+            raise typer.Exit(1)
+        else:
+            _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(mode="rb")
+            file = {
+                "file": (_file_name or _file_path.expanded.name, _file_obj),
+                "comment": (None, _file_comment or ""),
+            }
+    else:
+        file = None
+    raw_response = session(
+        endpoint_name,
+        endpoint_id,
+        sub_endpoint_name,
+        sub_endpoint_id,
+        query,
+        data=data,
+        files=file,
+    )
+    try:
+        # noinspection PyUnboundLocalVariable
+        _file_obj.close()
+    except UnboundLocalError:
+        ...
+
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
