@@ -342,6 +342,18 @@ def patch(
         str,
         typer.Option("--id", "-i", help=docs["endpoint_id_patch"], show_default=False),
     ] = None,
+    sub_endpoint_name: Annotated[
+        str,
+        typer.Option("--sub", show_default=False),
+    ] = None,
+    sub_endpoint_id: Annotated[
+        str,
+        typer.Option("--sub-id", show_default=False),
+    ] = None,
+    query: Annotated[
+        str,
+        typer.Option("--query", show_default=False),
+    ] = "{}",
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data_patch"], show_default=False)
     ],
@@ -366,6 +378,7 @@ def patch(
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
     import ast
+    from .. import APP_NAME
     from ..api import PATCHRequest
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
@@ -374,9 +387,33 @@ def patch(
     validate_config = Validate(HostIdentityValidator())
     validate_config()
 
-    valid_data: dict = ast.literal_eval(json_)
+    try:
+        query: dict = ast.literal_eval(query)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
+            style="red",
+        )
+        raise typer.Exit(1)
+    try:
+        data: dict = ast.literal_eval(json_)
+    except SyntaxError:
+        stderr_console.print(
+            f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --data.",
+            style="red",
+        )
+        raise typer.Exit(1)
     session = PATCHRequest()
-    raw_response = session(endpoint_name, endpoint_id, **valid_data)
+    raw_response = session(
+        endpoint_name,
+        endpoint_id,
+        sub_endpoint_name,
+        sub_endpoint_id,
+        query,
+        data=data,
+    )
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
