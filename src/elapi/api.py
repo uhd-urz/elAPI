@@ -393,7 +393,9 @@ class PATCHRequest(APIRequest):
         }
         return super().client.patch(
             url.get(),
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            headers={
+                "Accept": "application/json"
+            },  # '"Content-Type": "application/json"' is passed automatically when json argument is passed.
             json=data,
             **kwargs,
         )
@@ -443,7 +445,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         }
         return await super().client.patch(
             url.get(),
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            headers={"Accept": "application/json"},
             json=data,
             **kwargs,
         )
