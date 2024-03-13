@@ -7,8 +7,10 @@ from .api import (
     GETRequest,
     POSTRequest,
     PATCHRequest,
+    DELETERequest,
     AsyncPOSTRequest,
     AsyncPATCHRequest,
+    AsyncDELETERequest,
 )
 
 
@@ -18,6 +20,7 @@ class FixedAsyncEndpoint:
         self._get_session = AsyncGETRequest(keep_session_open=True)
         self._post_session = AsyncPOSTRequest(keep_session_open=True)
         self._patch_session = AsyncPATCHRequest(keep_session_open=True)
+        self._delete_session = AsyncDELETERequest(keep_session_open=True)
 
     async def get(
         self,
@@ -39,7 +42,12 @@ class FixedAsyncEndpoint:
         **kwargs,
     ) -> Response:
         return await self._post_session(
-            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
     async def patch(
@@ -51,13 +59,34 @@ class FixedAsyncEndpoint:
         **kwargs,
     ) -> Response:
         return await self._patch_session(
-            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
+        )
+
+    async def delete(
+        self,
+        endpoint_id: Union[int, str],
+        sub_endpoint_name: Optional[str] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        return await self._patch_session(
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
         )
 
     async def close(self):
         await self._get_session.close()
         await self._post_session.close()
         await self._patch_session.close()
+        await self._delete_session.close()
 
 
 class FixedEndpoint:
@@ -66,6 +95,7 @@ class FixedEndpoint:
         self._get_session = GETRequest(keep_session_open=True)
         self._post_session = POSTRequest(keep_session_open=True)
         self._patch_session = PATCHRequest(keep_session_open=True)
+        self._delete_session = DELETERequest(keep_session_open=True)
 
     def get(
         self,
@@ -87,7 +117,12 @@ class FixedEndpoint:
         **kwargs,
     ) -> Response:
         return self._post_session(
-            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
     def patch(
@@ -99,13 +134,34 @@ class FixedEndpoint:
         **kwargs,
     ) -> Response:
         return self._patch_session(
-            self.endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
+        )
+
+    def delete(
+        self,
+        endpoint_id: Union[int, str],
+        sub_endpoint_name: Optional[str] = None,
+        sub_endpoint_id: Union[int, str, None] = None,
+        query: Optional[dict] = None,
+    ) -> Response:
+        return self._delete_session(
+            self.endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
         )
 
     def close(self):
         self._get_session.close()
         self._post_session.close()
         self._patch_session.close()
+        self._delete_session.close()
 
 
 class RecursiveGETEndpoint:
@@ -159,4 +215,6 @@ class RecursiveGETEndpoint:
 
     def endpoints(self, **kwargs) -> Generator[Awaitable[Response], None, None]:
         for item in self.source:
-            yield self.target_endpoint.get(endpoint_id=item[self.source_id_prefix], **kwargs)
+            yield self.target_endpoint.get(
+                endpoint_id=item[self.source_id_prefix], **kwargs
+            )
