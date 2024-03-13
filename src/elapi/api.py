@@ -204,7 +204,9 @@ class GETRequest(APIRequest):
 
     def _make(self, *args) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         return super().client.get(url.get(), headers={"Accept": "application/json"})
 
     def close(self):
@@ -218,7 +220,9 @@ class GETRequest(APIRequest):
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
-        return super().__call__(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        return super().__call__(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
 
 
 class POSTRequest(APIRequest):
@@ -229,7 +233,9 @@ class POSTRequest(APIRequest):
 
     def _make(self, *args, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         data = {
             k: v.strip() if isinstance(v, str) else v
             for k, v in (kwargs.pop("data", dict())).items()
@@ -263,7 +269,12 @@ class POSTRequest(APIRequest):
         **kwargs,
     ) -> Response:
         return super().__call__(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
 
@@ -281,7 +292,9 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
 
     async def _make(self, *args, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         data = {
             k: v.strip() if isinstance(v, str) else v
             for k, v in (kwargs.pop("data", dict())).items()
@@ -309,7 +322,12 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
         **kwargs,
     ) -> Response:
         response = await self._make(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
         if not self.keep_session_open:
             await self.close()
@@ -330,7 +348,9 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
 
     async def _make(self, *args) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         return await super().client.get(
             url.get(),
             headers={"Accept": "application/json"},
@@ -348,7 +368,9 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
-        response = await self._make(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        response = await self._make(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         if not self.keep_session_open:
             await self.close()
         return response
@@ -362,7 +384,9 @@ class PATCHRequest(APIRequest):
 
     def _make(self, *args, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         data = {
             k: v.strip() if isinstance(v, str) else v
             for k, v in kwargs.pop("data", dict()).items()
@@ -387,7 +411,12 @@ class PATCHRequest(APIRequest):
         **kwargs,
     ) -> Response:
         return super().__call__(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
 
@@ -405,7 +434,9 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
 
     async def _make(self, *args, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
-        url = ElabFTWURL(endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query)
+        url = ElabFTWURL(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
         data = {
             k: v.strip() if isinstance(v, str) else v
             for k, v in kwargs.pop("data", dict()).items()
@@ -431,7 +462,12 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         **kwargs,
     ) -> Response:
         response = await self._make(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query, **kwargs
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
         if not self.keep_session_open:
             await self.close()
