@@ -19,9 +19,9 @@ from rich import pretty
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
+from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
 from ..loggers import Logger
-from ..plugins import experiments, bill_teams
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
 
@@ -35,8 +35,8 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-app.add_typer(bill_teams.app)
-app.add_typer(experiments.app)
+for _app in internal_plugin_typer_apps:
+    app.add_typer(_app, rich_help_panel="Plugins")
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437

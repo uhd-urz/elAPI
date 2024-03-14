@@ -203,3 +203,11 @@ except KeyError:
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
+
+ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
+INTERNAL_PLUGIN_DIRECTORY_NAME: str = "plugins"
+INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = "cli"
+INTERNAL_PLUGIN_TYPER_APP_FILE_NAME: str = (
+    f"{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}.py"
+)
+INTERNAL_PLUGIN_TYPER_APP_VAR_NAME: str = "app"
