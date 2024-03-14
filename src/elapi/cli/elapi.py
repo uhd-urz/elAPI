@@ -21,6 +21,7 @@ from typing_extensions import Annotated
 
 from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
+from .helpers import OrderedCommands
 from ..loggers import Logger
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
@@ -33,6 +34,7 @@ app = typer.Typer(
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
     no_args_is_help=True,
+    cls=OrderedCommands,
 )
 
 for _app in internal_plugin_typer_apps:
