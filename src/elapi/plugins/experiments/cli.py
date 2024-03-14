@@ -26,7 +26,7 @@ app = typer.Typer(
 
 
 # noinspection PyCallingNonCallable,PyUnresolvedReferences
-@app.command(short_help="Read or download an experiment")
+@app.command(short_help="Read or download an experiment.")
 def get(
     experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
     data_format: Annotated[
@@ -45,7 +45,7 @@ def get(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> dict:
     """
-    Read an experiment
+    Read or download an experiment.
     """
     from ...validators import Validate, HostIdentityValidator
     from ...plugins.export import Export
@@ -103,7 +103,7 @@ def get(
         return response_data
 
 
-@app.command(short_help="Add new content to an existing experiment")
+@app.command(short_help="Add new content to an existing experiment.")
 def append(
     experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
     content_text: Annotated[
@@ -166,7 +166,7 @@ def append(
         return content
 
 
-@app.command(short_help="Attach a file to an experiment")
+@app.command(short_help="Attach a file to an experiment.")
 def upload_attachment(
     experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
     path: Annotated[
@@ -183,7 +183,7 @@ def upload_attachment(
     ] = None,
 ) -> None:
     """
-    Add a new attachment to an existing experiment.
+    Add a file to an existing experiment.
     """
     from ...validators import Validate, HostIdentityValidator
     from .experiments import attach_to_experiment
@@ -205,7 +205,7 @@ def upload_attachment(
         stdin_console.print("[green]Successfully attached to experiment.[/green]")
 
 
-@app.command(short_help="Download an attachment from an experiment")
+@app.command(short_help="Download an attachment from an experiment.")
 def download_attachment(
     experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
     attachment_id: Annotated[
@@ -274,7 +274,7 @@ def download_attachment(
                 export(data=attachment, verbose=True)
 
 
-@app.command(short_help="Download an attachment from an experiment")
+@app.command(short_help="Create an empty experiment.")
 def create_empty() -> None:
     """
     Create an empty experiment.
