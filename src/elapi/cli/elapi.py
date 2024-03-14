@@ -478,7 +478,11 @@ def delete(
 
     With `elapi` you can run the following to delete an item:
     <br/>
-    `$ elapi delete item --id <id of the item>`.
+    `$ elapi delete item --id <item ID>`.
+    <br/>
+    Run the following to delete a tag:
+    <br/>
+    `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
     import ast
     from .. import APP_NAME
