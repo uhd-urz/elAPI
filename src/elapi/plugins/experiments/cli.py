@@ -272,3 +272,20 @@ def download_attachment(
                     format_name=data_format,
                 )
                 export(data=attachment, verbose=True)
+
+
+@app.command(short_help="Download an attachment from an experiment")
+def create_empty() -> None:
+    """
+    Create an empty experiment.
+
+    <br/>
+    create-empty doesn't take any argument. It just returns the ID of the newly created experiment that can be
+    used to just modify or do automation with the experiment later on. E.g., the following bash command will
+    create a new experiment, add a new title and set the experiment status to "Not set".
+
+    `$ elapi patch experiments -i "$(elapi experiments create-empty)" --data '{"title": "New experiment", "status": 0}'`
+    """
+    from .experiments import create_empty_experiment
+
+    typer.echo(create_empty_experiment())
