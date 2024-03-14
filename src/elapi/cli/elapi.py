@@ -48,7 +48,7 @@ typer.rich_utils._get_help_text = (
 )
 
 
-@app.command(short_help="Make `GET` requests to elabftw endpoints.")
+@app.command(short_help="Make `GET` requests to eLabFTW endpoints.")
 def get(
     endpoint_name: Annotated[
         str, typer.Argument(help=docs["endpoint_name"], show_default=False)
@@ -87,7 +87,7 @@ def get(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> dict:
     """
-    Make `GET` requests to elabftw endpoints as documented in
+    Make `GET` requests to eLabFTW endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
 
     <br/>
@@ -173,7 +173,7 @@ def get(
 
 
 @app.command(
-    short_help="Make `POST` request to elabftw endpoints.",
+    short_help="Make `POST` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def post(
@@ -211,7 +211,7 @@ def post(
     ] = "json",
 ) -> Optional[dict]:
     """
-    Make `POST` request to elabftw endpoints as documented in
+    Make `POST` request to eLabFTW endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
 
     <br/>
@@ -335,7 +335,7 @@ def post(
 
 
 @app.command(
-    short_help="Make `PATCH` request to elabftw endpoints.",
+    short_help="Make `PATCH` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def patch(
@@ -369,7 +369,7 @@ def patch(
     ] = "json",
 ) -> Optional[dict]:
     """
-    Make `PATCH` request to elabftw endpoints as documented in
+    Make `PATCH` request to eLabFTW endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
 
     <br/>
@@ -442,7 +442,7 @@ def patch(
 
 
 @app.command(
-    short_help="Make `DELETE` request to elabftw endpoints.",
+    short_help="Make `DELETE` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def delete(
@@ -472,7 +472,7 @@ def delete(
     ] = "json",
 ) -> Optional[dict]:
     """
-    Make `DELETE` request to elabftw endpoints as documented in
+    Make `DELETE` request to eLabFTW endpoints as documented in
     [https://doc.elabftw.net/api/v2/](https://doc.elabftw.net/api/v2/).
 
     <br/>
