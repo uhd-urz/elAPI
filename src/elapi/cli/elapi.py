@@ -558,7 +558,7 @@ def show_config(
 @app.command()
 def version() -> str:
     """
-    Show version number
+    Show version number.
     """
     from ..plugins.version import elapi_version
 
