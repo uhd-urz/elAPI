@@ -14,18 +14,39 @@ __PARAMETERS__doc__ = {
                      "todolist, unfinished_steps, users, idps.",
     "endpoint_id_get": "ID for one of the preceding endpoints. If provided, only information associated with that "
                      "ID will be returned. E.g., user ID, team ID, experiments ID.",
-    "endpoint_id_post": "ID for one of the preceding endpoints. If provided, `POST` request will be made against that "
+    "endpoint_id_post": "ID for a preceding endpoint. If provided, `POST` request will be made against that "
     "specific ID. E.g., events ID,.",
     "endpoint_id_patch": "ID for one of the preceding endpoints. If provided, `PATCH` request will be made "
                          "against that specific ID. E.g., events ID.",
     "endpoint_id_delete": "ID for one of the preceding endpoints. If provided, `DELETE` request will be made "
                          "against that specific ID. E.g., experiments ID.",
+    "sub_endpoint_name": "Name of a sub-endpoint. Not all endpoints have sub-endpoints. "
+                         "'uploads' is the sub-endpoint name of the API URL "
+                         "_'https://demo.elabftw.net/api/v2/experiments/1/`uploads`/'_. "
+                         "Consult the documentation for a list of available sub-endpoints of an endpoint.",
+    "sub_endpoint_id": "ID for a preceding sub-endpoint. "
+                        "'10' is the sub-endpoint ID of sub-endpoint 'uploads' of the API URL "
+                        "_'https://demo.elabftw.net/api/v2/experiments/1/uploads/`10`/'_.",
+    "query": "HTTP query to pass to API URL.\n"
+             "- The value (parameters) for --query should be in **JSON** format. "
+             f"E.g., `{APP_NAME} get experiments <experiment ID> --query '{{\"format\": \"csv\"}}'` "
+             f"will make a `GET` request to "
+             f"_'https://demo.elabftw.net/api/v2/experiments/\<experiment ID\>/?format=csv'_ "
+             f"which in response will send back the experiment with \<experiment ID\> in CSV format.\n"
+             f"- --query can be powerful. It can be used to make requests for arbitrary data formats "
+             f"which can conflict with how --format/-F works. Hence, --format is disabled (i.e., it takes no effect) "
+             f"when --query is passed.",
     # "data": f"HTTP POST data. There are two ways to pass the data. 1. With `--data` or `-d` option followed "
     #         f"by the JSON content like with `curl`. E.g., "
     #         f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`, 2. As regular options. E.g., "
     #         f"`{APP_NAME} post teams --name Alpha`.",
     "data": f"HTTP POST data. This works similar to how data is passed to `curl`. E.g., "
             f"`{APP_NAME} post teams -d '{{\"name\": \"Alpha\"}}'`,",
+    "file_post": "Send a file with a request. The value for --file should be in **JSON** format. The value must follow "
+                 "one of the following structures: `'{\"file\": \"<file path>\"}'`, "
+                 "`'{\"file\": \"<file path>\", \"comment\": \"<file comment>\"}'`, "
+                 "`'{\"file\": [\"<file new name>\", \"<file path>\"]}'`, or "
+                 "`'{\"file\": [\"<file new name>\", \"<file path>\"], \"comment\": \"<file comment>\"}'`.",
     "data_patch": f"Modified data to be sent as HTTP PATCH data. This works similar to how data is passed to `curl`. "
                   f'E.g., `{APP_NAME} patch teams --id <team id> -d \'{{"name": "New team name"}}\'`,',
     "export": "Export output to a location.\n",
@@ -35,11 +56,16 @@ __PARAMETERS__doc__ = {
               f"- If a directory path is provided as a value, "
               f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
               f"When the path is a directory, "
-              f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
+              f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*. "
+              f"File extension (EXT) cannot always be inferred if response data is in binary which can be the case if "
+              f"**--query is used** to define data format. In which case, --export will save the data to a "
+              f"file with `.bin` extension. To avoid this, a proper file path with correct extension "
+              f"should be passed to --export.\n"
               f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "
               f"then data is simply exported to that file. This allows custom file name scheme. "
               f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "
-              f"If _--format/-F_ is also present, then file extension is ignored, and --format value takes precedence.",
+              f"If _--format/-F_ is also present, then file extension is ignored, "
+              f"and --format value takes precedence.\n",
     "data_format": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "

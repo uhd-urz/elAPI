@@ -57,15 +57,15 @@ def get(
     ] = None,
     sub_endpoint_name: Annotated[
         str,
-        typer.Option("--sub", show_default=False),
+        typer.Option("--sub", help=docs["sub_endpoint_name"], show_default=False),
     ] = None,
     sub_endpoint_id: Annotated[
         str,
-        typer.Option("--sub-id", show_default=False),
+        typer.Option("--sub-id", help=docs["sub_endpoint_id"], show_default=False),
     ] = None,
     query: Annotated[
         str,
-        typer.Option("--query", show_default=False),
+        typer.Option("--query", help=docs["query"], show_default=False),
     ] = "{}",
     data_format: Annotated[
         Optional[str],
@@ -185,15 +185,15 @@ def post(
     ] = None,
     sub_endpoint_name: Annotated[
         str,
-        typer.Option("--sub", show_default=False),
+        typer.Option("--sub", help=docs["sub_endpoint_name"], show_default=False),
     ] = None,
     sub_endpoint_id: Annotated[
         str,
-        typer.Option("--sub-id", show_default=False),
+        typer.Option("--sub-id", help=docs["sub_endpoint_id"], show_default=False),
     ] = None,
     query: Annotated[
         str,
-        typer.Option("--query", show_default=False),
+        typer.Option("--query", help=docs["query"], show_default=False),
     ] = "{}",
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data"], show_default=False)
@@ -201,7 +201,7 @@ def post(
     # data: typer.Context = None,  TODO: To be re-enabled in Python 3.11
     file: Annotated[
         str,
-        typer.Option("--file", show_default=False),
+        typer.Option("--file", help=docs["file_post"], show_default=False),
     ] = "{}",
     data_format: Annotated[
         str,
@@ -276,7 +276,10 @@ def post(
             except ValueError:
                 _file_name = None
                 _file_path = file["file"]
-            _file_comment = file["comment"]
+            try:
+                _file_comment = file["comment"]
+            except KeyError:
+                _file_comment = None
         except KeyError:
             stderr_console.print(
                 f"Error: Given value with --file doesn't follow the expected pattern. "
@@ -344,15 +347,15 @@ def patch(
     ] = None,
     sub_endpoint_name: Annotated[
         str,
-        typer.Option("--sub", show_default=False),
+        typer.Option("--sub", help=docs["sub_endpoint_name"], show_default=False),
     ] = None,
     sub_endpoint_id: Annotated[
         str,
-        typer.Option("--sub-id", show_default=False),
+        typer.Option("--sub-id", help=docs["sub_endpoint_id"], show_default=False),
     ] = None,
     query: Annotated[
         str,
-        typer.Option("--query", show_default=False),
+        typer.Option("--query", help=docs["query"], show_default=False),
     ] = "{}",
     json_: Annotated[
         str, typer.Option("--data", "-d", help=docs["data_patch"], show_default=False)
