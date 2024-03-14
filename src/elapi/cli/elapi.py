@@ -127,7 +127,7 @@ def get(
     if not query:
         format = CLIFormat(data_format, export_file_ext)
     else:
-        logger.warning(
+        logger.info(
             "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
         )
         format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
@@ -139,8 +139,8 @@ def get(
     try:
         formatted_data = format(response_data := raw_response.json())
     except UnicodeDecodeError:
-        logger.warning(
-            "Response data is in binary (or not UTF-8 encoded). Data cannot be displayed properly. "
+        logger.info(
+            "Response data is in binary (or not UTF-8 encoded). "
             "--export/-e will not be able to infer the data format if export path is a directory."
         )
         formatted_data = format(response_data := raw_response.content)
