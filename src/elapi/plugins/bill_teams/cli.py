@@ -51,7 +51,7 @@ def bill_teams(
 ) -> dict:
     """Get billable teams data."""
     from ...cli.helpers import CLIExport, CLIFormat
-    from ...plugins.export import Export
+    from ..utils import Export
     from ...styles import Highlight
     from ...validators import (
         Validate,
@@ -120,7 +120,7 @@ def generate_invoice(
     Generate invoice for billable teams.
     """
     from ...cli.helpers import CLIExport
-    from ...plugins.export import Export
+    from ...plugins.utils import Export
     from .invoice import InvoiceGenerator
 
     _INVOICE_FORMAT = "md"

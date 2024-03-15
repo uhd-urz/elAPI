@@ -17,7 +17,7 @@ class CLIExport:
     ):
         from collections import namedtuple
         from ..validators import Validate
-        from ..plugins.export import ExportValidator
+        from ..plugins.utils import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()

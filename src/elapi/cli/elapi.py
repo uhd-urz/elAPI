@@ -108,7 +108,7 @@ def get(
     from ..api import GETRequest
     from .helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
-    from ..plugins.export import Export
+    from ..plugins.utils import Export
     from ..styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())

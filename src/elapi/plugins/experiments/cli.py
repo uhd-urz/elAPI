@@ -48,7 +48,7 @@ def get(
     Read or download an experiment.
     """
     from ...validators import Validate, HostIdentityValidator
-    from ...plugins.export import Export
+    from ..utils import Export
     from ...styles import Highlight
     from . import (
         formats,
@@ -227,7 +227,7 @@ def download_attachment(
     Download an attachment from an experiment.
     """
     from ...validators import Validate, HostIdentityValidator
-    from ...plugins.export import Export
+    from ...plugins.utils import Export
     from .experiments import download_attachment
 
     validate_config = Validate(HostIdentityValidator())
