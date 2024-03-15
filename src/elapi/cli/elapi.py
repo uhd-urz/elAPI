@@ -324,7 +324,7 @@ def post(
         if raw_response.is_success:
             if get_location:
                 try:
-                    _id, _url = get_location_from_headers(dict(raw_response.headers))
+                    _id, _url = get_location_from_headers(raw_response.headers)
                 except ValueError:
                     logger.error(
                         "Request was successful but no location for resource was found!"
