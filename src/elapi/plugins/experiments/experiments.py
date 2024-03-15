@@ -36,20 +36,35 @@ class ExperimentIDValidator(Validator):
         self._experiment_id = str(value)
 
     def validate(self) -> str:
-        experiments = self._experiment_endpoint.get(endpoint_id=None).json()
-        self._experiment_endpoint.close()
         if re.match(r"^\d+$|^me$", self.experiment_id, re.IGNORECASE):
-            for experiment in experiments:
-                if str(experiment["id"]) == self.experiment_id:
-                    # experiment["id"] is returned as an int
-                    return self.experiment_id
-            raise ValidationError(
-                f"Experiment ID '{self.experiment_id}' could not be found!"
-            )
+            try:
+                experiment_id = self._experiment_endpoint.get(
+                    endpoint_id=self.experiment_id
+                ).json()["id"]
+            except KeyError:
+                self._experiment_endpoint.close()
+                raise ValidationError(
+                    f"Experiment ID '{self.experiment_id}' could not be found!"
+                )
+            else:
+                self._experiment_endpoint.close()
+                return experiment_id
         if re.match(r"^\d+-\w+$", self.experiment_id, re.IGNORECASE):
-            for experiment in experiments:
-                if experiment["elabid"] == self.experiment_id:
-                    return experiment["id"]
+            try:
+                elab_id = (
+                    _experiment_data := self._experiment_endpoint.get(
+                        query={"q": self.experiment_id}
+                    ).json()[0]
+                )["elabid"]
+            except KeyError:
+                self._experiment_endpoint.close()
+                raise ValidationError(
+                    f"Experiment ID '{self.experiment_id}' could not be found!"
+                )
+            else:
+                self._experiment_endpoint.close()
+                if elab_id == self.experiment_id:
+                    return _experiment_data["id"]
                 raise ValidationError(
                     f"Experiment ID '{self.experiment_id}' could not be found!"
                 )
@@ -154,9 +169,9 @@ def download_attachment(
 
 def create_empty_experiment() -> str:
     session = FixedExperimentEndpoint()
-    _new_experiment_url_backwards = (
-        _headers := dict(session.post().headers)
-    )["location"].rstrip("/")[::-1]
+    _new_experiment_url_backwards = (_headers := dict(session.post().headers))[
+        "location"
+    ].rstrip("/")[::-1]
     _start, _end = re.match("\d+(?=/)", _new_experiment_url_backwards).span()
     session.close()
     return _new_experiment_url_backwards[_start:_end][::-1]
