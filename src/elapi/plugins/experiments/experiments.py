@@ -165,13 +165,3 @@ def download_attachment(
     raise ValueError(
         f"Attachment with ID '{attachment_id}' couldn't be found on experiment with ID '{experiment_id}'."
     )
-
-
-def create_empty_experiment() -> str:
-    session = FixedExperimentEndpoint()
-    _new_experiment_url_backwards = (_headers := dict(session.post().headers))[
-        "location"
-    ].rstrip("/")[::-1]
-    _start, _end = re.match("\d+(?=/)", _new_experiment_url_backwards).span()
-    session.close()
-    return _new_experiment_url_backwards[_start:_end][::-1]

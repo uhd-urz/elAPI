@@ -49,6 +49,11 @@ __PARAMETERS__doc__ = {
                  "`'{\"file\": [\"<file new name>\", \"<file path>\"], \"comment\": \"<file comment>\"}'`.",
     "data_patch": f"Modified data to be sent as HTTP PATCH data. This works similar to how data is passed to `curl`. "
                   f'E.g., `{APP_NAME} patch teams --id <team id> -d \'{{"name": "New team name"}}\'`,',
+    "get_loc": "When _--get-loc_ is passed, if the request is successful, instead of printing the success message, "
+               f"{APP_NAME} returns the ID and the URL (separated by comma) of the newly created resource that can "
+               f"be used to just modify or do automation with the resource later on. The ID and the URL can be "
+               f"captured and saved to variables with `cut`. E.g., We can create a new experiment, "
+               f"and get its ID with: `{APP_NAME} post experiments | cut -d \",\" -f 1`",
     "export": "Export output to a location.\n",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
               f"`export_dir` value from configuration file is used. "

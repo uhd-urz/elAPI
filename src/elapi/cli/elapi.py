@@ -205,6 +205,10 @@ def post(
         str,
         typer.Option("--file", help=docs["file_post"], show_default=False),
     ] = "{}",
+    get_location: Annotated[
+        bool,
+        typer.Option("--get-loc", help=docs["get_loc"], show_default=False),
+    ] = False,
     data_format: Annotated[
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
@@ -230,6 +234,7 @@ def post(
     from ..api import POSTRequest
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
+    from ..plugins.utils import get_location_from_headers
     from ..styles import Format, Highlight
     from ..path import ProperPath
 
@@ -317,6 +322,17 @@ def post(
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
+            if get_location:
+                try:
+                    _id, _url = get_location_from_headers(dict(raw_response.headers))
+                except ValueError:
+                    logger.error(
+                        "Request was successful but no location for resource was found!"
+                    )
+                    raise typer.Exit(1)
+                else:
+                    typer.echo(f"{_id},{_url}")
+                    raise typer.Exit()
             stdin_console.print("Success: Resource created!", style="green")
         else:
             logger.error(
