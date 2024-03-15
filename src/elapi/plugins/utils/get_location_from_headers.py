@@ -9,11 +9,17 @@ def get_location_from_headers(
 ) -> Tuple[str, str]:
     if isinstance(header, httpx.Headers):
         header = dict(header)
-    if isinstance(header, dict):
-        raise ValueError("Argument 'header' must be a dictionary!")
+    if not isinstance(header, dict):
+        raise ValueError(
+            f"Argument 'header' must be a dictionary or an instance of '{httpx.Headers}'!"
+        )
     try:
         location_backwards = (location := header[key].rstrip("/"))[::-1]
     except KeyError as e:
         raise ValueError(f"Argument 'header' doesn't contain the key '{key}'") from e
-    _start, _end = re.match("\d+(?=/)", location_backwards).span()
+    try:
+        _start, _end = re.match(pattern := "[\w-]+(?=/)", location_backwards).span()
+    except AttributeError:
+        # noinspection PyUnboundLocalVariable
+        raise ValueError(f"'location' didn't match the pattern '{pattern}' in 'header'.")
     return location_backwards[_start:_end][::-1], location
