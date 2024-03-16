@@ -80,9 +80,11 @@ def append_to_experiment(
     markdown_to_html: bool = False,
 ) -> None:
     session = FixedExperimentEndpoint()
-    current_body: str = (
+    current_body: Optional[str] = (
         experiment_metadata := (_response := session.get(experiment_id)).json()
     )["body"]
+    if current_body is None:
+        current_body: str = ""
     if markdown_to_html:
         # content_type == 1 => existing experiment is HTML-only, 2 => existing experiment is Markdown-only
         if _is_html := experiment_metadata["content_type"] & 1:
