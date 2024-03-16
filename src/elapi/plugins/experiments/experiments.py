@@ -90,6 +90,7 @@ def append_to_experiment(
         if _is_html := experiment_metadata["content_type"] & 1:
             from mistune import HTMLRenderer, Markdown
             from mistune.plugins.url import url
+            from mistune.plugins.table import table
             from mistune.plugins.task_lists import task_lists
             from mistune.plugins.def_list import def_list
             from mistune.plugins.abbr import abbr
@@ -101,6 +102,7 @@ def append_to_experiment(
                 renderer,
                 plugins=[
                     url,
+                    table,
                     task_lists,
                     def_list,
                     abbr,
