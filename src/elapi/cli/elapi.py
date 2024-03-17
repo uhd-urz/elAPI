@@ -119,7 +119,7 @@ def get(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
             f"See '{APP_NAME} get --help' for more on exactly how to use --query.",
             style="red",
@@ -244,7 +244,7 @@ def post(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
             f"See '{APP_NAME} post --help' for more on exactly how to use --query.",
             style="red",
@@ -254,7 +254,7 @@ def post(
     try:
         data: dict = ast.literal_eval(json_)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
             f"See '{APP_NAME} post --help' for more on exactly how to use --data.",
             style="red",
@@ -269,7 +269,7 @@ def post(
     try:
         file: Optional[dict] = ast.literal_eval(file)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --file has caused a syntax error. --file only supports JSON syntax. "
             f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
             style="red",
@@ -288,7 +288,7 @@ def post(
             except KeyError:
                 _file_comment = None
         except KeyError:
-            stderr_console.print(
+            logger.critical(
                 f"Error: Given value with --file doesn't follow the expected pattern. "
                 f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
                 style="red",
@@ -411,7 +411,7 @@ def patch(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
             f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
             style="red",
@@ -420,7 +420,7 @@ def patch(
     try:
         data: dict = ast.literal_eval(json_)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
             f"See '{APP_NAME} patch --help' for more on exactly how to use --data.",
             style="red",
@@ -518,7 +518,7 @@ def delete(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        stderr_console.print(
+        logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
             f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
             style="red",
