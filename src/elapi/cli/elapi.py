@@ -105,7 +105,7 @@ def get(
     import ast
     import re
     from .. import APP_NAME
-    from ..api import GETRequest
+    from ..api import GETRequest, ElabFTWURLError
     from .helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.utils import Export
@@ -135,9 +135,13 @@ def get(
         format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
 
     session = GETRequest()
-    raw_response = session(
-        endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
-    )
+    try:
+        raw_response = session(
+            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+        )
+    except ElabFTWURLError as e:
+        logger.error(e)
+        raise typer.Exit(1)
     try:
         formatted_data = format(response_data := raw_response.json())
     except UnicodeDecodeError:
@@ -231,7 +235,7 @@ def post(
     """
     import ast
     from .. import APP_NAME
-    from ..api import POSTRequest
+    from ..api import POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.utils import get_location_from_headers
@@ -302,15 +306,19 @@ def post(
             }
     else:
         file = None
-    raw_response = session(
-        endpoint_name,
-        endpoint_id,
-        sub_endpoint_name,
-        sub_endpoint_id,
-        query,
-        data=data,
-        files=file,
-    )
+    try:
+        raw_response = session(
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            data=data,
+            files=file,
+        )
+    except ElabFTWURLError as e:
+        logger.error(e)
+        raise typer.Exit(1)
     try:
         # noinspection PyUnboundLocalVariable
         _file_obj.close()
@@ -400,7 +408,7 @@ def patch(
     """
     import ast
     from .. import APP_NAME
-    from ..api import PATCHRequest
+    from ..api import PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..styles import Format, Highlight
@@ -427,14 +435,18 @@ def patch(
         )
         raise typer.Exit(1)
     session = PATCHRequest()
-    raw_response = session(
-        endpoint_name,
-        endpoint_id,
-        sub_endpoint_name,
-        sub_endpoint_id,
-        query,
-        data=data,
-    )
+    try:
+        raw_response = session(
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            data=data,
+        )
+    except ElabFTWURLError as e:
+        logger.error(e)
+        raise typer.Exit(1)
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
@@ -507,7 +519,7 @@ def delete(
     """
     import ast
     from .. import APP_NAME
-    from ..api import DELETERequest
+    from ..api import DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..styles import Format, Highlight
@@ -526,13 +538,17 @@ def delete(
         raise typer.Exit(1)
 
     session = DELETERequest()
-    raw_response = session(
-        endpoint_name,
-        endpoint_id,
-        sub_endpoint_name,
-        sub_endpoint_id,
-        query,
-    )
+    try:
+        raw_response = session(
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+        )
+    except ElabFTWURLError as e:
+        logger.error(e)
+        raise typer.Exit(1)
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())

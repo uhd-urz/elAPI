@@ -52,6 +52,9 @@ class APIRequest(ABC):
         return response
 
 
+class ElabFTWURLError(Exception): ...
+
+
 class ElabFTWURL:
     VALID_ENDPOINTS: dict[str : Tuple[str]] = {
         "apikeys": (),
@@ -121,8 +124,8 @@ class ElabFTWURL:
     def endpoint_name(self, value: str):
         if value is not None:
             if value.lower() not in ElabFTWURL.VALID_ENDPOINTS.keys():
-                raise ValueError(
-                    f"Endpoint must be one of valid eLabFTW endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS.keys())}"
+                raise ElabFTWURLError(
+                    f"Endpoint must be one of valid eLabFTW endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS.keys())}."
                 )
             self._endpoint_name = value
         else:
@@ -136,9 +139,9 @@ class ElabFTWURL:
     def sub_endpoint_name(self, value: str):
         if value is not None:
             if value.lower() not in ElabFTWURL.VALID_ENDPOINTS[self.endpoint_name]:
-                raise ValueError(
+                raise ElabFTWURLError(
                     f"A Sub-endpoint for endpoint '{self._endpoint_name}' must be "
-                    f"one of valid eLabFTW sub-endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS[self.endpoint_name])}"
+                    f"one of valid eLabFTW sub-endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS[self.endpoint_name])}."
                 )
             self._sub_endpoint_name = value
         else:
@@ -154,7 +157,7 @@ class ElabFTWURL:
             if not re.match(r"^\w+$", value := str(value)):
                 # Although, eLabFTW primarily supports integer-only IDs, there are exceptions, like the alias
                 # ID "me" for receiving one's own user information.
-                raise ValueError("Invalid endpoint ID (or entity ID)")
+                raise ElabFTWURLError("Invalid endpoint ID (or entity ID).")
             self._endpoint_id = value
         else:
             self._endpoint_id = ""
@@ -166,12 +169,12 @@ class ElabFTWURL:
     @sub_endpoint_id.setter
     def sub_endpoint_id(self, value):
         if self.sub_endpoint_name is None:
-            raise ValueError(
+            raise ElabFTWURLError(
                 "Sub-endpoint ID cannot be defined without first specifying its sub-endpoint name."
             )
         if value is not None:
             if not re.match(r"^\w+$", value := str(value)):
-                raise ValueError("Invalid sub-endpoint ID (or entity sub-ID)")
+                raise ElabFTWURLError("Invalid sub-endpoint ID (or entity sub-ID).")
             self._sub_endpoint_id = value
         else:
             self._sub_endpoint_id = ""
