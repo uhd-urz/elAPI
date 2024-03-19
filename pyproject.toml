@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elapi"
-version = "1.0.7"
+version = "1.0.7-dev1"
 description = """elAPI is a powerful, extensible API interface to eLabFTW built for \
 the University Computing Centre (URZ, FIRE division) at Universität Heidelberg."""
 authors = [
