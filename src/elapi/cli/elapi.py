@@ -50,7 +50,7 @@ typer.rich_utils._get_help_text = (
 )
 
 
-@app.command(short_help=f"Initialize {APP_NAME} configuration.")
+@app.command(short_help=f"Initialize {APP_NAME} configuration file.")
 def init(
     host_url: Annotated[
         str,
@@ -81,9 +81,12 @@ def init(
     ] = EXPORT_DIR,
 ) -> None:
     """
-    A quick and simple command to initialize elAPI configuration.
+    A quick and simple command to initialize elAPI configuration file.
     A 'host' and an 'api_token' are absolutely necessary to be able to make API calls to eLabFTW API endpoints.
-    We define those values in the configuration file.
+    We define those values in the configuration file. elAPI is capable of multiple configuration files
+    that follow an order of hierarchy. This command is meant to be user-friendly, and only creates one configuration
+    file in the user's home directory. See [README](https://pypi.org/project/elapi/) for use-cases of
+    advanced configuration files.
 
     <br/>
     'elapi init' can be run with or without any arguments. When it is run without arguments, a user prompt is shown
