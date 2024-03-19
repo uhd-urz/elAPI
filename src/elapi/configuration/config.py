@@ -57,11 +57,6 @@ history = ConfigHistory(settings)
 HOST: str = settings.get(
     KEY_HOST
 )  # case-insensitive: settings.get("HOST") == settings.get("host")
-if not HOST:
-    logger.critical(
-        f"'host' is empty or missing from {CONFIG_FILE_NAME} file. "
-        f"Please make sure host (URL pointing to root API endpoint) is included."
-    )
 
 
 # API token (api_key)
@@ -109,10 +104,7 @@ class APIToken:
 
 API_TOKEN: str = settings.get(KEY_API_TOKEN)
 if not API_TOKEN:
-    logger.critical(
-        f"'api_token' is empty or missing from {CONFIG_FILE_NAME} file. "
-        f"Please make sure api token with at least read access is included."
-    )
+    ...
     # Note elabftw-python uses the term "api_key" for "API_TOKEN"
 else:
     history.patch(KEY_API_TOKEN, APIToken(API_TOKEN))

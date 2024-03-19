@@ -44,19 +44,19 @@ class HostIdentityValidator(Validator):
         try:
             inspect.applied_config[KEY_HOST]
         except KeyError:
+            logger.critical("'host' is missing from configuration file.")
             stdin_console.print(
                 NoteText(
-                    "Host is missing from the config files! "
-                    "Host contains the URL of the root API endpoint. Example:"
+                    "Host is the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
                 )
             )
             raise CriticalValidationError
         else:
             if not HOST:
+                logger.critical("'host' is detected on configuration file but it's empty.")
                 stdin_console.print(
                     NoteText(
-                        "Host is detected but it's empty! "
                         "Host contains the URL of the root API endpoint. Example:"
                         f"\n{_HOST_EXAMPLE}",
                     )
@@ -66,18 +66,18 @@ class HostIdentityValidator(Validator):
         try:
             inspect.applied_config[KEY_API_TOKEN]
         except KeyError:
+            logger.critical("'api_token' is missing from configuration file.")
             stdin_console.print(
                 NoteText(
-                    "API token is missing from the config files! "
-                    "An API token with at least read-access is required to make requests.",
+                    "An API token with at least read-access is required to make requests."
                 )
             )
             raise CriticalValidationError
         else:
             if not API_TOKEN:
+                logger.critical("'api_token' is detected on configuration file but it's empty.")
                 stdin_console.print(
                     NoteText(
-                        "API token is detected but it's empty! "
                         "An API token with at least read-access is required to make requests.",
                     )
                 )
