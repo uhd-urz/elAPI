@@ -667,17 +667,17 @@ def delete(
 
 @app.command(name="show-config")
 def show_config(
-    show_keys: Annotated[
+    no_keys: Annotated[
         Optional[bool],
-        typer.Option("--show-keys", "-k", help=docs["show_keys"], show_default=True),
-    ] = False,
+        typer.Option("--no-keys", help=docs["no_keys"], show_default=True),
+    ] = True,
 ) -> None:
     """
     Get information about detected configuration values.
     """
     from ..plugins.show_config import show
 
-    md = Markdown(show(show_keys))
+    md = Markdown(show(no_keys))
     stdin_console.print(md)
 
 

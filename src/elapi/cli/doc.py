@@ -77,7 +77,7 @@ __PARAMETERS__doc__ = {
               "without syntax highlighting. This can be utilized if one wishes to pipe the output "
               " to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output format falls back to 'txt'.",
-    "show_keys": "Show names of configuration keywords as well.",
+    "no_keys": "Do not show the names of configuration keywords.",
     "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
                       'Make sure your API key has proper permission for your future tasks.',
