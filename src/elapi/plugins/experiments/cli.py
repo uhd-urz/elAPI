@@ -43,6 +43,7 @@ def get(
         Optional[bool],
         typer.Option(
             "--export",
+            "-e",
             help=elapi_docs["export"] + elapi_docs["export_details"],
             is_flag=True,
             is_eager=True,
@@ -248,6 +249,7 @@ def download_attachment(
         Optional[bool],
         typer.Option(
             "--export",
+            "-e",
             help=elapi_docs["export"] + elapi_docs["export_details"],
             is_flag=True,
             is_eager=True,
