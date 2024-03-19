@@ -2,6 +2,8 @@ from typing import Annotated, Optional
 
 import typer
 
+from ._doc import __PARAMETERS__doc__ as docs
+from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
 from ...cli.helpers import CLIExport, CLIFormat, OrderedCommands
 from ...loggers import Logger
 from ...plugins.experiments.experiments import (
@@ -28,15 +30,20 @@ app = typer.Typer(
 # noinspection PyCallingNonCallable,PyUnresolvedReferences
 @app.command(short_help="Read or download an experiment.")
 def get(
-    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    experiment_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["experiment_id"], show_default=False)
+    ],
     data_format: Annotated[
         Optional[str],
-        typer.Option("--format", "-F", show_default=False),
+        typer.Option(
+            "--format", "-F", help=elapi_docs["data_format"], show_default=False
+        ),
     ] = None,
     export: Annotated[
         Optional[bool],
         typer.Option(
             "--export",
+            help=elapi_docs["export"] + elapi_docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
@@ -105,20 +112,27 @@ def get(
 
 @app.command(short_help="Add new content to an existing experiment.")
 def append(
-    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    experiment_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["experiment_id"], show_default=False)
+    ],
     content_text: Annotated[
         Optional[str],
-        typer.Option("--text", "-t", show_default=False),
+        typer.Option(
+            "--text", "-t", help=docs["append_content_text"], show_default=False
+        ),
     ] = None,
     content_path: Annotated[
         Optional[str],
-        typer.Option("--path", "-P", show_default=False),
+        typer.Option(
+            "--path", "-P", help=docs["append_content_path"], show_default=False
+        ),
     ] = None,
     markdown_to_html: Annotated[
         Optional[bool],
         typer.Option(
             "--markdown-to-html",
             "-M",
+            help=docs["append_markdown_to_html"],
             show_default=False,
         ),
     ] = False,
@@ -168,18 +182,29 @@ def append(
 
 @app.command(short_help="Attach a file to an experiment.")
 def upload_attachment(
-    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    experiment_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["experiment_id"], show_default=False)
+    ],
     path: Annotated[
         str,
-        typer.Option("--path", "-P", show_default=False),
+        typer.Option(
+            "--path", "-P", help=docs["upload_attachment_path"], show_default=False
+        ),
     ],
     attachment_name: Annotated[
         Optional[str],
-        typer.Option("--rename", "-n", show_default=False),
+        typer.Option(
+            "--rename", "-n", help=docs["upload_attachment_rename"], show_default=False
+        ),
     ] = None,
     comment: Annotated[
         Optional[str],
-        typer.Option("--comment", "-c", show_default=False),
+        typer.Option(
+            "--comment",
+            "-c",
+            help=docs["upload_attachment_comment"],
+            show_default=False,
+        ),
     ] = None,
 ) -> None:
     """
@@ -207,15 +232,23 @@ def upload_attachment(
 
 @app.command(short_help="Download an attachment from an experiment.")
 def download_attachment(
-    experiment_id: Annotated[str, typer.Option("--id", "-i", show_default=False)],
+    experiment_id: Annotated[
+        str, typer.Option("--id", "-i", help=docs["experiment_id"], show_default=False)
+    ],
     attachment_id: Annotated[
         str,
-        typer.Option("--attachment-id", "-a", show_default=False),
+        typer.Option(
+            "--attachment-id",
+            "-a",
+            help=docs["download_attachment_attachment_id"],
+            show_default=False,
+        ),
     ],
     export: Annotated[
         Optional[bool],
         typer.Option(
             "--export",
+            help=elapi_docs["export"] + elapi_docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
