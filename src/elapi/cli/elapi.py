@@ -22,6 +22,8 @@ from typing_extensions import Annotated
 from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
 from .helpers import OrderedCommands
+from .. import APP_NAME
+from ..configuration import EXPORT_DIR
 from ..loggers import Logger
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
@@ -46,6 +48,95 @@ typer.rich_utils.STYLE_HELPTEXT = (
 typer.rich_utils._get_help_text = (
     get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
 )
+
+
+@app.command(short_help=f"Initialize {APP_NAME} configuration.")
+def init(
+    host_url: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help=docs["init_host"],
+            show_default=False,
+            prompt=f'Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
+        ),
+    ],
+    api_token: Annotated[
+        str,
+        typer.Option(
+            "--api-token",
+            help=docs["init_api_token"],
+            show_default=False,
+            prompt=f'Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
+        ),
+    ],
+    export_directory: Annotated[
+        str,
+        typer.Option(
+            "--export-dir",
+            help=docs["init_export_dir"],
+            show_default=False,
+            prompt=f'Enter your {docs["init_export_dir"][0]}{docs["init_export_dir"][1:].rstrip(".")}',
+        ),
+    ] = EXPORT_DIR,
+) -> None:
+    """
+    A quick and simple command to initialize elAPI configuration.
+    A 'host' and an 'api_token' are absolutely necessary to be able to make API calls to eLabFTW API endpoints.
+    We define those values in the configuration file.
+
+    <br/>
+    'elapi init' can be run with or without any arguments. When it is run without arguments, a user prompt is shown
+    asking for the required values. E.g.,
+    <br/>
+    Without arguments: `elapi init`
+    <br/>
+    With arguments: `elapi init --host <host> --api-token <api-token> --export-dir <export-directory>`
+
+    """
+    from .._names import CONFIG_FILE_NAME
+    from ..configuration import LOCAL_CONFIG_LOC
+    from ..validators import Validate, ValidationError
+    from ..validators import PathValidator
+    from time import sleep
+
+    with stdin_console.status(
+        f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
+    ):
+        sleep(0.5)
+        typer.echo()  # mainly for a newline!
+        try:
+            validate_local_config_loc = Validate(PathValidator(LOCAL_CONFIG_LOC))
+            validate_local_config_loc()
+        except ValidationError:
+            logger.error(
+                f"{APP_NAME} couldn't validate path '{LOCAL_CONFIG_LOC}' for writing configuration! "
+                f"Please make sure you have write and read access to '{LOCAL_CONFIG_LOC}'. "
+                "Configuration initialization has failed!"
+            )
+            raise typer.Exit(1)
+        else:
+            with LOCAL_CONFIG_LOC.open(mode="r+") as f:
+                if f.read():
+                    logger.error(
+                        f"A configuration file '{LOCAL_CONFIG_LOC}' already exists and it's not empty! "
+                        f"It's ambiguous what to do in this situation. {APP_NAME} will abort. "
+                        f"Configuration initialization has failed!"
+                    )
+                    raise typer.Exit(1)
+                else:
+                    _configuration_yaml_text = f"""host: {host_url}
+api_token: {api_token}
+export_dir: {export_directory}
+unsafe_api_token_warning: yes
+"""
+                    f.write(_configuration_yaml_text)
+            stdin_console.print(
+                "Configuration file has been successfully created! "
+                f"Run '{APP_NAME} show-config' to see the configuration path "
+                "and more configuration details.",
+                style="green",
+            )
 
 
 @app.command(short_help="Make `GET` requests to eLabFTW endpoints.")

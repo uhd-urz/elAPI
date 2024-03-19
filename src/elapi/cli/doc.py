@@ -1,7 +1,7 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
-from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
+from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT, EXPORT_DIR
 from ..styles import BaseFormat
 
 supported_highlighting_formats = ", ".join(
@@ -78,4 +78,9 @@ __PARAMETERS__doc__ = {
               " to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output format falls back to 'txt'.",
     "show_keys": "Show names of configuration keywords as well.",
+    "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
+    "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
+                      'Make sure your API key has proper permission for your future tasks.',
+    "init_export_dir": f"Preferred export directory. If '--export-dir' isn't passed, {EXPORT_DIR} will be "
+                        "set as the export directory."
 }
