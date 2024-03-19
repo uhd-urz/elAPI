@@ -51,7 +51,7 @@ detected_config_files_formatted = "\n- " + "\n- ".join(
 )
 
 
-def show(show_keys: bool) -> str:
+def show(no_keys: bool) -> str:
     _info = (
         f"""
 ## {APP_NAME} configuration information
@@ -64,7 +64,7 @@ The following debug information includes configuration values and their sources 
             f"- {ColorText('Host address').colorize(LIGHTGREEN)}"
             + (
                 f" **[{ColorText(KEY_HOST.lower()).colorize(YELLOW)}]**"
-                if show_keys
+                if no_keys
                 else ""
             )
             + ":"
@@ -79,7 +79,7 @@ The following debug information includes configuration values and their sources 
             f"- {ColorText('API Token').colorize(LIGHTGREEN)}"
             + (
                 f" **[{ColorText(KEY_API_TOKEN.lower()).colorize(YELLOW)}]**"
-                if show_keys
+                if no_keys
                 else ""
             )
             + ":"
@@ -93,7 +93,7 @@ The following debug information includes configuration values and their sources 
         + f"- {ColorText('Export directory').colorize(LIGHTGREEN)}"
         + (
             f" **[{ColorText(KEY_EXPORT_DIR.lower()).colorize(YELLOW)}]**"
-            if show_keys
+            if no_keys
             else ""
         )
         + f": {EXPORT_DIR} ← `{export_dir_source}`"
@@ -105,7 +105,7 @@ The following debug information includes configuration values and their sources 
         + f"- {ColorText('Unsafe API token use warning').colorize(LIGHTGREEN)}"
         + (
             f" **[{ColorText(KEY_UNSAFE_TOKEN_WARNING.lower()).colorize(YELLOW)}]**"
-            if show_keys
+            if no_keys
             else ""
         )
         + f": {unsafe_token_use_value} ← `{unsafe_token_use_source}`"
