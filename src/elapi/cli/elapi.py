@@ -670,7 +670,7 @@ def show_config(
     no_keys: Annotated[
         Optional[bool],
         typer.Option("--no-keys", help=docs["no_keys"], show_default=True),
-    ] = True,
+    ] = False,
 ) -> None:
     """
     Get information about detected configuration values.
