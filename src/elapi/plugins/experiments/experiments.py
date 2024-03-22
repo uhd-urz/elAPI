@@ -56,17 +56,17 @@ class ExperimentIDValidator(Validator):
                         query={"q": self.experiment_id}
                     ).json()[0]
                 )["elabid"]
-            except KeyError:
+            except (KeyError, IndexError):
                 self._experiment_endpoint.close()
                 raise ValidationError(
-                    f"Experiment ID '{self.experiment_id}' could not be found!"
+                    f"Experiment ID (detected as Unique eLabID) '{self.experiment_id}' could not be found!"
                 )
             else:
                 self._experiment_endpoint.close()
                 if elab_id == self.experiment_id:
                     return _experiment_data["id"]
                 raise ValidationError(
-                    f"Experiment ID '{self.experiment_id}' could not be found!"
+                    f"Experiment ID (detected as Unique eLabID) '{self.experiment_id}' could not be found!"
                 )
         raise ValidationError(
             f"Experiment ID '{self.experiment_id}' could not be validated "
