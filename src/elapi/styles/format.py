@@ -54,7 +54,9 @@ class JSONFormat(BaseFormat):
     def __call__(self, data: Any) -> str:
         import json
 
-        return json.dumps(data, indent=2, ensure_ascii=True)
+        return json.dumps(
+            data, indent=2, ensure_ascii=False
+        )  # ensure_ascii==False allows unicode
 
 
 class YAMLFormat(BaseFormat):
