@@ -130,14 +130,18 @@ class BillTeams:
                     owner[uid]["owner_name"] = u["fullname"]
                     owner[uid]["owner_email"] = u["email"]
                     owner[uid]["owner_user_id"] = uid
-                    # duplicate information to avoid ambiguity
-                    if not team_owners.get(team["id"]):
-                        team_owners[team["id"]] = {}
-                        team_owners[team["id"]]["team_name"] = team["name"]
-                        team_owners[team["id"]]["owners"] = [owner]
-                        team_owners[team["id"]]["team_id"] = team["id"]
-                        # duplicate information to avoid ambiguity
-                    else:
+                else:
+                    owner = None
+                # duplicate information to avoid ambiguity
+                if not team_owners.get(team["id"]):
+                    team_owners[team["id"]] = {}
+                    team_owners[team["id"]]["team_name"] = team["name"]
+                    team_owners[team["id"]]["owners"] = (
+                        [owner] if owner is not None else owner
+                    )
+                    team_owners[team["id"]]["team_id"] = team["id"]
+                else:
+                    if team_owners[team["id"]]["owners"] and owner:
                         team_owners[team["id"]]["owners"].append(owner)
 
         # Add team creation date to team_owners
