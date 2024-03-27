@@ -1,22 +1,32 @@
-from httpx import Response
+from typing import Union
 
 from .base import Validator, RuntimeValidationError, CriticalValidationError
-from .identity import COMMON_NETWORK_ERRORS
+from ..api import GETRequest
 
 
 class PermissionValidator(Validator):
-    __slots__ = "_group", "team_id", "_who"
+    _SYSADMIN_GROUP_KEY_NAME = "sysadmin"
+    _ADMIN_GROUP_KEY_NAME = "admin"
+    _USER_GROUP_KEY_NAME = "user"
+    __slots__ = "_group", "_who", "_team_id"
 
-    def __init__(self, _group: str, team_id: int = 1):
+    def __init__(
+        self, group: str = _USER_GROUP_KEY_NAME, team_id: Union[int, str, None] = None, can_write: bool = False
+    ):
         super().__init__()
-        self.group: str = _group
+        self.group: str = group
         self.team_id = team_id
+        self.can_write = can_write
 
     @property
     def GROUPS(self) -> dict:
         # Default (all) permission groups.
         # Reference: https://github.com/elabftw/elabftw/blob/master/src/enums/Usergroup.php
-        return {"sysadmin": 1, "admin": 2, "user": 4}
+        return {
+            PermissionValidator._SYSADMIN_GROUP_KEY_NAME: 1,
+            PermissionValidator._ADMIN_GROUP_KEY_NAME: 2,
+            PermissionValidator._USER_GROUP_KEY_NAME: 4,
+        }
 
     @GROUPS.setter
     def GROUPS(self, value):
@@ -37,48 +47,77 @@ class PermissionValidator(Validator):
         else:
             self._who = value
 
-    @staticmethod
-    def check_endpoint():
-        from ..api import GETRequest
+    @property
+    def team_id(self) -> str:
+        return self._team_id
 
-        session = GETRequest()
-        return session(endpoint_name="users", endpoint_id="me")
+    @team_id.setter
+    def team_id(self, value):
+        if value is None and self.group != PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
+            raise AttributeError(
+                f"A team ID must be provided to {self.__class__.__name__} class "
+                f"if the group to validate is not a '{PermissionValidator._SYSADMIN_GROUP_KEY_NAME}'!"
+            )
+        self._team_id = str(value)
+
+    @property
+    def session(self):
+        return GETRequest(keep_session_open=True)
+
+    @session.setter
+    def session(self, value):
+        raise AttributeError("Session cannot be modified!")
+
+    @session.deleter
+    def session(self):
+        raise AttributeError("Session cannot be deleted!")
 
     def validate(self) -> None:
         from ..loggers import Logger
+        from .identity import COMMON_NETWORK_ERRORS, HostIdentityValidator
 
         logger = Logger()
         try:
-            response: Response = self.check_endpoint()
-            caller_data: dict = response.json()
+            caller_data: dict = self.session(
+                endpoint_name="users", endpoint_id="me"
+            ).json()
+            api_token_data = self.session(
+                endpoint_name="apikeys", endpoint_id="me"
+            ).json()[0]
         except COMMON_NETWORK_ERRORS:
             logger.critical(
                 "Something went wrong while trying to read user information! "
-                "Try to validate the configuration first with 'HostIdentityValidator' "
+                f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
                 "to see what specifically went wrong."
             )
+            self.session.close()
             raise RuntimeValidationError
         else:
-            if self.group == "sysadmin":
-                if not caller_data["is_sysadmin"]:
+            self.session.close()
+            if self.can_write:
+                if not api_token_data["can_write"]:
                     logger.critical(
-                        "Requesting user doesn't have elabftw 'sysadmin' permission "
-                        "to be able to access the resource."
+                        "Requesting user's API token (API key) doesn't have write permission!"
                     )
                     raise CriticalValidationError
-            elif self.group in ["admin", "user"]:
+            if self.group == PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
+                if not caller_data["is_sysadmin"]:
+                    logger.critical(
+                        f"Requesting user doesn't have eLabFTW '{self.group}' permission "
+                        f"to be able to access the resource."
+                    )
+                    raise CriticalValidationError
+            elif self.team_id is not None:
                 for team in caller_data["teams"]:
-                    if not team["id"] == self.team_id:
-                        logger.critical(
-                            f"The provided team ID '{self.team_id}' didn't match "
-                            f"any of the teams the user is part of."
-                        )
-                        raise CriticalValidationError
-                    if team["usergroup"] not in [
-                        self.GROUPS[self.group],
-                        self.GROUPS["sysadmin"],
-                    ]:
-                        logger.critical(
-                            f"Requesting user doesn't belong to the permission group '{self.group}'!"
-                        )
-                        raise CriticalValidationError
+                    if str(team["id"]) == self.team_id:
+                        if team["usergroup"] > self.GROUPS[self.group]:
+                            logger.critical(
+                                f"Requesting user is part of the team '{self.team_id}' but "
+                                f"doesn't belong to the permission group '{self.group}'!"
+                            )
+                            raise CriticalValidationError
+                        return
+                logger.critical(
+                    f"Requesting user is not part of the given team with team ID '{self.team_id}'!"
+                )
+                raise CriticalValidationError
