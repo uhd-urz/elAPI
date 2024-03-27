@@ -1,7 +1,6 @@
 from typing import Union
 
 from .base import Validator, RuntimeValidationError, CriticalValidationError
-from ..api import GETRequest
 
 
 class PermissionValidator(Validator):
@@ -11,7 +10,10 @@ class PermissionValidator(Validator):
     __slots__ = "_group", "_who", "_team_id"
 
     def __init__(
-        self, group: str = _USER_GROUP_KEY_NAME, team_id: Union[int, str, None] = None, can_write: bool = False
+        self,
+        group: str = _USER_GROUP_KEY_NAME,
+        team_id: Union[int, str, None] = None,
+        can_write: bool = False,
     ):
         super().__init__()
         self.group: str = group
@@ -62,6 +64,8 @@ class PermissionValidator(Validator):
 
     @property
     def session(self):
+        from ..api import GETRequest
+
         return GETRequest(keep_session_open=True)
 
     @session.setter
