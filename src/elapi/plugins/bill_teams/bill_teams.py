@@ -91,7 +91,7 @@ class TeamsInformation:
             raise SystemExit(1)
 
 
-class BillTeams:
+class InternalTeamsInformation:
     __slots__ = "users", "teams"
 
     def __init__(
@@ -99,6 +99,16 @@ class BillTeams:
     ):
         self.users = users_information
         self.teams = teams_information
+
+    @property
+    def BILL_RUN_DATE(self) -> datetime:
+        return datetime.now()
+
+    @BILL_RUN_DATE.setter
+    def BILL_RUN_DATE(self, value):
+        raise AttributeError(
+            "BILL_RUN_DATE is always the current date. It cannot be modified!"
+        )
 
     @property
     def LAUNCH_DATE(self) -> datetime:
@@ -113,19 +123,26 @@ class BillTeams:
             return self.LAUNCH_DATE
         return creation_date
 
+    def is_user_expired(self, user_data: dict) -> bool:
+        if (user_expiration_date := user_data["valid_until"]) is not None:
+            if parser.isoparse(user_expiration_date) < self.BILL_RUN_DATE:
+                return True
+        return False
+
     def _get_owners(self) -> dict:
         # Generate teams information with team owners
         team_members, team_owners = {}, {}
         for u in self.users:
             for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
+                uid = u["userid"]
                 # Get teams user count
-                if not team_members.get(team["id"]):
-                    team_members[team["id"]]: list = [u["userid"]]
-                else:
-                    team_members[team["id"]].append(u["userid"])
+                if not self.is_user_expired(user_data=u):
+                    if not team_members.get(team["id"]):
+                        team_members[team["id"]]: list = [uid]
+                    else:
+                        team_members[team["id"]].append(uid)
                 # Get owners information
                 if team["is_owner"] == 1:
-                    uid = u["userid"]
                     owner = {uid: {}}
                     owner[uid]["owner_name"] = u["fullname"]
                     owner[uid]["owner_email"] = u["email"]

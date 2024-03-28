@@ -71,12 +71,12 @@ def bill_teams(
     from .bill_teams import (
         UsersInformation,
         TeamsInformation,
-        BillTeams,
+        InternalTeamsInformation,
     )
 
     users, teams = UsersInformation(), TeamsInformation()
     try:
-        bill = BillTeams(asyncio.run(users.items()), teams.items())
+        bill = InternalTeamsInformation(asyncio.run(users.items()), teams.items())
     except RuntimeError as e:
         # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before all tasks are finished
         logger.info(f"{APP_NAME} will try again.")
