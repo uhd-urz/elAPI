@@ -50,7 +50,7 @@ class PermissionValidator(Validator):
             self._who = value
 
     @property
-    def team_id(self) -> str:
+    def team_id(self) -> Optional[str]:
         return self._team_id
 
     @team_id.setter
@@ -60,7 +60,7 @@ class PermissionValidator(Validator):
                 f"A team ID must be provided to {self.__class__.__name__} class "
                 f"if the group to validate is not a '{PermissionValidator._SYSADMIN_GROUP_KEY_NAME}'!"
             )
-        self._team_id = str(value)
+        self._team_id = str(value) if value is not None else value
 
     @property
     def session(self):
