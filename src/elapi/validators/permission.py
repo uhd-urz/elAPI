@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from .base import Validator, RuntimeValidationError, CriticalValidationError
 
@@ -85,9 +85,12 @@ class PermissionValidator(Validator):
             caller_data: dict = self.session(
                 endpoint_name="users", endpoint_id="me"
             ).json()
-            api_token_data = self.session(
-                endpoint_name="apikeys", endpoint_id="me"
-            ).json()[0]
+            if self.can_write:
+                api_token_data: Optional[dict] = self.session(
+                    endpoint_name="apikeys", endpoint_id="me"
+                ).json()[0]
+            else:
+                api_token_data = None
         except COMMON_NETWORK_ERRORS:
             logger.critical(
                 "Something went wrong while trying to read user information! "
@@ -98,7 +101,7 @@ class PermissionValidator(Validator):
             raise RuntimeValidationError
         else:
             self.session.close()
-            if self.can_write:
+            if api_token_data is not None:
                 if not api_token_data["can_write"]:
                     logger.critical(
                         "Requesting user's API token (API key) doesn't have write permission!"
