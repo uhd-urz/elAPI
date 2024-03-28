@@ -13,12 +13,10 @@ class PermissionValidator(Validator):
         self,
         group: str = _USER_GROUP_KEY_NAME,
         team_id: Union[int, str, None] = None,
-        can_write: bool = False,
     ):
         super().__init__()
         self.group: str = group
         self.team_id = team_id
-        self.can_write = can_write
 
     @property
     def GROUPS(self) -> dict:
@@ -58,55 +56,27 @@ class PermissionValidator(Validator):
         if value is None and self.group != PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
             raise AttributeError(
                 f"A team ID must be provided to {self.__class__.__name__} class "
-                f"if the group to validate is not a '{PermissionValidator._SYSADMIN_GROUP_KEY_NAME}'!"
+                f"if the group to validate is not '{PermissionValidator._SYSADMIN_GROUP_KEY_NAME}'!"
             )
         self._team_id = str(value) if value is not None else value
 
-    @property
-    def session(self):
-        from ..api import GETRequest
-
-        return GETRequest(keep_session_open=True)
-
-    @session.setter
-    def session(self, value):
-        raise AttributeError("Session cannot be modified!")
-
-    @session.deleter
-    def session(self):
-        raise AttributeError("Session cannot be deleted!")
-
     def validate(self) -> None:
+        from ..api import GETRequest
         from ..loggers import Logger
         from .identity import COMMON_NETWORK_ERRORS, HostIdentityValidator
 
         logger = Logger()
         try:
-            caller_data: dict = self.session(
-                endpoint_name="users", endpoint_id="me"
-            ).json()
-            if self.can_write:
-                api_token_data: Optional[dict] = self.session(
-                    endpoint_name="apikeys", endpoint_id="me"
-                ).json()[0]
-            else:
-                api_token_data = None
+            _session = GETRequest()
+            caller_data: dict = _session(endpoint_name="users", endpoint_id="me").json()
         except COMMON_NETWORK_ERRORS:
             logger.critical(
                 "Something went wrong while trying to read user information! "
                 f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
                 "to see what specifically went wrong."
             )
-            self.session.close()
             raise RuntimeValidationError
         else:
-            self.session.close()
-            if api_token_data is not None:
-                if not api_token_data["can_write"]:
-                    logger.critical(
-                        "Requesting user's API token (API key) doesn't have write permission!"
-                    )
-                    raise CriticalValidationError
             if self.group == PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
                 if not caller_data["is_sysadmin"]:
                     logger.critical(
@@ -128,3 +98,35 @@ class PermissionValidator(Validator):
                     f"Requesting user is not part of the given team with team ID '{self.team_id}'!"
                 )
                 raise CriticalValidationError
+
+
+class APITokenRWValidator(Validator):
+    def __init__(self, can_write: bool = False):
+        super().__init__()
+        self.can_write = can_write
+
+    def validate(self):
+        from ..api import GETRequest
+        from .identity import COMMON_NETWORK_ERRORS, HostIdentityValidator
+        from ..loggers import Logger
+
+        logger = Logger()
+        if self.can_write:
+            try:
+                _session = GETRequest()
+                api_token_data: Optional[dict] = _session(
+                    endpoint_name="apikeys", endpoint_id="me"
+                ).json()[0]
+            except COMMON_NETWORK_ERRORS:
+                logger.critical(
+                    "Something went wrong while trying to read user information! "
+                    f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
+                    "to see what specifically went wrong."
+                )
+                raise RuntimeValidationError
+            else:
+                if not api_token_data["can_write"]:
+                    logger.critical(
+                        "Requesting user's API token doesn't have write permission!"
+                    )
+                    raise CriticalValidationError
