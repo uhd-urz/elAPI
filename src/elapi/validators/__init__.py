@@ -8,4 +8,4 @@ from .base import (
 )
 from .identity import HostIdentityValidator
 from .path import PathValidator
-from .permission import PermissionValidator
+from .permission import PermissionValidator, APITokenRWValidator
