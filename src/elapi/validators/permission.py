@@ -101,7 +101,7 @@ class PermissionValidator(Validator):
 
 
 class APITokenRWValidator(Validator):
-    def __init__(self, can_write: bool = False):
+    def __init__(self, can_write: bool = True):
         super().__init__()
         self.can_write = can_write
 
