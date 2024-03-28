@@ -119,7 +119,7 @@ class APITokenRWValidator(Validator):
                 ).json()[0]
             except COMMON_NETWORK_ERRORS:
                 logger.critical(
-                    "Something went wrong while trying to read user information! "
+                    "Something went wrong while trying to read API token information! "
                     f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
                     "to see what specifically went wrong."
                 )
