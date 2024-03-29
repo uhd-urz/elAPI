@@ -1,75 +1,25 @@
-import asyncio
 from datetime import datetime
-from typing import Awaitable
 
-import httpx
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
-from httpx import Response
 
 from ...loggers import Logger
 
 logger = Logger()
-_RETRY_TRIGGER_ERRORS = (
-    httpx.TimeoutException,
-    httpx.ReadError,
-    httpx.ConnectError,
-    httpx.RemoteProtocolError,
-    TimeoutError,
-)
 
 
 class UsersInformation:
     __slots__ = "users", "user_id_prefix"
     endpoint_name = "users"
-    endpoint_id_prefix = "userid"
+    endpoint_id_key_name = "userid"
 
     @classmethod
     async def items(cls):
-        from ...endpoint import FixedAsyncEndpoint, RecursiveGETEndpoint
-        from rich.progress import track
+        from ..utils import RecursiveInformation
 
-        event_loop = asyncio.get_running_loop()
-        users_endpoint = FixedAsyncEndpoint(endpoint_name=cls.endpoint_name)
-        try:
-            users = (
-                await users_endpoint.get(endpoint_id=None)
-            ).json()  # None gives a list of all users
-            recursive_users = RecursiveGETEndpoint(
-                users, cls.endpoint_id_prefix, target_endpoint=users_endpoint
-            )
-            tasks: list[Awaitable[Response]] = [
-                item for item in recursive_users.endpoints()
-            ]
-            recursive_users_data: list = []
-
-            for task in track(
-                asyncio.as_completed(tasks),
-                total=len(tasks),
-                description=f"Getting {cls.endpoint_name} data:",
-                transient=True,
-            ):
-                recursive_users_data.append((await task).json())
-        except _RETRY_TRIGGER_ERRORS as error:
-            logger.warning(
-                f"Retrieving {cls.endpoint_name} data was interrupted due to a network error. "
-                f"Exception details: '{error!r}'"
-            )
-            event_loop.set_exception_handler(lambda loop, context: ...)
-            # "lambda loop, context: ..." suppresses asyncio error emission:
-            # https://docs.python.org/3/library/asyncio-dev.html#detect-never-retrieved-exceptions
-            await users_endpoint.close()
-            if event_loop.is_running():
-                event_loop.stop()  # Will raise RuntimeError
-            raise InterruptedError  # This will likely never be reached,
-            # since this entire exception block will only trigger while event loop is still running
-        except (KeyboardInterrupt, asyncio.CancelledError):
-            await users_endpoint.close()
-            event_loop.stop()
-            raise SystemExit(1)
-        else:
-            await users_endpoint.close()
-            return recursive_users_data
+        return await RecursiveInformation(
+            cls.endpoint_name, cls.endpoint_id_key_name
+        ).items()
 
 
 class TeamsInformation:
@@ -78,18 +28,10 @@ class TeamsInformation:
 
     @classmethod
     def items(cls) -> list[dict, ...]:
-        from ...api import GETRequest
+        from ..utils import Information
 
-        teams = GETRequest()
-        try:
-            return teams(endpoint_name=cls.endpoint_name, endpoint_id=None).json()
-        except _RETRY_TRIGGER_ERRORS:
-            teams.close()
-            raise InterruptedError
-        except KeyboardInterrupt:
-            teams.close()
-            raise SystemExit(1)
-
+        return Information(cls.endpoint_name).items()
+        
 
 class InternalTeamsInformation:
     __slots__ = "users", "teams"
