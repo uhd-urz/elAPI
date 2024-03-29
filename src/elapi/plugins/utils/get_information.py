@@ -60,10 +60,8 @@ class RecursiveInformation:
 
         event_loop = asyncio.get_running_loop()
         _endpoint = FixedAsyncEndpoint(endpoint_name=self.endpoint_name)
+        endpoint_information = Information(self.endpoint_name).items()
         try:
-            endpoint_information = (
-                await _endpoint.get(endpoint_id=None)
-            ).json()  # None gives a list of all available resources
             recursive_endpoint = RecursiveGETEndpoint(
                 endpoint_information,
                 self.endpoint_id_key_name,
