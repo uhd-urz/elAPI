@@ -8,7 +8,7 @@ from ._doc import __PARAMETERS__doc__ as docs
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
-from ...styles import stdin_console
+from ...styles import stdin_console, stderr_console
 from ...validators import RuntimeValidationError
 
 app = typer.Typer(
@@ -59,7 +59,7 @@ def bill_teams(
         PermissionValidator,
     )
 
-    with stdin_console.status("Validating...\n", refresh_per_second=15):
+    with stderr_console.status("Validating...\n", refresh_per_second=15):
         validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
         validate()
     if export is False:
