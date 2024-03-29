@@ -31,9 +31,9 @@ class TeamsInformation:
         from ..utils import Information
 
         return Information(cls.endpoint_name).items()
-        
 
-class InternalTeamsInformation:
+
+class BillTeamsList:
     __slots__ = "users", "teams"
 
     def __init__(
