@@ -77,8 +77,9 @@ def bill_teams(
     users, teams = UsersInformation(), TeamsInformation()
     try:
         bill = BillTeamsList(asyncio.run(users.items()), teams.items())
-    except RuntimeError as e:
-        # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before all tasks are finished
+    except (RuntimeError, InterruptedError) as e:
+        # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
+        # InterruptedError is raised when JSONDecodeError is triggered.
         logger.info(f"{APP_NAME} will try again.")
         raise InterruptedError from e
     bill_teams_data = bill.items()

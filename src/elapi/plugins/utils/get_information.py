@@ -1,4 +1,5 @@
 import asyncio
+from json import JSONDecodeError
 from typing import Awaitable
 
 import httpx
@@ -84,18 +85,25 @@ class RecursiveInformation:
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
                 f"Exception details: '{error!r}'"
             )
+            raise InterruptedError from error  # This will likely never be reached,
+            # since this entire exception block will only trigger while event loop is still running
+            # but event loop is already closed in finally block which raises RuntimeError.
+        except JSONDecodeError as e:
+            logger.warning(
+                f"Request for '{self.endpoint_name}' data was received by the server but "
+                f"request was not successful."
+            )
+            raise InterruptedError from e
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            raise SystemExit(1)
+        else:
+            return recursive_information
+        finally:
             event_loop.set_exception_handler(lambda loop, context: ...)
             # "lambda loop, context: ..." suppresses asyncio error emission:
             # https://docs.python.org/3/library/asyncio-dev.html#detect-never-retrieved-exceptions
-            await _endpoint.close()
+            await _endpoint.close()  # Must be closed before cancelling asyncio tasks.
+            for task in asyncio.all_tasks(event_loop):
+                task.cancel()
             if event_loop.is_running():
                 event_loop.stop()  # Will raise RuntimeError
-            raise InterruptedError  # This will likely never be reached,
-            # since this entire exception block will only trigger while event loop is still running
-        except (KeyboardInterrupt, asyncio.CancelledError):
-            await _endpoint.close()
-            event_loop.stop()
-            raise SystemExit(1)
-        else:
-            await _endpoint.close()
-            return recursive_information
