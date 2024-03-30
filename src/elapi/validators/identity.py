@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+from typing import Union, Iterable
 
 import httpx
 
@@ -20,6 +21,27 @@ COMMON_NETWORK_ERRORS: tuple = (
 
 class HostIdentityValidator(Validator):
     __slots__ = ()
+
+    def __init__(self, restrict_to: Union[str, Iterable[str], None] = None):
+        self.restrict_to = restrict_to
+
+    @property
+    def restrict_to(self) -> Iterable[str]:
+        return self._restrict_to
+
+    @restrict_to.setter
+    def restrict_to(self, value):
+        if value is None:
+            self._restrict_to = None
+        elif isinstance(value, str):
+            self._restrict_to = [value]
+        elif isinstance(value, Iterable):
+            self._restrict_to = value
+        else:
+            raise AttributeError(
+                "restrict_to must be a string of target host URL, or an iterable of strings where "
+                f"each string is a host URL that {HostIdentityValidator.__name__} validation will be restricted to."
+            )
 
     @staticmethod
     def check_endpoint():
@@ -54,7 +76,9 @@ class HostIdentityValidator(Validator):
             raise CriticalValidationError
         else:
             if not HOST:
-                logger.critical("'host' is detected on configuration file but it's empty.")
+                logger.critical(
+                    "'host' is detected on configuration file but it's empty."
+                )
                 stdin_console.print(
                     NoteText(
                         "Host contains the URL of the root API endpoint. Example:"
@@ -62,7 +86,24 @@ class HostIdentityValidator(Validator):
                     )
                 )
                 raise CriticalValidationError
-
+        if self.restrict_to is not None:
+            if HOST not in self.restrict_to:
+                logger.error(
+                    "Detected 'host' is different from the restricted host. 'host' could not be validated!"
+                )
+                try:
+                    stdin_console.print(
+                        NoteText(
+                            f"Detected 'host': '{HOST}'. "
+                            f"Host(s) restricted by {HostIdentityValidator.__name__}: '{', '.join(self.restrict_to)}'."
+                        )
+                    )
+                except TypeError as e:
+                    raise ValueError(
+                        f"An invalid value might have been given to restrict_to "
+                        f"attribute of {HostIdentityValidator.__name__}. Validation could not be completed!"
+                    ) from e
+                raise CriticalValidationError
         try:
             inspect.applied_config[KEY_API_TOKEN]
         except KeyError:
@@ -75,7 +116,9 @@ class HostIdentityValidator(Validator):
             raise CriticalValidationError
         else:
             if not API_TOKEN:
-                logger.critical("'api_token' is detected on configuration file but it's empty.")
+                logger.critical(
+                    "'api_token' is detected on configuration file but it's empty."
+                )
                 stdin_console.print(
                     NoteText(
                         "An API token with at least read-access is required to make requests.",
