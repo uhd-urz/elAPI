@@ -29,12 +29,10 @@ class Information:
         session = GETRequest()
         try:
             response = session(endpoint_name=self.endpoint_name, endpoint_id=None)
-        except _RETRY_TRIGGER_ERRORS:
-            session.close()
-            raise InterruptedError
-        except KeyboardInterrupt:
-            session.close()
-            raise SystemExit(1)
+        except _RETRY_TRIGGER_ERRORS as e:
+            raise InterruptedError from e
+        except KeyboardInterrupt as e:
+            raise SystemExit(1) from e
         else:
             if response.is_success:
                 return response.json()
@@ -43,6 +41,8 @@ class Information:
                 f"Returned response was: '{response.text}'"
             )
             raise RuntimeError
+        finally:
+            session.close()
 
 
 class RecursiveInformation:
