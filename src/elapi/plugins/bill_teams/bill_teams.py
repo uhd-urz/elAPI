@@ -15,7 +15,7 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        from ..utils import RecursiveInformation
+        from ..commons import RecursiveInformation
 
         return await RecursiveInformation(
             cls.endpoint_name, cls.endpoint_id_key_name
@@ -28,7 +28,7 @@ class TeamsInformation:
 
     @classmethod
     def items(cls) -> list[dict, ...]:
-        from ..utils import Information
+        from ..commons import Information
 
         return Information(cls.endpoint_name).items()
 

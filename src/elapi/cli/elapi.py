@@ -202,7 +202,7 @@ def get(
     from ..api import GETRequest, ElabFTWURLError
     from .helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
-    from ..plugins.utils import Export
+    from ..plugins.commons import Export
     from ..styles import Highlight
 
     validate_config = Validate(HostIdentityValidator())
@@ -332,7 +332,7 @@ def post(
     from ..api import POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
-    from ..plugins.utils import get_location_from_headers
+    from ..plugins.commons import get_location_from_headers
     from ..styles import Format, Highlight
     from ..path import ProperPath
 
