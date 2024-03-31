@@ -2,6 +2,7 @@
 from .base import (
     Validator,
     Validate,
+    Exit,
     ValidationError,
     RuntimeValidationError,
     CriticalValidationError,

@@ -6,6 +6,7 @@ import httpx
 from httpx import Response
 
 from ...loggers import Logger
+from ...validators import Exit
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -32,7 +33,7 @@ class Information:
         except _RETRY_TRIGGER_ERRORS as e:
             raise InterruptedError from e
         except KeyboardInterrupt as e:
-            raise SystemExit(1) from e
+            raise Exit(1) from e
         else:
             if response.is_success:
                 return response.json()
@@ -94,8 +95,8 @@ class RecursiveInformation:
                 f"request was not successful."
             )
             raise InterruptedError from e
-        except (KeyboardInterrupt, asyncio.CancelledError):
-            raise SystemExit(1)
+        except (KeyboardInterrupt, asyncio.CancelledError) as e:
+            raise Exit(1) from e
         else:
             return recursive_information
         finally:

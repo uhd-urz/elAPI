@@ -1,11 +1,11 @@
+import sys
 from abc import abstractmethod, ABC
 from typing import Any
 
 import typer
 
 
-class ValidationError(Exception):
-    ...
+class ValidationError(Exception): ...
 
 
 class RuntimeValidationError(typer.Exit):
@@ -13,8 +13,18 @@ class RuntimeValidationError(typer.Exit):
         super().__init__(*args or (1,))  # default error code is always 1
 
 
-class CriticalValidationError(BaseException):
-    SYSTEM_EXIT: bool = True
+class Exit(BaseException):
+    if (
+        hasattr(sys, "ps1")
+        or hasattr(sys, "ps2")
+        or sys.modules.get(
+            "ptpython", False
+        )  # hasattr(sys, "ps1") doesn't work with ptpython.
+        or sys.modules.get("bpython", False)
+    ):
+        SYSTEM_EXIT: bool = False
+    else:
+        SYSTEM_EXIT: bool = True
 
     def __new__(cls, *args, **kwargs):
         if cls.SYSTEM_EXIT:
@@ -22,10 +32,12 @@ class CriticalValidationError(BaseException):
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
 
 
+class CriticalValidationError(Exit): ...
+
+
 class Validator(ABC):
     @abstractmethod
-    def validate(self):
-        ...
+    def validate(self): ...
 
 
 class Validate:
