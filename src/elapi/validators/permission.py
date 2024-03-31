@@ -67,8 +67,8 @@ class PermissionValidator(Validator):
 
         logger = Logger()
         try:
-            _session = GETRequest()
-            caller_data: dict = _session(endpoint_name="users", endpoint_id="me").json()
+            session = GETRequest(keep_session_open=True)
+            caller_data: dict = session(endpoint_name="users", endpoint_id="me").json()
         except COMMON_NETWORK_ERRORS:
             logger.critical(
                 "Something went wrong while trying to read user information! "
@@ -84,10 +84,14 @@ class PermissionValidator(Validator):
                         f"to be able to access the resource."
                     )
                     raise CriticalValidationError
-            elif self.team_id is not None:
+            if self.team_id is not None:
                 for team in caller_data["teams"]:
                     if str(team["id"]) == self.team_id:
-                        if team["usergroup"] > self.GROUPS[self.group]:
+                        if (
+                            team["usergroup"] > self.GROUPS[self.group]
+                            and self.group
+                            != PermissionValidator._SYSADMIN_GROUP_KEY_NAME
+                        ):  # "sysadmin" has access to all teams, hence we don't check if "sysadmin" belongs to a team.
                             logger.critical(
                                 f"Requesting user is part of the team '{self.team_id}' but "
                                 f"doesn't belong to the permission group '{self.group}'!"
