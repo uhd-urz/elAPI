@@ -288,7 +288,7 @@ def download_attachment(
             ) = download_attachment(experiment_id, attachment_id)
         except ValueError as e:
             logger.error(e)
-            typer.Exit(1)
+            raise typer.Exit(1)
         else:
             data_format, export_dest, export_file_ext = CLIExport(
                 attachment_extension, _export_dest
