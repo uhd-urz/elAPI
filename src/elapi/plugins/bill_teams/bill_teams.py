@@ -1,9 +1,13 @@
 from datetime import datetime
+from pathlib import Path
+from typing import Union
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
 from ...loggers import Logger
+from ...path import ProperPath
+from ...validators import Exit
 
 logger = Logger()
 
@@ -31,6 +35,46 @@ class TeamsInformation:
         from ..commons import Information
 
         return Information(cls.endpoint_name).items()
+
+
+class OwnersInformationFromURZContract:
+    def __init__(self, source_path: Union[Path, ProperPath, str], delimiter: str = ";"):
+        self.source_path = source_path
+        self.delimiter = delimiter
+
+    @property
+    def source_path(self) -> ProperPath:
+        return self._source_path
+
+    @source_path.setter
+    def source_path(self, value):
+        if not isinstance(value, ProperPath):
+            value = ProperPath(value, err_logger=logger)
+        self._source_path = value
+
+    def items(self) -> dict:
+        import csv
+
+        with self.source_path.open() as f:
+            data: list[dict] = list(csv.DictReader(f, delimiter=self.delimiter))
+        if not data:
+            logger.error(
+                f"Given source file '{self.source_path}' for "
+                f"{OwnersInformationFromURZContract.__name__} cannot be empty!"
+            )
+            raise Exit(1)
+        try:
+            data_flat: dict = {
+                team_data.pop("team_id"): team_data for team_data in data
+            }
+        except KeyError as e:
+            logger.error(
+                f"Given source file '{self.source_path}' for "
+                f"{OwnersInformationFromURZContract.__name__} might be invalid! Key '{e}' couldn't be found."
+            )
+            raise Exit(1)
+        else:
+            return data_flat
 
 
 class BillTeamsList:
