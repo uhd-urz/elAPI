@@ -122,11 +122,26 @@ class BillTeamsList:
             for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
                 uid = u["userid"]
                 # Get teams user count
-                if not self.is_user_expired(user_data=u):
-                    if not team_members.get(team["id"]):
-                        team_members[team["id"]]: list = [uid]
-                    else:
-                        team_members[team["id"]].append(uid)
+                if not team_members.get(team["id"]):
+                    team_members[team["id"]]: dict = {
+                        uid: {
+                            "firstname": u["firstname"],
+                            "lastname": u["lastname"],
+                            "email": u["email"],
+                            "expired": self.is_user_expired(user_data=u),
+                        }
+                    }
+                else:
+                    team_members[team["id"]].update(
+                        {
+                            uid: {
+                                "firstname": u["firstname"],
+                                "lastname": u["lastname"],
+                                "email": u["email"],
+                                "expired": self.is_user_expired(user_data=u),
+                            }
+                        }
+                    )
                 # Get owners information
                 if team["is_owner"] == 1:
                     owner = {uid: {}}
@@ -155,8 +170,14 @@ class BillTeamsList:
         # Add member count to team_owners
         for team_id in team_owners:
             team_owners[team_id]["members"] = {}
-            team_owners[team_id]["members"]["user_ids"] = team_members[team_id]
-            team_owners[team_id]["members"]["member_count"] = len(team_members[team_id])
+            team_owners[team_id]["members"] = team_members[team_id]
+            team_owners[team_id]["total_unarchived_member_count"] = len(
+                team_members[team_id]
+            )
+            team_owners[team_id]["active_member_count"] = 0
+            for k in team_members[team_id]:
+                if team_members[team_id][k]["expired"] is False:
+                    team_owners[team_id]["active_member_count"] += 1
             # Add trial information
             trial_starts_at = self.team_trial_start_date(
                 parser.isoparse(team_owners[team_id]["team_created_at"])
