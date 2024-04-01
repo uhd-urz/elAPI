@@ -187,14 +187,17 @@ class ProperPath:
 
     @contextmanager
     def open(
-        self, mode="r", encoding: Union[str, None] = None
+        self,
+        mode="r",
+        encoding: Union[str, None] = None,
+        **kwargs,
     ) -> Generator[TextIO, None, None]:
         path = self.expanded.resolve()
         file: Union[TextIO, None] = None
         try:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
-            file: TextIO = path.open(mode=mode, encoding=encoding)
+            file: TextIO = path.open(mode=mode, encoding=encoding, **kwargs)
         except FileNotFoundError as e:
             message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)
