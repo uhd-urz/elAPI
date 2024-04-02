@@ -47,14 +47,14 @@ class Information:
 
 
 class RecursiveInformation:
-    __slots__ = "endpoint_name", "endpoint_id_key_name", "verbose"
+    __slots__ = "endpoint_name", "endpoint_id_key_name", "show_progress"
 
     def __init__(
-        self, endpoint_name: str, endpoint_id_key_name: str, verbose: bool = True
+        self, endpoint_name: str, endpoint_id_key_name: str, show_progress: bool = True
     ):
         self.endpoint_name = endpoint_name
         self.endpoint_id_key_name = endpoint_id_key_name
-        self.verbose = verbose
+        self.show_progress = show_progress
 
     @staticmethod
     async def close_event_loop(event_loop: asyncio.AbstractEventLoop, endpoint) -> None:
@@ -90,7 +90,7 @@ class RecursiveInformation:
                 total=len(tasks),
                 description=f"Getting {self.endpoint_name} data:",
                 transient=True,
-                disable=not self.verbose,
+                disable=not self.show_progress,
             ):
                 recursive_information.append((await task).json())
         except _RETRY_TRIGGER_ERRORS as error:
