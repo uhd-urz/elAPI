@@ -324,7 +324,7 @@ def post(
 
     With `elapi` you can do the following:
     <br/>
-    `$ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
+    `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
     import ast
