@@ -30,6 +30,10 @@ logger = Logger()
     retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
 )
 def bill_teams(
+    contract_info_path: Annotated[
+        str,
+        typer.Option("--contract-info-path", help="", show_default=False),
+    ],
     data_format: Annotated[
         Optional[str],
         typer.Option(
@@ -71,12 +75,19 @@ def bill_teams(
     from .bill_teams import (
         UsersInformation,
         TeamsInformation,
+        OwnersInformationFromURZContract,
         BillTeamsList,
     )
 
-    users, teams = UsersInformation(), TeamsInformation()
+    users, teams, contract = (
+        UsersInformation(),
+        TeamsInformation(),
+        OwnersInformationFromURZContract(contract_info_path),
+    )
     try:
-        bill = BillTeamsList(asyncio.run(users.items()), teams.items())
+        bill = BillTeamsList(
+            asyncio.run(users.items()), teams.items(), contract.items()
+        )
     except (RuntimeError, InterruptedError) as e:
         # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
         # InterruptedError is raised when JSONDecodeError is triggered.

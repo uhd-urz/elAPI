@@ -78,13 +78,17 @@ class OwnersInformationFromURZContract:
 
 
 class BillTeamsList:
-    __slots__ = "users", "teams"
+    __slots__ = "users", "teams", "contract"
 
     def __init__(
-        self, users_information: list[dict, ...], teams_information: list[dict, ...]
+        self,
+        users_information: list[dict, ...],
+        teams_information: list[dict, ...],
+        contract_information: dict,
     ):
         self.users = users_information
         self.teams = teams_information
+        self.contract = contract_information
 
     @property
     def BILL_RUN_DATE(self) -> datetime:
@@ -117,7 +121,7 @@ class BillTeamsList:
 
     def _get_owners(self) -> dict:
         # Generate teams information with team owners
-        team_members, team_owners = {}, {}
+        team_members, teams = {}, {}
         for u in self.users:
             for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
                 uid = u["userid"]
@@ -142,51 +146,52 @@ class BillTeamsList:
                             }
                         }
                     )
-                # Get owners information
-                if team["is_owner"] == 1:
-                    owner = {uid: {}}
-                    owner[uid]["owner_name"] = u["fullname"]
-                    owner[uid]["owner_email"] = u["email"]
-                    owner[uid]["owner_user_id"] = uid
-                else:
-                    owner = None
-                # duplicate information to avoid ambiguity
-                if not team_owners.get(team["id"]):
-                    team_owners[team["id"]] = {}
-                    team_owners[team["id"]]["team_name"] = team["name"]
-                    team_owners[team["id"]]["owners"] = (
-                        [owner] if owner is not None else owner
-                    )
-                    team_owners[team["id"]]["team_id"] = team["id"]
-                else:
-                    if team_owners[team["id"]]["owners"] and owner:
-                        team_owners[team["id"]]["owners"].append(owner)
+                # Get team basic information
+                teams[team["id"]] = {}
+                teams[team["id"]]["team_name"] = team["name"]
+                teams[team["id"]]["team_id"] = team["id"]
 
-        # Add team creation date to team_owners
+        # Add team creation date to teams
         for team in self.teams:
-            if team["id"] in team_owners.keys():
-                team_owners[team["id"]]["team_created_at"] = team["created_at"]
+            if team["id"] in teams.keys():
+                teams[team["id"]]["team_created_at"] = team["created_at"]
 
-        # Add member count to team_owners
-        for team_id in team_owners:
-            team_owners[team_id]["members"] = {}
-            team_owners[team_id]["members"] = team_members[team_id]
-            team_owners[team_id]["total_unarchived_member_count"] = len(
+        # Add member count to teams
+        for team_id in teams:
+            teams[team_id]["members"] = {}
+            teams[team_id]["members"] = team_members[team_id]
+            teams[team_id]["total_unarchived_member_count"] = len(
                 team_members[team_id]
             )
-            team_owners[team_id]["active_member_count"] = 0
+            teams[team_id]["active_member_count"] = 0
             for k in team_members[team_id]:
                 if team_members[team_id][k]["expired"] is False:
-                    team_owners[team_id]["active_member_count"] += 1
+                    teams[team_id]["active_member_count"] += 1
             # Add trial information
             trial_starts_at = self.team_trial_start_date(
-                parser.isoparse(team_owners[team_id]["team_created_at"])
+                parser.isoparse(teams[team_id]["team_created_at"])
             )
             trial_ends_at = trial_starts_at + self.TRIAL_PERIOD
-            team_owners[team_id]["trial_ends_at"] = str(trial_ends_at)
-            team_owners[team_id]["on_trial"] = trial_ends_at > datetime.now()
+            teams[team_id]["trial_ends_at"] = str(trial_ends_at)
+            teams[team_id]["on_trial"] = trial_ends_at > datetime.now()
 
-        return team_owners
+        for team_id in teams:
+            teams[team_id]["owner"] = {}
+            team_contract = self.contract[str(team_id)]
+            teams[team_id]["owner"]["team_owner_user_id"] = team_contract[
+                "team_owner_user_id"
+            ]
+            teams[team_id]["owner"]["team_owner_firstname"] = team_contract[
+                "team_owner_firstname"
+            ]
+            teams[team_id]["owner"]["team_owner_lastname"] = team_contract[
+                "team_owner_lastname"
+            ]
+            teams[team_id]["owner"]["team_owner_email"] = team_contract[
+                "team_owner_email"
+            ]
+
+        return teams
 
     def items(self) -> dict:
         return self._get_owners()
