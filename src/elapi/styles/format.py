@@ -70,7 +70,7 @@ class YAMLFormat(BaseFormat):
     def __call__(self, data: Any) -> str:
         import yaml
 
-        return yaml.dump(data, indent=2, allow_unicode=True)
+        return yaml.dump(data, indent=2, allow_unicode=True, sort_keys=False)
 
 
 class TXTFormat(BaseFormat):
