@@ -37,7 +37,7 @@ class TeamsInformation:
         return Information(cls.endpoint_name).items()
 
 
-class OwnersInformationFromURZContract:
+class OwnersInformation:
     def __init__(self, source_path: Union[Path, ProperPath, str], delimiter: str = ";"):
         self.source_path = source_path
         self.delimiter = delimiter
@@ -56,39 +56,43 @@ class OwnersInformationFromURZContract:
         import csv
 
         with self.source_path.open() as f:
-            data: list[dict] = list(csv.DictReader(f, delimiter=self.delimiter))
-        if not data:
+            owners: list[dict] = list(csv.DictReader(f, delimiter=self.delimiter))
+        if not owners:
             logger.error(
                 f"Given source file '{self.source_path}' for "
-                f"{OwnersInformationFromURZContract.__name__} cannot be empty!"
+                f"{OwnersInformation.__name__} cannot be empty!"
             )
             raise Exit(1)
         try:
-            data_flat: dict = {
-                team_data.pop("team_id"): team_data for team_data in data
-            }
+            owners_flat = {}
+            for team in owners:
+                if not owners_flat.get(team_id := team["team_id"]):
+                    owners_flat[team.pop("team_id")] = team
+                    continue
+                logger.warning(
+                    f"Duplicate row with team ID '{team_id}' "
+                    f"in source '{self.source_path}' is detected. Only the last detected column"
+                    f"will be considered."
+                )
         except KeyError as e:
-            logger.error(
+            raise ValueError(
                 f"Given source file '{self.source_path}' for "
-                f"{OwnersInformationFromURZContract.__name__} might be invalid! Key '{e}' couldn't be found."
-            )
-            raise Exit(1)
+                f"{OwnersInformation.__name__} might be invalid! Key '{e}' couldn't be found."
+            ) from e
         else:
-            return data_flat
+            return owners_flat
 
 
-class BillTeamsList:
+class TeamsList:
     __slots__ = "users", "teams", "contract"
 
     def __init__(
         self,
         users_information: list[dict, ...],
         teams_information: list[dict, ...],
-        contract_information: dict,
     ):
         self.users = users_information
         self.teams = teams_information
-        self.contract = contract_information
 
     @property
     def BILL_RUN_DATE(self) -> datetime:
@@ -160,9 +164,7 @@ class BillTeamsList:
         for team_id in teams:
             teams[team_id]["members"] = {}
             teams[team_id]["members"] = team_members[team_id]
-            teams[team_id]["total_unarchived_member_count"] = len(
-                team_members[team_id]
-            )
+            teams[team_id]["total_unarchived_member_count"] = len(team_members[team_id])
             teams[team_id]["active_member_count"] = 0
             for k in team_members[team_id]:
                 if team_members[team_id][k]["expired"] is False:
@@ -175,23 +177,32 @@ class BillTeamsList:
             teams[team_id]["trial_ends_at"] = str(trial_ends_at)
             teams[team_id]["on_trial"] = trial_ends_at > datetime.now()
 
-        for team_id in teams:
-            teams[team_id]["owner"] = {}
-            team_contract = self.contract[str(team_id)]
-            teams[team_id]["owner"]["team_owner_user_id"] = team_contract[
-                "team_owner_user_id"
-            ]
-            teams[team_id]["owner"]["team_owner_firstname"] = team_contract[
-                "team_owner_firstname"
-            ]
-            teams[team_id]["owner"]["team_owner_lastname"] = team_contract[
-                "team_owner_lastname"
-            ]
-            teams[team_id]["owner"]["team_owner_email"] = team_contract[
-                "team_owner_email"
-            ]
-
         return teams
 
     def items(self) -> dict:
         return self._get_owners()
+
+
+class OwnersList:
+    __slots__ = "owners"
+
+    def __init__(self, owners_information: dict):
+        self.owners = owners_information
+
+    def items(self) -> dict:
+        team_owners: dict = {}
+        for team_id, team in self.owners.items():
+            team_owners[team_id] = {}
+            team_owners[team_id]["owner"] = {}
+            team_owners[team_id]["owner"]["team_owner_user_id"] = team[
+                "team_owner_user_id"
+            ]
+            team_owners[team_id]["owner"]["team_owner_firstname"] = team[
+                "team_owner_firstname"
+            ]
+            team_owners[team_id]["owner"]["team_owner_lastname"] = team[
+                "team_owner_lastname"
+            ]
+            team_owners[team_id]["owner"]["team_owner_email"] = team["team_owner_email"]
+
+        return team_owners
