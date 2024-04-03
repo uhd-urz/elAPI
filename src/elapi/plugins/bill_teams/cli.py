@@ -6,6 +6,7 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 
 from ._doc import __PARAMETERS__doc__ as docs
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
+from ...cli.helpers import OrderedCommands
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...styles import stdin_console, stderr_console
@@ -17,6 +18,7 @@ app = typer.Typer(
     no_args_is_help=True,
     name="bill-teams",
     help="Manage bills incurred by teams.",
+    cls=OrderedCommands,
 )
 
 logger = Logger()
