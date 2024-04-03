@@ -22,18 +22,14 @@ app = typer.Typer(
 logger = Logger()
 
 
-@app.command(name="info")
+@app.command(name="teams-info")
 @tenacity.retry(
     retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
     stop=stop_after_attempt(6),  # including the very first attempt
     wait=wait_exponential(multiplier=60, min=5, max=4260),
     retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
 )
-def bill_teams(
-    contract_info_path: Annotated[
-        str,
-        typer.Option("--contract-info-path", help="", show_default=False),
-    ],
+def get_teams(
     data_format: Annotated[
         Optional[str],
         typer.Option(
@@ -54,6 +50,7 @@ def bill_teams(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> dict:
     """Get billable teams data."""
+
     from ...cli.helpers import CLIExport, CLIFormat
     from ..commons import Export
     from ...styles import Highlight
@@ -75,39 +72,109 @@ def bill_teams(
     from .bill_teams import (
         UsersInformation,
         TeamsInformation,
-        OwnersInformationFromURZContract,
-        BillTeamsList,
+        TeamsList,
     )
 
-    users, teams, contract = (
-        UsersInformation(),
-        TeamsInformation(),
-        OwnersInformationFromURZContract(contract_info_path),
-    )
+    users_info, teams_info = UsersInformation(), TeamsInformation()
     try:
-        bill = BillTeamsList(
-            asyncio.run(users.items()), teams.items(), contract.items()
-        )
+        tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
     except (RuntimeError, InterruptedError) as e:
         # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
         # InterruptedError is raised when JSONDecodeError is triggered.
         logger.info(f"{APP_NAME} will try again.")
         raise InterruptedError from e
-    bill_teams_data = bill.items()
-    formatted_bill_teams_data = format(bill_teams_data)
+    formatted_teams = format(teams := tl.items())
 
     if export:
-        export = Export(
+        export_teams = Export(
             export_dest,
-            file_name_stub=bill_teams.__name__,
+            file_name_stub="teams_info",
             file_extension=format.convention,
             format_name=format.name,
         )
-        export(data=formatted_bill_teams_data, verbose=True)
+        export_teams(data=formatted_teams, verbose=True)
     else:
         highlight = Highlight(format.name)
-        stdin_console.print(highlight(formatted_bill_teams_data))
-    return bill_teams_data
+        stdin_console.print(highlight(formatted_teams))
+    return teams
+
+
+@app.command(name="owners-info")
+def get_owners(
+    owners_data_path: Annotated[
+        str,
+        typer.Option("--owners-data-path", help="", show_default=False),
+    ],
+    skip_essential_validation: Annotated[
+        Optional[bool], typer.Option(hidden=True)
+    ] = False,
+    data_format: Annotated[
+        Optional[str],
+        typer.Option(
+            "--format", "-F", help=elapi_docs["data_format"], show_default=False
+        ),
+    ] = None,
+    export: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--export",
+            "-e",
+            help=elapi_docs["export"] + elapi_docs["export_details"],
+            is_flag=True,
+            is_eager=True,
+            show_default=False,
+        ),
+    ] = False,
+    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+) -> dict:
+    """Get billable team owners data."""
+
+    from ...cli.helpers import CLIExport, CLIFormat
+    from ..commons import Export
+    from ...styles import Highlight
+    from ...validators import (
+        Validate,
+        HostIdentityValidator,
+        PermissionValidator,
+        Exit,
+    )
+
+    if not skip_essential_validation:
+        with stderr_console.status("Validating...\n", refresh_per_second=15):
+            validate = Validate(
+                HostIdentityValidator(), PermissionValidator("sysadmin")
+            )
+            validate()
+    if export is False:
+        _export_dest = None
+    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    format = CLIFormat(data_format, export_file_ext)
+
+    from .bill_teams import (
+        OwnersInformation,
+        OwnersList,
+    )
+
+    owners_info = OwnersInformation(owners_data_path)
+    try:
+        ol = OwnersList(owners_info.items())
+    except ValueError as e:
+        logger.error(e)
+        raise Exit(1)
+    formatted_owners = format(owners := ol.items())
+
+    if export:
+        export_teams = Export(
+            export_dest,
+            file_name_stub="owners_info",
+            file_extension=format.convention,
+            format_name=format.name,
+        )
+        export_teams(data=formatted_owners, verbose=True)
+    else:
+        highlight = Highlight(format.name)
+        stdin_console.print(highlight(formatted_owners))
+    return owners
 
 
 @app.command("generate-invoice")
@@ -142,7 +209,7 @@ def generate_invoice(
 
     data_format, export_dest, _ = CLIExport(_INVOICE_FORMAT, _export_dest)
     if _bill_teams_data is None:
-        _bill_teams_data = bill_teams(
+        _bill_teams_data = get_teams(
             data_format=DEFAULT_EXPORT_DATA_FORMAT, export=export
         )
     invoice = InvoiceGenerator(_bill_teams_data)
