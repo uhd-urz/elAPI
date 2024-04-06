@@ -282,6 +282,10 @@ class ProperPath:
                     self.err_logger.critical(message)
                     self.PathException = exception
                 raise io_err
+            except (exception := OSError) as os_err:
+                self.err_logger.error(os_err)
+                self.PathException = exception
+                raise os_err
         finally:
             if file:
                 try:
