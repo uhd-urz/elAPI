@@ -236,16 +236,16 @@ class ProperPath:
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
                 # I.e., contextmanager always expects a yield?
-            except AttributeError as attribute_err:
+            except (exception := AttributeError) as attribute_err:
                 # However, yielding None leads to attribute calls to None
                 # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
                 attribute_in_error = str(attribute_err).split()[-1]
                 message = (
-                    f"An attempt to access attribute {attribute_in_error} "
-                    f"of the file object was made, "
+                    f"An attempt to access attribute {attribute_in_error} was made,"
                     f"but there was a problem opening the file {path}."
                 )
                 self.err_logger.warning(message)
+                self.PathException = exception
                 raise attribute_err
             else:
                 raise e
