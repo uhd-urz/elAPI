@@ -63,6 +63,24 @@ class ProperPath:
         self._err_logger = value
 
     @property
+    def PathException(self) -> type:
+        return self._PathException
+
+    # noinspection PyAttributeOutsideInit
+    @PathException.setter
+    def PathException(self, value: type) -> None:
+        if not issubclass(value, (Exception, BaseException)):
+            raise ValueError(
+                "Only an instance of Exception or BaseException can be "
+                "assigned to descriptor PathException."
+            )
+        self._PathException = value
+
+    @PathException.deleter
+    def PathException(self):
+        raise AttributeError("PathException cannot be deleted!")
+
+    @property
     def expanded(self) -> Path:
         if self.env_var:
             try:
@@ -134,9 +152,10 @@ class ProperPath:
                 (path_parent / path_file).touch(exist_ok=True)
             elif self.kind == "dir":
                 path.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
+        except (exception := PermissionError) as e:
             message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
             self.err_logger.error(message)
+            self.PathException = exception
             raise e
         else:
             return path
@@ -153,10 +172,12 @@ class ProperPath:
             file.unlink()
         except FileNotFoundError as e:
             # unlink() throws FileNotFoundError when a directory is passed as it expects files only
-            raise ValueError(f"{file} doesn't exist or isn't a valid file!") from e
-        except PermissionError as e:
+            self.PathException = exception = ValueError
+            raise exception(f"{file} doesn't exist or isn't a valid file!") from e
+        except (exception := PermissionError) as e:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.err_logger.warning(message)
+            self.PathException = exception
             raise e
         if verbose:
             self.err_logger.info(f"Deleted: {file}")
@@ -198,17 +219,19 @@ class ProperPath:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
             file: TextIO = path.open(mode=mode, encoding=encoding, **kwargs)
-        except FileNotFoundError as e:
+        except (exception := FileNotFoundError) as e:
             message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)
+            self.PathException = exception
             raise e
 
-        except PermissionError as e:
+        except (exception := PermissionError) as e:
             message = (
                 f"Permission denied while trying to open file with mode '{mode}' for "
                 f"{self._error_helper_compare_path_source(self.name, path)}."
             )
             self.err_logger.error(message)
+            self.PathException = exception
 
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
@@ -241,14 +264,15 @@ class ProperPath:
                 )
                 self.err_logger.warning(message)
                 raise e
-            except MemoryError as e:
+            except (exception := MemoryError) as e:
                 message = (
                     f"Out of memory while trying to use mode '{mode}' with "
                     f"{self._error_helper_compare_path_source(self.name, path)}."
                 )
                 self.err_logger.critical(message)
+                self.PathException = exception
                 raise e
-            except IOError as io_err:
+            except (exception := IOError) as io_err:
                 # We catch "No disk space left" error which will likely be triggered during a write attempt on the file
                 if io_err.errno == errno.ENOSPC:
                     message = (
@@ -256,6 +280,7 @@ class ProperPath:
                         f"{self._error_helper_compare_path_source(self.name, path)}."
                     )
                     self.err_logger.critical(message)
+                    self.PathException = exception
                 raise io_err
         finally:
             if file:
@@ -267,7 +292,7 @@ class ProperPath:
                 # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again.
                 # The above will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
                 # Because of *, we again need to catch the error during close().
-                except IOError as io_err:
+                except (exception := IOError) as io_err:
                     if io_err.errno == errno.ENOSPC:
                         message = (
                             f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
@@ -275,4 +300,5 @@ class ProperPath:
                             f"{self._error_helper_compare_path_source(self.name, path)}."
                         )
                         self.err_logger.critical(message)
+                        self.PathException = exception
                     raise io_err
