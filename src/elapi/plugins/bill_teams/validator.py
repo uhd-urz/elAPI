@@ -35,6 +35,12 @@ class OwnersDataSpecification:
     TEAM_END_DATE: str = "team_enddate"
 
 
+class SanitizationError(Exception): ...
+
+
+class FormatError(Exception): ...
+
+
 class OwnersInformationContainer:
     def __init__(self, data: dict, /):
         self.data = data
@@ -68,28 +74,19 @@ class OwnersInformationContainer:
             raise e
         self.data[team_id][column_name] = value
 
-    def items(self) -> dict:
-        return self.data
-
-
-class OwnersInformationValidator(Validator):
-    def __init__(self, owners_information: dict, teams_information: list[dict, ...]):
-        self.owners = OwnersInformationContainer(owners_information)
-        self.teams = teams_information
-
     def get_sanitized(
         self, team_id: str, column_name: str, stringent: bool = False
     ) -> Optional[str]:
         import math
 
-        value = self.owners.get(team_id, column_name)
+        value = self.get(team_id, column_name)
         try:
             if math.isnan(float(value or None)):
                 logger.info(
                     f"'NaN' entry in column '{column_name}' of team ID '{team_id}'."
                 )
                 if stringent:
-                    raise ValidationError(
+                    raise SanitizationError(
                         f"Column '{column_name}' of '{team_id}' cannot have 'NaN' entries!"
                     )
                 return None
@@ -98,13 +95,13 @@ class OwnersInformationValidator(Validator):
                 f"Blank entry in column '{column_name}' of team ID '{team_id}'."
             )
             if stringent:
-                raise ValidationError(
+                raise SanitizationError(
                     f"Null value found! Column '{column_name}' of team ID '{team_id}' cannot have null entries."
                 ) from e
             return None
         except ValueError as e:
             if stringent:
-                raise ValidationError(
+                raise SanitizationError(
                     f"Invalid value '{value}' in column '{column_name}' of team ID '{team_id}'!"
                 ) from e
         return str(value).strip()
@@ -119,17 +116,26 @@ class OwnersInformationValidator(Validator):
     ) -> str:
         import re
 
-        value = self.owners.get(team_id, column_name)
+        value = self.get(team_id, column_name)
         value = (
             self.get_sanitized(team_id, column_name, stringent=True)
             if sanitize
             else value
         )
         if not re.match(rf"{expected_pattern}", value):
-            raise ValidationError(
+            raise FormatError(
                 f"Unexpected value '{value}' in column '{column_name}' of team ID '{team_id}'!"
             )
         return function_to_apply(value)
+
+    def items(self) -> dict:
+        return self.data
+
+
+class OwnersInformationValidator(Validator):
+    def __init__(self, owners_information: dict, teams_information: list[dict, ...]):
+        self.owners = OwnersInformationContainer(owners_information)
+        self.teams = teams_information
 
     # noinspection PyUnboundLocalVariable
     def validate(self):
@@ -141,47 +147,49 @@ class OwnersInformationValidator(Validator):
                 self.owners.set(
                     team_id,
                     spec.TEAM_OWNER_ID,
-                    self.get_sanitized(team_id, spec.TEAM_OWNER_ID),
+                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_ID),
                 )
                 self.owners.set(
                     team_id,
                     spec.TEAM_OWNER_FIRST_NAME,
-                    self.get_sanitized(team_id, spec.TEAM_OWNER_FIRST_NAME),
+                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_FIRST_NAME),
                 )
                 self.owners.set(
                     team_id,
                     spec.TEAM_OWNER_LAST_NAME,
-                    self.get_sanitized(team_id, spec.TEAM_OWNER_LAST_NAME),
+                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_LAST_NAME),
                 )
                 self.owners.set(
                     team_id,
                     spec.TEAM_OWNER_EMAIL,
-                    self.get_sanitized(team_id, spec.TEAM_OWNER_EMAIL),
+                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_EMAIL),
                 )
                 # Validate team billing factors
                 self.owners.set(
                     team_id,
                     spec.TEAM_BILLABLE,
-                    self.get_formatted(team_id, spec.TEAM_BILLABLE, r"^[01]$", int),
+                    self.owners.get_formatted(
+                        team_id, spec.TEAM_BILLABLE, r"^[01]$", int
+                    ),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_UNIT_COST,
-                    self.get_formatted(
+                    self.owners.get_formatted(
                         team_id, spec.BILLING_UNIT_COST, r"^\d*\.?\d+$", float
                     ),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_MANAGEMENT_FACTOR,
-                    self.get_formatted(
+                    self.owners.get_formatted(
                         team_id, spec.BILLING_MANAGEMENT_FACTOR, r"^\d*\.?\d+$", float
                     ),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_MANAGEMENT_LIMITL,
-                    self.get_formatted(
+                    self.owners.get_formatted(
                         team_id,
                         spec.BILLING_MANAGEMENT_LIMITL,
                         r"^\d*\.?\d+$|^-1$",
@@ -192,56 +200,58 @@ class OwnersInformationValidator(Validator):
                 self.owners.set(
                     team_id,
                     spec.BILLING_INSTITUTE1,
-                    self.get_sanitized(team_id, spec.BILLING_INSTITUTE1),
+                    self.owners.get_sanitized(team_id, spec.BILLING_INSTITUTE1),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_INSTITUTE2,
-                    self.get_sanitized(team_id, spec.BILLING_INSTITUTE2),
+                    self.owners.get_sanitized(team_id, spec.BILLING_INSTITUTE2),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_PERSON_GROUP,
-                    self.get_sanitized(team_id, spec.BILLING_PERSON_GROUP),
+                    self.owners.get_sanitized(team_id, spec.BILLING_PERSON_GROUP),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_STREET,
-                    self.get_sanitized(team_id, spec.BILLING_STREET),
+                    self.owners.get_sanitized(team_id, spec.BILLING_STREET),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_POSTAL_CODE,
-                    self.get_sanitized(team_id, spec.BILLING_POSTAL_CODE),
+                    self.owners.get_sanitized(team_id, spec.BILLING_POSTAL_CODE),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_CITY,
-                    self.get_sanitized(team_id, spec.BILLING_CITY),
+                    self.owners.get_sanitized(team_id, spec.BILLING_CITY),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_INT_EXT,
-                    self.get_sanitized(team_id, spec.BILLING_INT_EXT),
+                    self.owners.get_sanitized(team_id, spec.BILLING_INT_EXT),
                 )
                 self.owners.set(
                     team_id,
                     spec.BILLING_ACCOUNT_UNIT,
-                    self.get_sanitized(team_id, spec.BILLING_ACCOUNT_UNIT),
+                    self.owners.get_sanitized(team_id, spec.BILLING_ACCOUNT_UNIT),
                 )
                 self.owners.set(
                     team_id,
                     spec.TEAM_ACRONYM_INT,
-                    self.get_sanitized(team_id, spec.TEAM_ACRONYM_INT),
+                    self.owners.get_sanitized(team_id, spec.TEAM_ACRONYM_INT),
                 )
                 self.owners.set(
                     team_id,
                     spec.TEAM_ACRONYM_EXT,
-                    self.get_sanitized(team_id, spec.TEAM_ACRONYM_EXT),
+                    self.owners.get_sanitized(team_id, spec.TEAM_ACRONYM_EXT),
                 )
         except KeyError as e:
             raise ValidationError(str(e).strip('"'))
             # See: https://stackoverflow.com/a/48850520, https://stackoverflow.com/a/24999035
+        except (SanitizationError, FormatError) as e:
+            raise ValidationError(e)
 
         for team_id in self.owners.items():
             if team_id not in [team["id"] for team in self.teams]:
