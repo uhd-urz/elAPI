@@ -105,7 +105,7 @@ def get_teams(
 def get_owners(
     owners_data_path: Annotated[
         str,
-        typer.Option("--owners-data-path", help="", show_default=False),
+        typer.Option("--source-path", help="", show_default=False),
     ],
     skip_essential_validation: Annotated[
         Optional[bool], typer.Option(hidden=True)
