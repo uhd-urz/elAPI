@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import NoneType
 from typing import Optional, Callable, Union
 
 from ...loggers import Logger
@@ -66,12 +67,19 @@ class OwnersInformationContainer:
                 return value
 
     def set(
-        self, team_id: Union[str, int], column_name: str, value: Union[str, int]
+        self,
+        team_id: Union[str, int],
+        column_name: str,
+        value: Union[str, int, float, NoneType],
     ) -> None:
         try:
             self.get(team_id, column_name)
         except KeyError as e:
             raise e
+        if not isinstance(value, (str, int, float, type(None))):
+            raise ValueError(
+                "value must be an string or an integer or a float or NoneType!"
+            )
         self.data[team_id][column_name] = value
 
     def get_sanitized(
