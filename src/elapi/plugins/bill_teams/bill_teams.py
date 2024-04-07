@@ -55,8 +55,15 @@ class OwnersInformation:
     def items(self) -> dict:
         import csv
 
-        with self.source_path.open() as f:
-            owners: list[dict] = list(csv.DictReader(f, delimiter=self.delimiter))
+        try:
+            with self.source_path.open() as f:
+                owners: list[dict] = list(csv.DictReader(f, delimiter=self.delimiter))
+        except self.source_path.PathException as e:
+            logger.critical(
+                f"A '{e.__class__.__name__}' error was raised against path "
+                f"'{self.source_path}' that could not be handled."
+            )
+            raise Exit(1)
         if not owners:
             logger.error(
                 f"Given source file '{self.source_path}' for "
