@@ -59,7 +59,7 @@ class OwnersInformationContainer:
                 value = team[column_name]
             except KeyError as e:
                 raise KeyError(
-                    f"Column '{e}' does not exist in owners data! Owners data might not be valid."
+                    f"Column {e} does not exist in owners data! Owners data might not be valid."
                 ) from e
             else:
                 return value
@@ -80,62 +80,71 @@ class OwnersInformationContainer:
             )
         self.data[team_id][column_name] = value
 
-    def get_sanitized(
-        self, team_id: str, column_name: str, stringent: bool = False
+    def items(self) -> dict:
+        return self.data
+
+
+class OwnersInformationFormatter:
+    def __init__(self, owners_data_container: OwnersInformationContainer, /):
+        self.owners = owners_data_container
+
+    @staticmethod
+    def _sanitize(
+        value: Union[str, int, float, NoneType],
+        reference: str,
+        allow_null: bool = True,
+        stringent: bool = False,
     ) -> Optional[str]:
         import math
 
-        value = self.get(team_id, column_name)
         try:
             if math.isnan(float(value or None)):
-                logger.info(
-                    f"'NaN' entry in column '{column_name}' of team ID '{team_id}'."
-                )
+                if not allow_null:
+                    logger.info(f"'NaN' entry in {reference}.")
                 if stringent:
                     raise SanitizationError(
-                        f"Column '{column_name}' of team ID '{team_id}' cannot have 'NaN' entries!"
+                        f"{reference.capitalize()} cannot have 'NaN' entries!"
                     )
                 return None
         except TypeError as e:
-            logger.info(
-                f"Blank entry in column '{column_name}' of team ID '{team_id}'."
-            )
+            if not allow_null:
+                logger.info(f"Blank entry in {reference}.")
             if stringent:
                 raise SanitizationError(
-                    f"Null value found! Column '{column_name}' of team ID '{team_id}' cannot have null entries."
+                    f"Null value found! {reference.capitalize()} cannot have null entries."
                 ) from e
             return None
         except ValueError as e:
             if stringent:
                 raise SanitizationError(
-                    f"Invalid value '{value}' in column '{column_name}' of team ID '{team_id}'!"
+                    f"Invalid value '{value}' in {reference}!"
                 ) from e
         return str(value).strip()
 
-    def get_formatted(
+    def format(
         self,
-        team_id: str,
+        team_id: Union[str, int],
         column_name: str,
-        expected_pattern: str,
-        function_to_apply: Callable,
-        sanitize: bool = True,
-    ) -> str:
+        expected_pattern: Optional[str] = None,
+        function_to_apply: Optional[Callable] = None,
+        allow_null: bool = True,
+        stringent: bool = False,
+    ) -> None:
         import re
 
-        value = self.get(team_id, column_name)
-        value = (
-            self.get_sanitized(team_id, column_name, stringent=True)
-            if sanitize
-            else value
+        reference = f"column '{column_name}' of team ID {team_id}"
+        value = self._sanitize(
+            self.owners.get(team_id, column_name),
+            reference=reference,
+            allow_null=allow_null,
+            stringent=stringent,
         )
-        if not re.match(rf"{expected_pattern}", value):
-            raise FormatError(
-                f"Unexpected value '{value}' in column '{column_name}' of team ID '{team_id}'!"
-            )
-        return function_to_apply(value)
-
-    def items(self) -> dict:
-        return self.data
+        if expected_pattern is not None:
+            if not re.match(rf"{expected_pattern}", value):
+                raise FormatError(f"Unexpected value '{value}' in {reference}!")
+        if not function_to_apply:
+            function_to_apply = lambda x: x  # noqa: E731
+        self.owners.set(team_id, column_name, function_to_apply(value))
 
 
 class OwnersInformationValidator(Validator):
@@ -146,113 +155,59 @@ class OwnersInformationValidator(Validator):
     # noinspection PyUnboundLocalVariable
     def validate(self):
         spec = OwnersDataSpecification()
+        formatter = OwnersInformationFormatter(self.owners)
         try:
             for team in self.teams:
                 team_id = team["id"]
                 # Validate team owner identifying information
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_OWNER_ID,
-                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_ID),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_OWNER_FIRST_NAME,
-                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_FIRST_NAME),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_OWNER_LAST_NAME,
-                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_LAST_NAME),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_OWNER_EMAIL,
-                    self.owners.get_sanitized(team_id, spec.TEAM_OWNER_EMAIL),
-                )
+                formatter.format(team_id, spec.TEAM_OWNER_ID)
+                formatter.format(team_id, spec.TEAM_OWNER_FIRST_NAME)
+                formatter.format(team_id, spec.TEAM_OWNER_LAST_NAME)
+                formatter.format(team_id, spec.TEAM_OWNER_EMAIL)
                 # Validate team billing factors
-                self.owners.set(
+                formatter.format(
                     team_id,
                     spec.TEAM_BILLABLE,
-                    self.owners.get_formatted(
-                        team_id, spec.TEAM_BILLABLE, r"^[01]$", int
-                    ),
+                    expected_pattern=r"^[01]$",
+                    function_to_apply=int,
+                    allow_null=False,
+                    stringent=True,
                 )
-                self.owners.set(
+                formatter.format(
                     team_id,
                     spec.BILLING_UNIT_COST,
-                    self.owners.get_formatted(
-                        team_id, spec.BILLING_UNIT_COST, r"^\d*\.?\d+$", float
-                    ),
+                    expected_pattern=r"^\d*\.?\d+$",
+                    function_to_apply=float,
+                    allow_null=False,
+                    stringent=True,
                 )
-                self.owners.set(
+                formatter.format(
                     team_id,
                     spec.BILLING_MANAGEMENT_FACTOR,
-                    self.owners.get_formatted(
-                        team_id, spec.BILLING_MANAGEMENT_FACTOR, r"^\d*\.?\d+$", float
-                    ),
+                    expected_pattern=r"^\d*\.?\d+$",
+                    function_to_apply=float,
+                    allow_null=False,
+                    stringent=True,
                 )
-                self.owners.set(
+                formatter.format(
                     team_id,
                     spec.BILLING_MANAGEMENT_LIMITL,
-                    self.owners.get_formatted(
-                        team_id,
-                        spec.BILLING_MANAGEMENT_LIMITL,
-                        r"^\d*\.?\d+$|^-1$",
-                        float,
-                    ),
+                    expected_pattern=r"^\d*\.?\d+$|^-1$",
+                    function_to_apply=lambda x: -1 if float(x) == -1 else float(x),
+                    allow_null=False,
+                    stringent=True,
                 )
                 # Validate billing address related information
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_INSTITUTE1,
-                    self.owners.get_sanitized(team_id, spec.BILLING_INSTITUTE1),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_INSTITUTE2,
-                    self.owners.get_sanitized(team_id, spec.BILLING_INSTITUTE2),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_PERSON_GROUP,
-                    self.owners.get_sanitized(team_id, spec.BILLING_PERSON_GROUP),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_STREET,
-                    self.owners.get_sanitized(team_id, spec.BILLING_STREET),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_POSTAL_CODE,
-                    self.owners.get_sanitized(team_id, spec.BILLING_POSTAL_CODE),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_CITY,
-                    self.owners.get_sanitized(team_id, spec.BILLING_CITY),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_INT_EXT,
-                    self.owners.get_sanitized(team_id, spec.BILLING_INT_EXT),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.BILLING_ACCOUNT_UNIT,
-                    self.owners.get_sanitized(team_id, spec.BILLING_ACCOUNT_UNIT),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_ACRONYM_INT,
-                    self.owners.get_sanitized(team_id, spec.TEAM_ACRONYM_INT),
-                )
-                self.owners.set(
-                    team_id,
-                    spec.TEAM_ACRONYM_EXT,
-                    self.owners.get_sanitized(team_id, spec.TEAM_ACRONYM_EXT),
-                )
+                formatter.format(team_id, spec.BILLING_INSTITUTE1)
+                formatter.format(team_id, spec.BILLING_INSTITUTE2)
+                formatter.format(team_id, spec.BILLING_PERSON_GROUP)
+                formatter.format(team_id, spec.BILLING_STREET)
+                formatter.format(team_id, spec.BILLING_POSTAL_CODE)
+                formatter.format(team_id, spec.BILLING_CITY)
+                formatter.format(team_id, spec.BILLING_INT_EXT)
+                formatter.format(team_id, spec.BILLING_ACCOUNT_UNIT)
+                formatter.format(team_id, spec.TEAM_ACRONYM_INT)
+                formatter.format(team_id, spec.TEAM_ACRONYM_EXT)
         except KeyError as e:
             raise ValidationError(str(e).strip('"'))
             # See: https://stackoverflow.com/a/48850520, https://stackoverflow.com/a/24999035
