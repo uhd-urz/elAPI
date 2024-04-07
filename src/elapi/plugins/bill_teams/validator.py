@@ -87,7 +87,7 @@ class OwnersInformationContainer:
                 )
                 if stringent:
                     raise SanitizationError(
-                        f"Column '{column_name}' of '{team_id}' cannot have 'NaN' entries!"
+                        f"Column '{column_name}' of team ID '{team_id}' cannot have 'NaN' entries!"
                     )
                 return None
         except TypeError as e:
