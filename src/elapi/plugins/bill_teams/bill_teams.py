@@ -66,8 +66,8 @@ class OwnersInformation:
         try:
             owners_flat = {}
             for team in owners:
-                if not owners_flat.get(team_id := team["team_id"]):
-                    owners_flat[team.pop("team_id")] = team
+                if not owners_flat.get(team_id := int(team["team_id"])):
+                    owners_flat[int(team.pop("team_id"))] = team
                     continue
                 logger.warning(
                     f"Duplicate row with team ID '{team_id}' "
@@ -190,19 +190,57 @@ class OwnersList:
         self.owners = owners_information
 
     def items(self) -> dict:
+        from .validator import OwnersDataSpecification
+
         team_owners: dict = {}
+        spec = OwnersDataSpecification()
         for team_id, team in self.owners.items():
+            # Here attribute items() is the dictionary items attribute
             team_owners[team_id] = {}
+
+            # Get team owner identifying information
             team_owners[team_id]["owner"] = {}
-            team_owners[team_id]["owner"]["team_owner_user_id"] = team[
-                "team_owner_user_id"
+            team_owners[team_id]["owner"][spec.TEAM_OWNER_ID] = team[spec.TEAM_OWNER_ID]
+            team_owners[team_id]["owner"][spec.TEAM_OWNER_FIRST_NAME] = team[
+                spec.TEAM_OWNER_FIRST_NAME
             ]
-            team_owners[team_id]["owner"]["team_owner_firstname"] = team[
-                "team_owner_firstname"
+            team_owners[team_id]["owner"][spec.TEAM_OWNER_LAST_NAME] = team[
+                spec.TEAM_OWNER_LAST_NAME
             ]
-            team_owners[team_id]["owner"]["team_owner_lastname"] = team[
-                "team_owner_lastname"
+            team_owners[team_id]["owner"][spec.TEAM_OWNER_EMAIL] = team[
+                spec.TEAM_OWNER_EMAIL
             ]
-            team_owners[team_id]["owner"]["team_owner_email"] = team["team_owner_email"]
+
+            # Get team billing factors
+            team_owners[team_id][spec.TEAM_BILLABLE] = team[spec.TEAM_BILLABLE]
+            team_owners[team_id][spec.BILLING_UNIT_COST] = team[spec.BILLING_UNIT_COST]
+            team_owners[team_id][spec.BILLING_MANAGEMENT_FACTOR] = team[
+                spec.BILLING_MANAGEMENT_FACTOR
+            ]
+            team_owners[team_id][spec.BILLING_MANAGEMENT_LIMITL] = team[
+                spec.BILLING_MANAGEMENT_LIMITL
+            ]
+
+            # Get billing address related information
+            team_owners[team_id][spec.BILLING_INSTITUTE1] = team[
+                spec.BILLING_INSTITUTE1
+            ]
+            team_owners[team_id][spec.BILLING_INSTITUTE2] = team[
+                spec.BILLING_INSTITUTE2
+            ]
+            team_owners[team_id][spec.BILLING_PERSON_GROUP] = team[
+                spec.BILLING_PERSON_GROUP
+            ]
+            team_owners[team_id][spec.BILLING_STREET] = team[spec.BILLING_STREET]
+            team_owners[team_id][spec.BILLING_POSTAL_CODE] = team[
+                spec.BILLING_POSTAL_CODE
+            ]
+            team_owners[team_id][spec.BILLING_CITY] = team[spec.BILLING_CITY]
+            team_owners[team_id][spec.BILLING_INT_EXT] = team[spec.BILLING_INT_EXT]
+            team_owners[team_id][spec.BILLING_ACCOUNT_UNIT] = team[
+                spec.BILLING_ACCOUNT_UNIT
+            ]
+            team_owners[team_id][spec.TEAM_ACRONYM_INT] = team[spec.TEAM_ACRONYM_INT]
+            team_owners[team_id][spec.TEAM_ACRONYM_EXT] = team[spec.TEAM_ACRONYM_EXT]
 
         return team_owners
