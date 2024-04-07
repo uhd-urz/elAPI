@@ -43,6 +43,9 @@ class BaseFormat(ABC):
     def __call__(self, data: Any): ...
 
 
+class FormatError(Exception): ...
+
+
 class JSONFormat(BaseFormat):
     name: str = "json"
     convention: str = name
@@ -105,7 +108,7 @@ class ValidateLanguage:
                 self.convention: Union[str, Iterable[str, ...]] = formatter.convention
                 self.formatter: type(BaseFormat) = formatter
                 return
-        raise ValueError(
+        raise FormatError(
             f"'{value}' isn't a supported language format! "
             f"Supported formats are: {BaseFormat.supported_formatter_names()}."
         )

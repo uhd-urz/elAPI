@@ -44,11 +44,11 @@ class CLIFormat:
         data_format: str,
         export_file_ext: Optional[str] = None,
     ):
-        from ..styles import Format
+        from ..styles import Format, FormatError
 
         try:
             format = Format(data_format)
-        except ValueError as e:
+        except FormatError as e:
             logger.error(e)
             logger.info(
                 f"{APP_NAME} will fallback to '{cls.FALLBACK_DATA_FORMAT}' format."

@@ -3,6 +3,7 @@ from types import NoneType
 from typing import Optional, Callable, Union
 
 from ...loggers import Logger
+from ...styles import FormatError
 from ...validators import Validator, ValidationError
 
 logger = Logger()
@@ -37,9 +38,6 @@ class OwnersDataSpecification:
 
 
 class SanitizationError(Exception): ...
-
-
-class FormatError(Exception): ...
 
 
 class OwnersInformationContainer:
