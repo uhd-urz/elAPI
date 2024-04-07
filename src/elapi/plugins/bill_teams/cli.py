@@ -139,6 +139,7 @@ def get_owners(
         HostIdentityValidator,
         PermissionValidator,
         Exit,
+        ValidationError,
     )
 
     if not skip_essential_validation:
@@ -153,13 +154,24 @@ def get_owners(
     format = CLIFormat(data_format, export_file_ext)
 
     from .bill_teams import (
+        TeamsInformation,
         OwnersInformation,
         OwnersList,
     )
+    from .validator import OwnersInformationValidator
 
-    owners_info = OwnersInformation(owners_data_path)
+    teams_info, owners_info = TeamsInformation(), OwnersInformation(owners_data_path)
     try:
-        ol = OwnersList(owners_info.items())
+        validate_owners = Validate(
+            OwnersInformationValidator(owners_info.items(), teams_info.items())
+        )
+        owners_validated = validate_owners.get()
+    except ValidationError as e:
+        logger.error(e)
+        logger.error("Owners data could not be validated!")
+        raise Exit(1)
+    try:
+        ol = OwnersList(owners_validated)
     except ValueError as e:
         logger.error(e)
         raise Exit(1)
