@@ -160,10 +160,10 @@ class OwnersInformationValidator(Validator):
             for team in self.teams:
                 team_id = team["id"]
                 # Validate team owner identifying information
-                formatter.format(team_id, spec.TEAM_OWNER_ID)
+                formatter.format(team_id, spec.TEAM_OWNER_ID, allow_null=False)
                 formatter.format(team_id, spec.TEAM_OWNER_FIRST_NAME)
                 formatter.format(team_id, spec.TEAM_OWNER_LAST_NAME)
-                formatter.format(team_id, spec.TEAM_OWNER_EMAIL)
+                formatter.format(team_id, spec.TEAM_OWNER_EMAIL, allow_null=False)
                 # Validate team billing factors
                 formatter.format(
                     team_id,
