@@ -64,6 +64,14 @@ class OwnersInformationContainer:
             else:
                 return value
 
+    def items(self) -> dict:
+        return self.data
+
+
+class OwnersInformationModifier:
+    def __init__(self, owners_data_container: OwnersInformationContainer, /):
+        self.owners = owners_data_container
+
     def set(
         self,
         team_id: Union[str, int],
@@ -71,22 +79,14 @@ class OwnersInformationContainer:
         value: Union[str, int, float, NoneType],
     ) -> None:
         try:
-            self.get(team_id, column_name)
+            self.owners.get(team_id, column_name)
         except KeyError as e:
             raise e
         if not isinstance(value, (str, int, float, type(None))):
             raise ValueError(
                 "value must be an string or an integer or a float or NoneType!"
             )
-        self.data[team_id][column_name] = value
-
-    def items(self) -> dict:
-        return self.data
-
-
-class OwnersInformationFormatter:
-    def __init__(self, owners_data_container: OwnersInformationContainer, /):
-        self.owners = owners_data_container
+        self.owners.items()[team_id][column_name] = value
 
     @staticmethod
     def _sanitize(
@@ -144,7 +144,7 @@ class OwnersInformationFormatter:
                 raise FormatError(f"Unexpected value '{value}' in {reference}!")
         if not function_to_apply:
             function_to_apply = lambda x: x  # noqa: E731
-        self.owners.set(team_id, column_name, function_to_apply(value))
+        self.set(team_id, column_name, function_to_apply(value))
 
 
 class OwnersInformationValidator(Validator):
@@ -155,7 +155,7 @@ class OwnersInformationValidator(Validator):
     # noinspection PyUnboundLocalVariable
     def validate(self):
         spec = OwnersDataSpecification()
-        formatter = OwnersInformationFormatter(self.owners)
+        formatter = OwnersInformationModifier(self.owners)
         try:
             for team in self.teams:
                 team_id = team["id"]
