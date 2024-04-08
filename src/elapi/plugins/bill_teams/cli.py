@@ -191,7 +191,7 @@ def get_owners(
     return owners
 
 
-@app.command("generate-invoice")
+@app.command("generate-invoice", deprecated=True, hidden=True)
 def generate_invoice(
     _bill_teams_data: Annotated[
         Optional[str], typer.Option(hidden=True, show_default=False)
