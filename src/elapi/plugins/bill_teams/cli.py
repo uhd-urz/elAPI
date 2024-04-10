@@ -275,14 +275,14 @@ def store_teams_and_owners(
     **Example**:
 
     `$ elapi bill-teams store-info --root-dir ~/bill-teams --meta-source <CSV file path to owners information>` will
-    store the information in the following structure:
+    store the information in the following structure. _YYYY_ and _MM_ refer to year and month number respectively.
 
     ```sh
     ~/bill-teams/
-    └── 2024/
-        └── 04/
-            ├── <yyyy-mm-dd_HHMMSS>_owners_info.json
-            └── <yyyy-mm-dd_HHMMSS>_teams_info.json
+    └── YYYY/
+        └── MM/
+            ├── <YYYY-MM-DD_HHMMSS>_owners_info.json
+            └── <YYYY-MM-DD_HHMMSS>_teams_info.json
     ```
     """
     from ...styles import print_typer_error
