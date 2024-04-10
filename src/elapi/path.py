@@ -159,6 +159,13 @@ class ProperPath:
             self.err_logger.error(message)
             self.PathException = exception
             raise e
+        except (exception := NotADirectoryError) as e:
+            # Both "file" and "dir" cases are handled, but when path is under special files like
+            # /dev/null/<directory name>, os.mkdir() will throw NotADirectoryError.
+            message = f"Couldn't create {self._error_helper_compare_path_source(self.name, path)}."
+            self.err_logger.error(message)
+            self.PathException = exception
+            raise e
         else:
             return path
 
