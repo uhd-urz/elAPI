@@ -7,6 +7,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Union, TextIO, Generator
 
+from ._exceptions import NoException
 from .loggers import SimpleLogger
 
 
@@ -22,6 +23,7 @@ class ProperPath:
         self.env_var = env_var
         self.kind = kind
         self.err_logger = err_logger
+        self.PathException = NoException
 
     def __str__(self):
         return str(self.expanded)
