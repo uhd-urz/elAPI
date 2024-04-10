@@ -6,15 +6,6 @@ from typing import Union, Iterable
 from .base import Validator, ValidationError
 from ..path import ProperPath
 
-COMMON_PATH_ERRORS: tuple = (
-    FileNotFoundError,
-    PermissionError,
-    MemoryError,
-    IOError,
-    ValueError,
-    AttributeError,
-)
-
 
 class PathValidator(Validator):
     def __init__(
@@ -69,7 +60,7 @@ class PathValidator(Validator):
                         continue  # It'd not be possible to read from those files.
                     f.seek(f.tell() - 1)
                     f.truncate()
-            except COMMON_PATH_ERRORS:
+            except (p.PathException, ValueError, AttributeError):
                 continue
             else:
                 (p / self.TMP_FILE).remove() if p.kind == "dir" else ...
