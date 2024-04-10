@@ -10,7 +10,7 @@ from ...cli.helpers import OrderedCommands
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...styles import stdin_console, stderr_console
-from ...validators import RuntimeValidationError
+from ...validators import RuntimeValidationError, Exit
 
 app = typer.Typer(
     rich_markup_mode="markdown",
@@ -234,3 +234,113 @@ def generate_invoice(
         format_name=_INVOICE_FORMAT,
     )
     export(data=invoice.generate(), verbose=True)
+
+
+# noinspection PyTypeChecker
+@app.command(name="store-info")
+def store_teams_and_owners(
+    root_directory: Annotated[
+        str,
+        typer.Option("--root-dir", help=docs["root_directory"], show_default=False),
+    ],
+    owners_data_path: Annotated[
+        str,
+        typer.Option(
+            "--meta-source", help=docs["owners_data_path"], show_default=False
+        ),
+    ] = None,
+    target_date: Annotated[
+        Optional[str],
+        typer.Option("--target-date", help=docs["target_date"], show_default=False),
+    ] = None,
+    teams_info_only: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--teams-info-only", help=docs["teams_info_only"], show_default=False
+        ),
+    ] = None,
+    owners_info_only: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--owners-info-only", help=docs["owners_info_only"], show_default=False
+        ),
+    ] = None,
+) -> None:
+    """
+    Store billable teams and team owners data.
+
+    `store-info` essentially runs `teams-info` and `owners-info` but takes over their export location, and
+    instead stores the output information in a pre-defined directory structure.
+
+    **Example**:
+
+    `$ elapi bill-teams store-info --root-dir ~/bill-teams --meta-source <CSV file path to owners information>` will
+    store the information in the following structure:
+
+    ```sh
+    ~/bill-teams/
+    └── 2024/
+        └── 04/
+            ├── <yyyy-mm-dd_HHMMSS>_owners_info.json
+            └── <yyyy-mm-dd_HHMMSS>_teams_info.json
+    ```
+    """
+    from ...styles import print_typer_error
+    from ...path import ProperPath
+    from ...validators import Validate, PathValidator, ValidationError
+    from datetime import datetime
+    from dateutil import parser
+
+    if teams_info_only is True and owners_info_only is True:
+        print_typer_error(
+            "Both '--team-info-only' and '--owners-info-only' cannot be passed "
+            "as the meaning is ambiguous!"
+        )
+        raise Exit(1)
+
+    if not ProperPath(root_directory).kind == "dir":
+        print_typer_error("'--root-dir' must be a path to a directory.")
+        raise Exit(1)
+    try:
+        validate_path = Validate(PathValidator(root_directory))
+        root_directory: ProperPath = validate_path.get()
+    except ValidationError:
+        logger.error(
+            "--root-dir path could not be validated! Data could not be stored in desired location."
+        )
+        raise Exit(1)
+    if target_date is None:
+        target_date = datetime.now()
+    else:
+        try:
+            target_date = parser.isoparse(target_date)
+        except ValueError as e:
+            print_typer_error(
+                f"'--target-date' is given an invalid ISO 8601 date '{target_date}'."
+            )
+            raise Exit(1) from e
+    target_year = str(target_date.year)
+    target_month = f"{target_date.month:02d}"
+    store_location = root_directory / target_year / target_month
+
+    if teams_info_only is True:
+        get_teams(export=True, _export_dest=store_location)
+        return
+    if owners_info_only is True:
+        if owners_data_path is None:
+            print_typer_error(
+                "When '--owners-info-only' is passed '--meta-source' must be provided as well!"
+            )
+            raise Exit(1)
+        get_owners(owners_data_path, export=True, _export_dest=store_location)
+        return
+    if owners_data_path is None:
+        print_typer_error("Missing option '--meta-source'.")
+        raise Exit(1)
+    get_teams(export=True, _export_dest=store_location)
+    get_owners(
+        owners_data_path,
+        skip_essential_validation=True,
+        export=True,
+        _export_dest=store_location,
+    )
