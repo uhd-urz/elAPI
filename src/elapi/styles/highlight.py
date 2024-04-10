@@ -15,8 +15,7 @@ class BaseHighlight(ABC):
         return issubclass(subclass, Syntax) or super().__subclasshook__(cls, subclass)
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
-        ...
+    def __call__(self, *args, **kwargs): ...
 
 
 class Highlight(BaseHighlight):
@@ -56,3 +55,12 @@ class ColorText:
 
     def colorize(self, ansi_color: str) -> str:
         return f"{ansi_color}{self.text}{Fore.RESET}"
+
+
+def print_typer_error(error_message: str) -> None:
+    import click
+    from typer.rich_utils import rich_format_error
+
+    exception = click.ClickException(error_message)
+    exception.ctx = click.get_current_context()
+    rich_format_error(exception)
