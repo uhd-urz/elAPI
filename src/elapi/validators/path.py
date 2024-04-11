@@ -45,7 +45,7 @@ class PathValidator(Validator):
                     p = ProperPath(p, err_logger=self.err_logger)
                 except (ValueError, TypeError):
                     continue
-            p_child = p / self.TMP_FILE if p.kind == "dir" else p
+            p_child = ProperPath(p / self.TMP_FILE, kind="file") if p.kind == "dir" else p
             try:
                 p.create()
                 with p_child.open(
@@ -64,6 +64,6 @@ class PathValidator(Validator):
             except (p.PathException, p_child.PathException, ValueError, AttributeError):
                 continue
             else:
-                p_child.remove() if p.kind == "dir" else ...
+                p_child.remove() if p_child.kind == "file" else ...
                 return p.expanded
         raise ValidationError("Given path(s) could not be validated!")
