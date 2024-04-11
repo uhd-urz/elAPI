@@ -38,6 +38,7 @@ def get_teams(
             "--format", "-F", help=elapi_docs["data_format"], show_default=False
         ),
     ] = None,
+    sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
     export: Annotated[
         Optional[bool],
         typer.Option(
@@ -67,6 +68,10 @@ def get_teams(
         validate()
     if export is False:
         _export_dest = None
+
+    if sort_json_format:
+        from .format import JSONSortedFormat  # noqa: F401
+
     data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
     format = CLIFormat(data_format, export_file_ext)
 
@@ -101,15 +106,19 @@ def get_teams(
     return teams
 
 
+# noinspection PyUnresolvedReferences
 @app.command(name="owners-info")
 def get_owners(
     owners_data_path: Annotated[
         str,
-        typer.Option("--meta-source", help=docs["owners_data_path"], show_default=False),
+        typer.Option(
+            "--meta-source", help=docs["owners_data_path"], show_default=False
+        ),
     ],
     skip_essential_validation: Annotated[
         Optional[bool], typer.Option(hidden=True)
     ] = False,
+    sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
     data_format: Annotated[
         Optional[str],
         typer.Option(
@@ -150,6 +159,10 @@ def get_owners(
             validate()
     if export is False:
         _export_dest = None
+
+    if sort_json_format:
+        from .format import JSONSortedFormat  # noqa: F401
+
     data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
     format = CLIFormat(data_format, export_file_ext)
 
@@ -306,7 +319,7 @@ def store_teams_and_owners(
         root_directory: ProperPath = validate_path.get()
     except ValidationError:
         logger.error(
-           f"--root-dir path '{root_directory}' could not be validated! Data could not be stored in desired location."
+            f"--root-dir path '{root_directory}' could not be validated! Data could not be stored in desired location."
         )
         raise Exit(1)
     if target_date is None:
@@ -324,7 +337,7 @@ def store_teams_and_owners(
     store_location = root_directory / target_year / target_month
 
     if teams_info_only is True:
-        get_teams(export=True, _export_dest=store_location)
+        get_teams(sort_json_format=True, export=True, _export_dest=store_location)
         return
     if owners_info_only is True:
         if owners_data_path is None:
@@ -332,15 +345,21 @@ def store_teams_and_owners(
                 "When '--owners-info-only' is passed '--meta-source' must be provided as well!"
             )
             raise Exit(1)
-        get_owners(owners_data_path, export=True, _export_dest=store_location)
+        get_owners(
+            owners_data_path,
+            sort_json_format=True,
+            export=True,
+            _export_dest=store_location,
+        )
         return
     if owners_data_path is None:
         print_typer_error("Missing option '--meta-source'.")
         raise Exit(1)
-    get_teams(export=True, _export_dest=store_location)
+    get_teams(sort_json_format=True, export=True, _export_dest=store_location)
     get_owners(
         owners_data_path,
         skip_essential_validation=True,
+        sort_json_format=True,
         export=True,
         _export_dest=store_location,
     )
