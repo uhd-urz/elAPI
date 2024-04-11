@@ -45,9 +45,10 @@ class PathValidator(Validator):
                     p = ProperPath(p, err_logger=self.err_logger)
                 except (ValueError, TypeError):
                     continue
+            p_child = p / self.TMP_FILE if p.kind == "dir" else p
             try:
                 p.create()
-                with (p / self.TMP_FILE if p.kind == "dir" else p).open(
+                with p_child.open(
                     mode="ba+"
                 ) as f:
                     f.write(
@@ -60,9 +61,9 @@ class PathValidator(Validator):
                         continue  # It'd not be possible to read from those files.
                     f.seek(f.tell() - 1)
                     f.truncate()
-            except (p.PathException, ValueError, AttributeError):
+            except (p.PathException, p_child.PathException, ValueError, AttributeError):
                 continue
             else:
-                (p / self.TMP_FILE).remove() if p.kind == "dir" else ...
+                p_child.remove() if p.kind == "dir" else ...
                 return p.expanded
         raise ValidationError("Given path(s) could not be validated!")

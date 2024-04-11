@@ -166,6 +166,12 @@ class ProperPath:
             self.err_logger.error(message)
             self.PathException = exception
             raise e
+        except (exception := OSError) as os_err:
+            # When an attempt to create a file or directory inside root (e.g., '/foo')
+            # is made, OS can throw OSError with error no. 30 instead of PermissionError.
+            self.err_logger.error(os_err)
+            self.PathException = exception
+            raise os_err
         else:
             return path
 
@@ -258,6 +264,12 @@ class ProperPath:
                 raise attribute_err
             else:
                 raise e
+        except (exception := OSError) as os_err:
+            # When an attempt to create a file or directory inside root (e.g., '/foo')
+            # is made, OS can throw OSError with error no. 30 instead of PermissionError.
+            self.err_logger.error(os_err)
+            self.PathException = exception
+            raise os_err
 
         else:
             try:
