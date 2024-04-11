@@ -76,7 +76,8 @@ __PARAMETERS__doc__ = {
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
               "without syntax highlighting. This can be utilized if one wishes to pipe the output "
               " to some external formatting program like `less`. "
-              "If an unsupported format value is provided then the output format falls back to 'txt'.",
+              "If an unsupported format value is provided then the output format "
+              f"falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
     "no_keys": "Do not show the names of configuration keywords.",
     "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
