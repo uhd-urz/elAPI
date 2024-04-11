@@ -91,6 +91,43 @@ class TXTFormat(BaseFormat):
         return pformat(data)
 
 
+class CSVFormat(BaseFormat):
+    name: str = "csv"
+    convention: str = name
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^csv$"
+
+    def __call__(self, data: Any) -> str:
+        from csv import DictWriter
+        from io import StringIO
+
+        with StringIO() as csv_buffer:
+            writer = DictWriter(csv_buffer, fieldnames=[])
+            if isinstance(data, dict):
+                writer.fieldnames = data.keys()
+                writer.writeheader()
+                writer.writerow(data)
+                csv_as_string = csv_buffer.getvalue()
+            elif isinstance(data, Iterable):
+                for item in data:
+                    if not isinstance(item, dict):
+                        raise FormatError(
+                            "Only dictionaries or iterables of dictionaries can be formatted to CSV."
+                        )
+                    if not writer.fieldnames:
+                        writer.fieldnames = item.keys()
+                        writer.writeheader()
+                    if len(item.items()) > len(writer.fieldnames):
+                        raise FormatError(
+                            "Iterable of dictionary contains insistent length of key items."
+                        )
+                    writer.writerow(item)
+                csv_as_string = csv_buffer.getvalue()
+        return csv_as_string
+
+
 class ValidateLanguage:
     def __init__(self, language: str):
         self._validated = language

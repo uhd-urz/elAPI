@@ -34,9 +34,7 @@ logger = Logger()
 def get_teams(
     data_format: Annotated[
         Optional[str],
-        typer.Option(
-            "--format", "-F", help=elapi_docs["data_format"], show_default=False
-        ),
+        typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = None,
     sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
     export: Annotated[
@@ -53,7 +51,7 @@ def get_teams(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> dict:
     """Get billable teams data."""
-
+    from .format import remove_csv_formatter_support
     from ...cli.helpers import CLIExport, CLIFormat
     from ..commons import Export
     from ...styles import Highlight
@@ -62,6 +60,8 @@ def get_teams(
         HostIdentityValidator,
         PermissionValidator,
     )
+
+    remove_csv_formatter_support()
 
     with stderr_console.status("Validating...\n", refresh_per_second=15):
         validate = Validate(HostIdentityValidator(), PermissionValidator("sysadmin"))
@@ -137,7 +137,7 @@ def get_owners(
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
 ) -> dict:
     """Get billable team owners data."""
-
+    from .format import remove_csv_formatter_support
     from ...cli.helpers import CLIExport, CLIFormat
     from ..commons import Export
     from ...styles import Highlight
@@ -148,6 +148,8 @@ def get_owners(
         Exit,
         ValidationError,
     )
+
+    remove_csv_formatter_support()
 
     if not skip_essential_validation:
         with stderr_console.status("Validating...\n", refresh_per_second=15):
