@@ -115,9 +115,7 @@ def get_owners(
             "--meta-source", help=docs["owners_data_path"], show_default=False
         ),
     ],
-    skip_essential_validation: Annotated[
-        Optional[bool], typer.Option(hidden=True)
-    ] = False,
+    skip_essential_validation: Annotated[bool, typer.Option(hidden=True)] = False,
     sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
     data_format: Annotated[
         Optional[str],
