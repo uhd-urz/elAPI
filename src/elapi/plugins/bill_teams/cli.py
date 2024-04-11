@@ -306,7 +306,7 @@ def store_teams_and_owners(
         root_directory: ProperPath = validate_path.get()
     except ValidationError:
         logger.error(
-            "--root-dir path could not be validated! Data could not be stored in desired location."
+           f"--root-dir path '{root_directory}' could not be validated! Data could not be stored in desired location."
         )
         raise Exit(1)
     if target_date is None:
