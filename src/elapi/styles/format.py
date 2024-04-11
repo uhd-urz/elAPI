@@ -12,7 +12,8 @@ class BaseFormat(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._registry[cls.pattern()] = cls
-        cls._names.append(cls.name)
+        if cls.name not in cls._names:
+            cls._names.append(cls.name)
         cls._conventions.append(cls.convention)
 
     @property
