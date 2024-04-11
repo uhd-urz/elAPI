@@ -14,7 +14,7 @@ from .loggers import SimpleLogger
 class ProperPath:
     def __init__(
         self,
-        name: Union[str, Path, None],
+        name: Union[str, Path, None, "ProperPath"],
         env_var: bool = False,
         kind: Union[str, None] = "",
         err_logger: logging.Logger = SimpleLogger(),
