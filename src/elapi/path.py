@@ -325,5 +325,5 @@ class ProperPath:
                             f"{self._error_helper_compare_path_source(self.name, path)}."
                         )
                         self.err_logger.critical(message)
-                        self.PathException = exception
+                    self.PathException = exception
                     raise io_err
