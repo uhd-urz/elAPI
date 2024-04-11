@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from types import NoneType
 from typing import Optional, Callable, Union
 
 from ...loggers import Logger
@@ -76,7 +75,7 @@ class OwnersInformationModifier:
         self,
         team_id: Union[str, int],
         column_name: str,
-        value: Union[str, int, float, NoneType],
+        value: Union[str, int, float, type(None)],
     ) -> None:
         try:
             self.owners.get(team_id, column_name)
@@ -90,7 +89,7 @@ class OwnersInformationModifier:
 
     @staticmethod
     def _sanitize(
-        value: Union[str, int, float, NoneType],
+        value: Union[str, int, float, type(None)],
         reference: str,
         allow_null: bool = True,
         stringent: bool = False,
