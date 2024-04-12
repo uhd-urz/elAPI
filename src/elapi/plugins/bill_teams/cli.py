@@ -6,7 +6,7 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 
 from ._doc import __PARAMETERS__doc__ as docs
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-from ...cli.helpers import OrderedCommands
+from ...plugins.commons.cli_helpers import OrderedCommands
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...styles import stdin_console, stderr_console
@@ -52,7 +52,7 @@ def get_teams(
 ) -> dict:
     """Get billable teams data."""
     from .format import remove_csv_formatter_support
-    from ...cli.helpers import CLIExport, CLIFormat
+    from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..commons import Export
     from ...styles import Highlight
     from ...validators import (
@@ -138,7 +138,7 @@ def get_owners(
 ) -> dict:
     """Get billable team owners data."""
     from .format import remove_csv_formatter_support
-    from ...cli.helpers import CLIExport, CLIFormat
+    from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..commons import Export
     from ...styles import Highlight
     from ...validators import (
@@ -225,7 +225,7 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
-    from ...cli.helpers import CLIExport
+    from ...plugins.commons.cli_helpers import CLIExport
     from ...plugins.commons import Export
     from .invoice import InvoiceGenerator
 

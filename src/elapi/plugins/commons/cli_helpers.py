@@ -4,9 +4,9 @@ from typing import Optional
 from click import Context
 from typer.core import TyperGroup
 
-from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
-from ..loggers import Logger
-from ..path import ProperPath
+from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
+from ...loggers import Logger
+from ...path import ProperPath
 
 logger = Logger()
 
@@ -16,8 +16,8 @@ class CLIExport:
         cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
     ):
         from collections import namedtuple
-        from ..validators import Validate
-        from ..plugins.commons import ExportValidator
+        from ...validators import Validate
+        from .export import ExportValidator
 
         validate_export = Validate(ExportValidator(export_dest))
         export_dest: ProperPath = validate_export.get()
@@ -44,7 +44,7 @@ class CLIFormat:
         data_format: str,
         export_file_ext: Optional[str] = None,
     ):
-        from ..styles import Format, FormatError
+        from ...styles import Format, FormatError
 
         try:
             format = Format(data_format)

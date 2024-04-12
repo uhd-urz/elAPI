@@ -4,7 +4,7 @@ import typer
 
 from ._doc import __PARAMETERS__doc__ as docs
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-from ...cli.helpers import CLIExport, CLIFormat, OrderedCommands
+from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, OrderedCommands
 from ...loggers import Logger
 from ...plugins.experiments.experiments import (
     ExperimentIDValidator,

@@ -21,7 +21,7 @@ from typing_extensions import Annotated
 
 from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
-from .helpers import OrderedCommands
+from ..plugins.commons.cli_helpers import OrderedCommands
 from .. import APP_NAME
 from ..configuration import EXPORT_DIR
 from ..loggers import Logger
@@ -200,7 +200,7 @@ def get(
     import re
     from .. import APP_NAME
     from ..api import GETRequest, ElabFTWURLError
-    from .helpers import CLIExport, CLIFormat
+    from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import Export
     from ..styles import Highlight
