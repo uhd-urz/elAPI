@@ -50,7 +50,17 @@ At the moment, though, the documentation about using elAPI as a library is sever
 
 ## Configuration
 
-elAPI needs to be configured first before we can do anything useful with it. elAPI supports a YAML configuration file in
+elAPI needs to be configured first before we can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
+server's API URL and your API key (or token) for access.
+
+### Quick configuration
+
+You can run `elapi init` to simplify the configuration process. You will be prompted with questions
+about your eLabFTW server with examples to help you fill in the answers.
+
+### Advanced configuration
+
+elAPI supports a YAML configuration file in
 the following locations.
 
 - Current directory: `./elapi.yml`
@@ -58,12 +68,12 @@ the following locations.
 - Root directory: `/etc/elapi.yml`
 
 elAPI supports configuration overloading. I.e., a keyword set in root configuration file `/etc/elapi.yml` can be
-overriden by setting a different value in user configuration file `$HOME/.config/elapi.yml`. In terms of precedence,
+overridden by setting a different value in user configuration file `$HOME/.config/elapi.yml`. In terms of precedence,
 configuration file present in the currently active directory has the highest priority, and configuration in root
 directory has the lowest.
 
 The following parameters are currently configurable, with `host` and `api_token` being the required fields. For testing
-purposes it would be safe to store everything in the user configuration file.
+purposes it would be safe to store everything in `$HOME/.config/elapi.yml`.
 
 ```yaml
 # elAPI configuration
