@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7-dev2] - 2024-04-15
+
+Second development release before the next stable version. This release adds a number of improvements and bug fixes.
+Mostly, this release introduces the new `bill-teams` plugin.
+
 ## [1.0.7-dev1] - 2024-03-19
 
 Development release. This release adds a tons of new changes and improvements.
@@ -14,11 +19,13 @@ Development release. This release adds a tons of new changes and improvements.
 ### Added
 
 - New `PATCH` command ([!24](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/24))
-- New style APIs ([`1da3bb`](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/commit/1da3bb1a2bf6f97aea3106e628bf50ef065cf838))
+- New style
+  APIs ([`1da3bb`](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/commit/1da3bb1a2bf6f97aea3106e628bf50ef065cf838))
 
 ### Fixed
 
-- Add warning in `README.md` about installing elapi outside virtual environment ([#11](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/11))
+- Add warning in `README.md` about installing elapi outside virtual
+  environment ([#11](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/11))
 - Fix errors not being sent to `STDERR` ([#10](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/10))
 - Fixed typos in CLI documentation
 
@@ -32,7 +39,8 @@ Development release. This release adds a tons of new changes and improvements.
 
 - elAPI can be run without error when run with no arguments. I.e., running elapi will show the default help message.
 - New `version` command.
-- Formatter APIs (including base API `BaseFormat`) now supports multiple conventional names for formats. E.g., `yaml` and `yml` conventions for `YAMLFormat`.
+- Formatter APIs (including base API `BaseFormat`) now supports multiple conventional names for formats. E.g., `yaml`
+  and `yml` conventions for `YAMLFormat`.
 
 ### Fixed
 
