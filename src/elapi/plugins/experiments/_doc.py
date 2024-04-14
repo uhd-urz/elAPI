@@ -1,5 +1,22 @@
 from ... import APP_NAME
+from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
+
+_UNIQUE_SUPPORTED_FORMATS = [
+    "json",
+    "yaml",
+    "txt",
+    "pdf",
+    "pdfa",
+    "zip",
+    "zipa",
+    "eln",
+    "csv",
+    "qrpng",
+]
+supported_format_values = ", ".join(
+    f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
+)
 
 __PARAMETERS__doc__ = {
     "experiment_id": "ID of an existing experiment. ID can be found on the URL of the experiment. "
@@ -20,5 +37,17 @@ __PARAMETERS__doc__ = {
                                          "pages. Attachment SHA can be seen by clicking \"More information\" "
                                          "of an attachment. First 6 digits (or more) of the attachment SHA256 "
                                          "hash can also be passed as an attachment ID.",
+    "data_format": f"Experiment output format. Supported values are: {supported_format_values}. "
+                   f"The supported formats follow the _'Export'_ options available "
+                   f"for an experiment on the browser GUI. As such, **only** JSON, YAML and TXT formats can be printed "
+                   f"on the terminal. All other supported formats are exported to "
+                   f"local storage by default (see _--export_ for more export options)."
+                   f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
+                   "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
+                   "without syntax highlighting. This can be utilized if one wishes to pipe the output "
+                   " to some external formatting program like `less`. "
+                   "If an unsupported format value is provided then the output format "
+                   f"falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
+
 
 }
