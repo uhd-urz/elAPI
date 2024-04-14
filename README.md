@@ -20,14 +20,33 @@ $ elapi get users --id <id>
 
 ## Installation
 
-Support for installing packages with `pip install --user` has been deprecated with the adoption of [PEP 688](https://peps.python.org/pep-0668/) on many systems like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
-We recommend [`pipx`](https://pipx.pypa.io/stable/) for installing elAPI.
+elAPI can be used both as a CLI tool and as a Python library. If you are interested in simply using elAPI's
+off-the-shelf features from the command-line, install elAPI as a CLI tool. If you intend to write automation script for
+eLabFTW, you should install elAPI as a library inside a virtual environment. Of course, if you're interested in
+both, you can have elAPI installed in both ways.
+
+### Install elAPI as a CLI tool
+
+Support for installing Python packages with `pip install --user` has been deprecated with the adoption
+of [PEP 688](https://peps.python.org/pep-0668/) on many systems
+like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
+We recommend [`pipx`](https://pipx.pypa.io/stable/) for installing elAPI for use of its CLI functionalities. Pipx
+installs packages in isolated virtual environments, so Pipx-installed elAPI should not conflict with elAPI installed
+inside other virtual environments.
 
 ```shell
 $ pipx install elapi
 ```
 
-Of course, `pip install --user elapi` might continue to work on some systems.
+After installation with Pipx is complete, you would also be able to run elAPI just by entering the `elapi` command on
+the
+terminal.
+
+### Install elAPI as a library
+
+It is recommended to install elAPI inside a Python virtual environment for use of its rich APIs for
+working with eLabFTW. From inside a virtual environment, elAPI CLI can be invoked with `python -m elapi.cli`.
+At the moment, though, the documentation about using elAPI as a library is severely lacking.
 
 ## Configuration
 
