@@ -162,6 +162,27 @@ You can reset the configuration to default values.
 $ elapi delete config
 ```
 
+### `experiments` plugin
+
+`experiments` plugin enables experiments-specific actions. You can download an experiment in PDF by its "Unique eLabID"
+to `~/Downloads` directory.
+
+```shell
+$ elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
+```
+
+Append text in markdown to an existing experiment by its ID:
+
+```shell
+$ elapi experiments append --id <experiment ID> -M -t "**New content.**"
+```
+
+You can also upload an attachment to an experiment.
+
+```shell
+$ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
+```
+
 ### Bill teams
 
 You can get a list of all teams and its users for billing purposes and export it to home directory.
