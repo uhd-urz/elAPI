@@ -1,6 +1,9 @@
 # elAPI
 
-elAPI is a powerful, extensible API interface to eLabFTW. It supports serving almost all kinds of requests documented in
+elAPI is a powerful, extensible API client for eLabFTW built for
+the [University Computing Centre](https://www.urz.uni-heidelberg.de/en) (
+URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) at
+Universität Heidelberg. It supports serving almost all kinds of requests documented on
 [eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI treats eLabFTW API endpoints as its
 arguments.
 
