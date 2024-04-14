@@ -50,7 +50,7 @@ At the moment, though, the documentation about using elAPI as a library is sever
 
 ## Configuration
 
-elAPI needs to be configured first before we can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
+elAPI needs to be configured first before you can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
 server's API URL and your API key (or token) for access.
 
 ### Quick configuration
@@ -88,13 +88,13 @@ export_dir: ~/Downloads/elAPI
 unsafe_api_token_warning: yes
 ```
 
-We can get an overview of detected configurations.
+You can get an overview of detected configurations.
 
 ```shell
 $ elapi show-config
 ```
 
-If both `host` and `api_token` are detected, we are good to go!
+If both `host` and `api_token` are detected, you are good to go!
 
 ## Usage
 
@@ -106,14 +106,14 @@ $ elapi --help
 
 ### `GET` requests
 
-We can request an overview of running eLabFTW server.
+Request an overview of running eLabFTW server:
 
 ```shell
 $ elapi get info -F yml
 # Here -F (or --format) defines the output format
 ```
 
-We can request a list o all active experiments and export it to a `JSON` file.
+You can request a list o all active experiments and export it to a `JSON` file.
 
 ```shell
 $ elapi get experiments --export ~/Downoads/experiments.json
@@ -121,7 +121,7 @@ $ elapi get experiments --export ~/Downoads/experiments.json
 
 ### `POST` requests
 
-We can create a new user by the name 'John Doe'.
+Create a new user by the name 'John Doe':
 
 ```shell
 $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
@@ -129,20 +129,20 @@ $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "
 
 ### `PATCH` requests
 
-We can update an existing user's email address.
+Update an existing user's email address:
 
 ```shell
 $ elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
 ```
 
-`patch` command allows us to make changes to eLabFTW server settings. E.g., we can update the time (in minutes)
+`patch` command allows us to make changes to eLabFTW server settings. E.g., you can update the time (in minutes)
 after which the authentication cookie will expire.
 
 ```shell
 $ elapi patch config -d '{"cookie_validity_time": 43200}'
 ```
 
-We can publish an announcement to all the members.
+You can publish an announcement to all the members.
 
 ```shell
 $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
@@ -150,19 +150,19 @@ $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow 
 
 ### Bill teams
 
-We can generate invoice for eLabFTW teams.
+You can generate invoice for eLabFTW teams.
 
 ```shell
 $ elapi bill-teams generate-invoice
 ```
 
-We may just want to have a look at the billing information without generating invoice.
+You may just want to have a look at the billing information without generating invoice.
 
 ```shell
 $ elapi bill-teams info -F yaml
 ```
 
-We can also export this information as a `YAML` file to the export directory defined in configuration
+You can also export this information as a `YAML` file to the export directory defined in configuration
 file (`export_dir`).
 
 ```shell
