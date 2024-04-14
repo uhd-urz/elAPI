@@ -148,6 +148,20 @@ You can publish an announcement to all the members.
 $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
 ```
 
+### `DELETE` requests
+
+Delete all the tags associated to an experiment:
+
+```shell
+$ elapi delete experiments -i <experiment ID> --sub tags
+```
+
+You can reset the configuration to default values.
+
+```shell
+$ elapi delete config
+```
+
 ### Bill teams
 
 You can generate invoice for eLabFTW teams.
