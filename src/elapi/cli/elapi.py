@@ -21,10 +21,10 @@ from typing_extensions import Annotated
 
 from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
-from ..plugins.commons.cli_helpers import OrderedCommands
 from .. import APP_NAME
 from ..configuration import EXPORT_DIR
 from ..loggers import Logger
+from ..plugins.commons.cli_helpers import OrderedCommands
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
 
@@ -101,6 +101,7 @@ def init(
     from ..configuration import LOCAL_CONFIG_LOC
     from ..validators import Validate, ValidationError
     from ..validators import PathValidator
+    from ..path import ProperPath
     from time import sleep
 
     with stdin_console.status(
@@ -119,27 +120,42 @@ def init(
             )
             raise typer.Exit(1)
         else:
-            with LOCAL_CONFIG_LOC.open(mode="r+") as f:
-                if f.read():
-                    logger.error(
-                        f"A configuration file '{LOCAL_CONFIG_LOC}' already exists and it's not empty! "
-                        f"It's ambiguous what to do in this situation. {APP_NAME} will abort. "
-                        f"Configuration initialization has failed!"
-                    )
-                    raise typer.Exit(1)
+            path = ProperPath(LOCAL_CONFIG_LOC)
+            try:
+                with path.open(mode="r") as f:
+                    if f.read():
+                        logger.error(
+                            f"A configuration file '{LOCAL_CONFIG_LOC}' already exists and it's not empty! "
+                            f"It's ambiguous what to do in this situation."
+                        )
+                        logger.error("Configuration initialization has failed!")
+                        raise typer.Exit(1)
+            except path.PathException as e:
+                if isinstance(e, FileNotFoundError):
+                    path.create()
                 else:
+                    logger.error(e)
+                    logger.error("Configuration initialization has failed!")
+                    raise typer.Exit(1)
+            try:
+                with path.open(mode="w") as f:
                     _configuration_yaml_text = f"""host: {host_url}
-api_token: {api_token}
-export_dir: {export_directory}
-unsafe_api_token_warning: yes
-"""
+    api_token: {api_token}
+    export_dir: {export_directory}
+    unsafe_api_token_warning: yes
+    """
                     f.write(_configuration_yaml_text)
-            stdin_console.print(
-                "Configuration file has been successfully created! "
-                f"Run '{APP_NAME} show-config' to see the configuration path "
-                "and more configuration details.",
-                style="green",
-            )
+            except path.PathException as e:
+                logger.error(e)
+                logger.error("Configuration initialization has failed!")
+                raise typer.Exit(1)
+            else:
+                stdin_console.print(
+                    "Configuration file has been successfully created! "
+                    f"Run '{APP_NAME} show-config' to see the configuration path "
+                    "and more configuration details.",
+                    style="green",
+                )
 
 
 @app.command(short_help="Make `GET` requests to eLabFTW endpoints.")
