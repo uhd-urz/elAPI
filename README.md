@@ -164,24 +164,13 @@ $ elapi delete config
 
 ### Bill teams
 
-You can generate invoice for eLabFTW teams.
+You can get a list of all teams and its users for billing purposes and export it to home directory.
 
 ```shell
-$ elapi bill-teams generate-invoice
+$ elapi bill-teams teams-info --export ~
 ```
 
-You may just want to have a look at the billing information without generating invoice.
-
-```shell
-$ elapi bill-teams info -F yaml
-```
-
-You can also export this information as a `YAML` file to the export directory defined in configuration
-file (`export_dir`).
-
-```shell
-elapi bill-teams info -F yaml --export
-```
+Most sub-commands available under `elapi bill-teams` plugin are for Universität Heidelberg specific use-cases.
 
 ## Open-source
 
