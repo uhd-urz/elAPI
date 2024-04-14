@@ -6,9 +6,9 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 
 from ._doc import __PARAMETERS__doc__ as docs
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-from ...plugins.commons.cli_helpers import OrderedCommands
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
+from ...plugins.commons.cli_helpers import OrderedCommands
 from ...styles import stdin_console, stderr_console
 from ...validators import RuntimeValidationError, Exit
 
@@ -225,6 +225,9 @@ def generate_invoice(
     """
     Generate invoice for billable teams.
     """
+    from rich.live import Live
+    from os import devnull
+    import contextlib
     from ...plugins.commons.cli_helpers import CLIExport
     from ...plugins.commons import Export
     from .invoice import InvoiceGenerator
@@ -232,15 +235,19 @@ def generate_invoice(
     _INVOICE_FORMAT = "md"
     if export is False:
         _export_dest = None
-    export = True  # export is always true for generate-invoice
-
+    logger.warning(
+        "Due to deprecation, the generated invoice will not reflect accurate information. "
+        "Some behaviors have been removed."
+    )
     data_format, export_dest, _ = CLIExport(_INVOICE_FORMAT, _export_dest)
-    if _bill_teams_data is None:
-        _bill_teams_data = get_teams(
-            data_format=DEFAULT_EXPORT_DATA_FORMAT, export=export
-        )
+    with Live("Generating invoice..."):
+        ...
+    with open(devnull, "w") as devnull:
+        with contextlib.redirect_stdout(devnull):
+            if _bill_teams_data is None:
+                _bill_teams_data = get_teams(data_format=DEFAULT_EXPORT_DATA_FORMAT)
     invoice = InvoiceGenerator(_bill_teams_data)
-    export = Export(
+    export = Export(  # export is always true for generate-invoice
         export_dest,
         file_name_stub="invoice",
         file_extension=data_format,

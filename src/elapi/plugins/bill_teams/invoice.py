@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from ...styles import stdin_console
-
 
 class InvoiceGenerator:
     __slots__ = ("data",)
@@ -25,7 +23,6 @@ class InvoiceGenerator:
     def _template(
         team_id: int,
         team_name: str,
-        owners: list,
         member_count: int,
         bill_amount: int,
     ):
@@ -38,10 +35,6 @@ class InvoiceGenerator:
             return "\n".join([f"|{owner[0]}|{owner[1]}|" for owner in trunc_owners])
 
         return f"""◆ **Team:** {team_name}                      ◇ **Team ID:** {team_id}
-
-|Owner Name| Owner Email|
-|:----------|------------:|
-{_owner_template(owners)}
         
 **Number of members:** {member_count}
 
@@ -71,16 +64,12 @@ Total amount due: {total_bill_amount: .2f} EUR
         breakdown = """## Breakdown
 
 """
-        with stdin_console.status(status="Generating invoice..."):
-            for team in self.data.values():
-                team_id = team["team_id"]
-                team_name = team["team_name"]
-                owners = team["owners"]
-                member_count = team["members"]["member_count"]
-                bill_amount = 0 if team["on_trial"] else self.MONTHLY_FEE
-                total_bill_amount += bill_amount * member_count
-                team_invoice = self._template(
-                    team_id, team_name, owners, member_count, bill_amount
-                )
-                breakdown += team_invoice
+        for team in self.data.values():
+            team_id = team["team_id"]
+            team_name = team["team_name"]
+            member_count = team["active_member_count"]
+            bill_amount = 0 if team["on_trial"] else self.MONTHLY_FEE
+            total_bill_amount += bill_amount * member_count
+            team_invoice = self._template(team_id, team_name, member_count, bill_amount)
+            breakdown += team_invoice
         return self._header(len(self.data.values()), total_bill_amount) + breakdown
