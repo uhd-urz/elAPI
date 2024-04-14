@@ -1,11 +1,8 @@
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
-from ...styles import BaseFormat
-from .format import UNSUPPORTED_FORMAT_NAMES
 
-supported_highlighting_formats = ", ".join(
-    f"**{_.upper()}**"
-    for _ in BaseFormat.supported_formatter_names()
-    if _ not in UNSUPPORTED_FORMAT_NAMES
+_UNIQUE_SUPPORTED_FORMATS = ["json", "yaml", "txt"]
+supported_format_values = ", ".join(
+    f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
 )
 
 __PARAMETERS__doc__ = {
@@ -21,7 +18,9 @@ __PARAMETERS__doc__ = {
     "Both _--teams-info-only_ and _--owners-info-only_ cannot be passed.",
     "owners_info_only": "If passed, then only `owners-info` will be stored. "
     "Both _--teams-info-only_ and _--owners-info-only_ cannot be passed.",
-    "data_format": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
+    "data_format": f"Format style for the output. Supported values are: {supported_format_values}. "
+                   f"CSV is **not** a supported format for this command as the "
+                   f"output data structure is too complex for naive CSV. "
                    f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
                    "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
                    "without syntax highlighting. This can be utilized if one wishes to pipe the output "

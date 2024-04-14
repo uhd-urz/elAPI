@@ -2,8 +2,6 @@ from typing import Any
 
 from ...styles.format import BaseFormat, JSONFormat
 
-UNSUPPORTED_FORMAT_NAMES: list = ["csv"]
-
 
 class JSONSortedFormat(JSONFormat, BaseFormat):
     def __call__(self, data: Any) -> str:
