@@ -140,19 +140,23 @@ class ProperPath:
         )
 
     def create(self) -> Union[Path, None]:
-        if not (path := self.expanded.resolve(strict=False)).exists():
-            # except FileNotFoundError:
-            message = (
-                f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
-                f"An attempt to create PATH={path} will be made."
-            )
-            self.err_logger.warning(message)
+        path = self.expanded.resolve(strict=False)
         try:
             if self.kind == "file":
                 path_parent, path_file = path.parent, path.name
+                if not path_parent.exists():
+                    self.err_logger.info(
+                        f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} could not be "
+                        f"found. An attempt to create directory {path} will be made."
+                    )
                 path_parent.mkdir(parents=True, exist_ok=True)
                 (path_parent / path_file).touch(exist_ok=True)
             elif self.kind == "dir":
+                if not path.exists():
+                    self.err_logger.info(
+                        f"Directory {self._error_helper_compare_path_source(self.name, path)} could not be found. "
+                        f"An attempt to create directory {path} will be made."
+                    )
                 path.mkdir(parents=True, exist_ok=True)
         except (exception := PermissionError) as e:
             message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
