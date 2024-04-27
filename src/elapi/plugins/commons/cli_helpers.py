@@ -7,19 +7,29 @@ from typer.core import TyperGroup
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...path import ProperPath
+from ...validators import Exit
 
 logger = Logger()
 
 
 class CLIExport:
     def __new__(
-        cls, data_format: Optional[str] = None, export_dest: Optional[str] = None
+        cls,
+        data_format: Optional[str] = None,
+        export_dest: Optional[str] = None,
+        can_overwrite: bool = False,
     ):
         from collections import namedtuple
         from ...validators import Validate
         from .export import ExportValidator
 
-        validate_export = Validate(ExportValidator(export_dest))
+        try:
+            validate_export = Validate(
+                ExportValidator(export_dest, can_overwrite=can_overwrite)
+            )
+        except ValueError as e:
+            logger.error(e)
+            raise Exit(1)
         export_dest: ProperPath = validate_export.get()
 
         _export_file_ext: str = (
