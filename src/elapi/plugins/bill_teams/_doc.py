@@ -1,3 +1,4 @@
+from ... import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
 _UNIQUE_SUPPORTED_FORMATS = ["json", "yaml", "txt"]
@@ -27,4 +28,17 @@ __PARAMETERS__doc__ = {
                    " to some external formatting program like `less`. "
                    "If an unsupported format value is provided then the output "
                    f"format falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
+    "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
+                      f"`export_dir` value from configuration file is used. "
+                      f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
+                      f"- If a directory path is provided as a value, "
+                      f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+                      f"When the path is a directory, "
+                      f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
+                      f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "
+                      f"then data is simply exported to that file. This allows custom file name scheme. "
+                      f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "
+                      f"If _--format/-F_ is also present, then file extension is ignored, "
+                      f"and --format value takes precedence.\n"
+
 }

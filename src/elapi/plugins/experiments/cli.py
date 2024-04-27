@@ -42,7 +42,7 @@ def get(
         typer.Option(
             "--export",
             "-e",
-            help=elapi_docs["export"] + elapi_docs["export_details"],
+            help=elapi_docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
@@ -256,7 +256,7 @@ def download_attachment(
         typer.Option(
             "--export",
             "-e",
-            help=elapi_docs["export"] + elapi_docs["export_details"],
+            help=elapi_docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,

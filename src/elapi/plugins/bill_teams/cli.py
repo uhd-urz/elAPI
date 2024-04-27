@@ -42,7 +42,7 @@ def get_teams(
         typer.Option(
             "--export",
             "-e",
-            help=elapi_docs["export"] + elapi_docs["export_details"],
+            help=elapi_docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
@@ -136,7 +136,7 @@ def get_owners(
         typer.Option(
             "--export",
             "-e",
-            help=elapi_docs["export"] + elapi_docs["export_details"],
+            help=elapi_docs["export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
@@ -228,7 +228,7 @@ def generate_invoice(
         typer.Option(
             "--export",
             "-e",
-            help=docs["invoice_export"] + elapi_docs["export_details"],
+            help=docs["invoice_export"] + docs["export_details"],
             is_flag=True,
             is_eager=True,
             show_default=False,
