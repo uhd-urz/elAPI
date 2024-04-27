@@ -49,6 +49,12 @@ def get_teams(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    export_overwrite: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite", help=elapi_docs["export_overwrite"], show_default=False
+        ),
+    ] = False,
 ) -> dict:
     """Get billable teams data."""
     from .format import remove_csv_formatter_support
@@ -72,7 +78,9 @@ def get_teams(
     if sort_json_format:
         from .format import JSONSortedFormat  # noqa: F401
 
-    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    data_format, export_dest, export_file_ext = CLIExport(
+        data_format, _export_dest, export_overwrite
+    )
     format = CLIFormat(data_format, export_file_ext)
 
     import asyncio
@@ -135,6 +143,12 @@ def get_owners(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    export_overwrite: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite", help=elapi_docs["export_overwrite"], show_default=False
+        ),
+    ] = False,
 ) -> dict:
     """Get billable team owners data."""
     from .format import remove_csv_formatter_support
@@ -163,7 +177,7 @@ def get_owners(
     if sort_json_format:
         from .format import JSONSortedFormat  # noqa: F401
 
-    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest, export_overwrite)
     format = CLIFormat(data_format, export_file_ext)
 
     from .bill_teams import (

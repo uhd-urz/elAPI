@@ -195,6 +195,10 @@ def get(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    export_overwrite: Annotated[
+        bool,
+        typer.Option("--overwrite", help=docs["export_overwrite"], show_default=False),
+    ] = False,
 ) -> dict:
     """
     Make `GET` requests to eLabFTW endpoints as documented in
@@ -235,7 +239,9 @@ def get(
             style="red",
         )
         raise typer.Exit(1)
-    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+    data_format, export_dest, export_file_ext = CLIExport(
+        data_format, _export_dest, export_overwrite
+    )
     if not query:
         format = CLIFormat(data_format, export_file_ext)
     else:

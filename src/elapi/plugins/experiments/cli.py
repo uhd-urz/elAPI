@@ -49,6 +49,12 @@ def get(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    export_overwrite: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite", help=elapi_docs["export_overwrite"], show_default=False
+        ),
+    ] = False,
 ) -> dict:
     """
     Read or download an experiment.
@@ -71,7 +77,9 @@ def get(
         logger.error(e)
         raise typer.Exit(1)
     else:
-        data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest)
+        data_format, export_dest, export_file_ext = CLIExport(
+            data_format, _export_dest, export_overwrite
+        )
         format = CLIFormat(data_format, export_file_ext)
 
         if isinstance(format, formats.BinaryFormat):
@@ -255,6 +263,12 @@ def download_attachment(
         ),
     ] = False,
     _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    export_overwrite: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite", help=elapi_docs["export_overwrite"], show_default=False
+        ),
+    ] = False,
 ) -> None:
     """
     Download an attachment from an experiment.
@@ -289,7 +303,7 @@ def download_attachment(
             raise typer.Exit(1)
         else:
             data_format, export_dest, export_file_ext = CLIExport(
-                attachment_extension, _export_dest
+                attachment_extension, _export_dest, export_overwrite
             )
             _is_real_id = attachment_id == attachment_real_id
             if export:
