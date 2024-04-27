@@ -1,10 +1,22 @@
 import string
 from pathlib import Path
 from random import choices
-from typing import Union, Iterable
+from typing import Union, Iterable, Optional
 
 from .base import Validator, ValidationError
 from ..path import ProperPath
+
+
+class PathValidationError(ValidationError):
+    def __init__(self, *args) -> None:
+        super().__init__(*args)
+        self.errno: Optional[int] = None
+        # Unlike OSError errno here is an instance attribute instead a class attribute.
+        # This ensures broad use of errno with PathValidationError in the future.
+
+    def __call__(self, *args):
+        super().__init__(*args)
+        return self
 
 
 class PathValidator(Validator):
@@ -39,6 +51,7 @@ class PathValidator(Validator):
             self._path = (value,) if isinstance(value, str) else value
 
     def validate(self):
+        errno: Optional[int] = None
         for p in self.path:
             if not isinstance(p, ProperPath):
                 try:
@@ -63,9 +76,17 @@ class PathValidator(Validator):
                         continue  # It'd not be possible to read from those files.
                     f.seek(f.tell() - 1)
                     f.truncate()
-            except (p.PathException, p_child.PathException, ValueError, AttributeError):
+            except (
+                p.PathException,
+                p_child.PathException,
+                ValueError,
+                AttributeError,
+            ) as e:
+                errno = getattr(e, "errno", None)
                 continue
             else:
                 p_child.remove() if p.kind == "dir" else ...
                 return p.expanded
-        raise ValidationError("Given path(s) could not be validated!")
+        validation_error = PathValidationError()
+        validation_error.errno = errno
+        raise validation_error("Given path(s) could not be validated!")

@@ -8,5 +8,5 @@ from .base import (
     CriticalValidationError,
 )
 from .identity import HostIdentityValidator
-from .path import PathValidator
+from .path import PathValidator, PathValidationError
 from .permission import PermissionValidator, APITokenRWValidator
