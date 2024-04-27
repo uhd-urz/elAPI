@@ -1,3 +1,4 @@
+import errno
 import os
 from pathlib import Path
 
@@ -5,6 +6,7 @@ from dynaconf import Dynaconf
 
 from ._config_history import ConfigHistory, InspectConfigHistory
 from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
+
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
@@ -25,11 +27,13 @@ from .._names import (
 )
 from ..loggers import Logger
 from ..path import ProperPath
+from ..styles import stdin_console, NoteText
 from ..validators import (
     Validate,
     ValidationError,
     CriticalValidationError,
     PathValidator,
+    PathValidationError,
 )
 
 logger = Logger()
@@ -116,19 +120,24 @@ TOKEN_BEARER: str = "Authorization"
 # Export location
 CONFIG_EXPORT_DIR = ProperPath(
     (_CONFIG_EXPORT_DIR_ORIGINAL := settings.get(KEY_EXPORT_DIR)) or os.devnull,
+    kind=(_CONFIG_EXPORT_DIR_ORIGINAL and "dir") or "file",
     err_logger=logger,
 )  # the default "os.devnull" saves ProperPath from TypeError, ValueError
 # for when settings.get(KEY_EXPORT_DIR) is None/"".
-if _CONFIG_EXPORT_DIR_ORIGINAL and CONFIG_EXPORT_DIR.kind != "dir":
-    logger.warning(
-        f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} is not a directory!"
-    )
-    logger.debug("If you want to export to a file use '--export <path-to-file>'.")
-    CONFIG_EXPORT_DIR = None
 try:
     EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
-except ValidationError:
+except PathValidationError as e:
     if _CONFIG_EXPORT_DIR_ORIGINAL:
+        if e.errno == errno.EEXIST:
+            logger.warning(
+                f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file is not a directory!"
+            )
+            stdin_console.print(
+                NoteText(
+                    "If you want to export to a file use '--export <path-to-file>'.\n",
+                    stem="Note",
+                )
+            )
         logger.warning(
             f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
         )
@@ -149,7 +158,7 @@ except ValidationError:
         logger.critical(
             f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
             f"This is a fatal error. To quickly fix this error define an export directory "
-            f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
+            f"with '{KEY_EXPORT_DIR}' in configuration file. {APP_NAME} will not run!"
         )
         raise CriticalValidationError
 # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
