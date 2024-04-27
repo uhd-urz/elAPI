@@ -147,7 +147,7 @@ class ProperPath:
                 if not path_parent.exists():
                     self.err_logger.info(
                         f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} could not be "
-                        f"found. An attempt to create directory {path} will be made."
+                        f"found. An attempt to create directory {path_parent} will be made."
                     )
                 path_parent.mkdir(parents=True, exist_ok=True)
                 (path_parent / path_file).touch(exist_ok=True)
