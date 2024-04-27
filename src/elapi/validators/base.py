@@ -2,15 +2,8 @@ import sys
 from abc import abstractmethod, ABC
 from typing import Any
 
-import typer
-
 
 class ValidationError(Exception): ...
-
-
-class RuntimeValidationError(typer.Exit):
-    def __init__(self, *args) -> None:
-        super().__init__(*args or (1,))  # default error code is always 1
 
 
 class Exit(BaseException):
@@ -32,7 +25,12 @@ class Exit(BaseException):
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
 
 
-class CriticalValidationError(Exit): ...
+class RuntimeValidationError(Exit, ValidationError):
+    def __init__(self, *args) -> None:
+        super().__init__(*args or (1,))  # default error code is always 1
+
+
+class CriticalValidationError(Exit, ValidationError): ...
 
 
 class Validator(ABC):
