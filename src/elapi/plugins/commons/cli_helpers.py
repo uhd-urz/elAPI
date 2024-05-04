@@ -21,11 +21,11 @@ class CLIExport:
     ):
         from collections import namedtuple
         from ...validators import Validate
-        from .export import ExportValidator
+        from .export import ExportPathValidator
 
         try:
             validate_export = Validate(
-                ExportValidator(export_dest, can_overwrite=can_overwrite)
+                ExportPathValidator(export_dest, can_overwrite=can_overwrite)
             )
         except ValueError as e:
             logger.error(e)

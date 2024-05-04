@@ -74,7 +74,7 @@ class Export:
             )
 
 
-class ExportValidator(PathValidator):
+class ExportPathValidator(PathValidator):
     def __init__(
         self,
         /,
