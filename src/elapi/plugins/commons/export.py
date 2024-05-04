@@ -83,7 +83,7 @@ class ExportValidator(PathValidator):
     ):
         self.export_path = export_path
         self.can_overwrite = can_overwrite
-        super().__init__(export_path)
+        super().__init__(export_path, retain_created_file=False)
 
     @property
     def can_overwrite(self) -> bool:
@@ -111,20 +111,18 @@ class ExportValidator(PathValidator):
                 if (
                     path.kind == "file"
                     and path.expanded.exists()
-                    # Though, unnecessary in most cases as PathValidator already creates the file.
                     and not self.can_overwrite
                 ):
-                    if path.expanded.read_bytes():
-                        logger.warning(
-                            f"--export path '{self.export_path}' already exists and is not empty! "
-                            f"{APP_NAME} will use fallback export location."
+                    logger.warning(
+                        f"--export path '{self.export_path}' already exists! "
+                        f"{APP_NAME} will use fallback export location."
+                    )
+                    stdin_console.print(
+                        NoteText(
+                            "Use '--overwrite' to force '--export' to write to an existing file.\n",
+                            stem="Note",
                         )
-                        stdin_console.print(
-                            NoteText(
-                                "Use '--overwrite' to force '--export' to write to a non-empty file.\n",
-                                stem="Note",
-                            )
-                        )
-                        return ProperPath(EXPORT_DIR, err_logger=logger)
+                    )
+                    return ProperPath(EXPORT_DIR, err_logger=logger)
                 return path
         return ProperPath(EXPORT_DIR, err_logger=logger)

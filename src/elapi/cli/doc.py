@@ -71,11 +71,10 @@ __PARAMETERS__doc__ = {
               f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "
               f"If _--format/-F_ is also present, then file extension is ignored, "
               f"and --format value takes precedence.\n",
-    "export_overwrite": f"If given --export/-e path is a file, but it already exists and isn't empty, "
+    "export_overwrite": f"If given --export/-e path is a file, but it already **exists**, "
                         f"{APP_NAME} will not overwrite the file by default, and will instead use the "
                         f"fallback location. _--overwrite_ needs to be passed if {APP_NAME} should overwrite "
-                        f"a non-empty file when exporting. Note that even without _--overwrite_, {APP_NAME} will "
-                        f"overwrite an existing file if the file is **empty**.",
+                        f"an existing file when exporting.",
     "data_format": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
               "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
