@@ -23,6 +23,7 @@ class PathValidator(Validator):
     def __init__(
         self,
         path: Union[Iterable, Union[None, str, ProperPath, Path]],
+        retain_created_file: bool = True,
         **kwargs,
     ):
         from ..loggers import Logger
@@ -32,6 +33,7 @@ class PathValidator(Validator):
         self.TMP_FILE = (
             f".tmp_{''.join(choices(string.ascii_lowercase + string.digits, k=16))}"
         )
+        self.retain_created_file = retain_created_file
 
     @property
     def path(self):
@@ -52,6 +54,7 @@ class PathValidator(Validator):
 
     def validate(self):
         errno: Optional[int] = None
+        _self_created_file: bool = False
         for p in self.path:
             if not isinstance(p, ProperPath):
                 try:
@@ -64,7 +67,9 @@ class PathValidator(Validator):
                 else p
             )
             try:
-                p.create()
+                if not p.expanded.exists():
+                    p.create()
+                    _self_created_file = True
                 with p_child.open(mode="ba+") as f:
                     f.write(
                         b"\x06"
@@ -85,7 +90,15 @@ class PathValidator(Validator):
                 errno = getattr(e, "errno", None)
                 continue
             else:
-                p_child.remove() if p.kind == "dir" else ...
+                if p.kind == "dir":
+                    p_child.remove()
+                if (
+                    not self.retain_created_file
+                    and _self_created_file
+                    and p.kind == "file"
+                    and p.expanded.stat().st_size == 0
+                ):
+                    p.remove()
                 return p.expanded
         validation_error = PathValidationError()
         validation_error.errno = errno
