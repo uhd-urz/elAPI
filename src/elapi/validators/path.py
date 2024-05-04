@@ -34,6 +34,7 @@ class PathValidator(Validator):
             f".tmp_{''.join(choices(string.ascii_lowercase + string.digits, k=16))}"
         )
         self.retain_created_file = retain_created_file
+        self.__self_created_files: list = []
 
     @property
     def path(self):
@@ -52,6 +53,10 @@ class PathValidator(Validator):
         else:
             self._path = (value,) if isinstance(value, str) else value
 
+    @property
+    def _self_created_files(self):
+        return self.__self_created_files
+
     def validate(self):
         errno: Optional[int] = None
         _self_created_file: bool = False
@@ -69,6 +74,7 @@ class PathValidator(Validator):
             try:
                 if not p.expanded.exists():
                     p.create()
+                    self._self_created_files.append(p.expanded)
                     _self_created_file = True
                 with p_child.open(mode="ba+") as f:
                     f.write(
