@@ -83,7 +83,7 @@ class ExportPathValidator(PathValidator):
     ):
         self.export_path = export_path
         self.can_overwrite = can_overwrite
-        super().__init__(export_path, retain_created_file=False)
+        super().__init__(export_path)
 
     @property
     def can_overwrite(self) -> bool:
@@ -111,6 +111,7 @@ class ExportPathValidator(PathValidator):
                 if (
                     path.kind == "file"
                     and path.expanded.exists()
+                    and path.expanded not in super()._self_created_files
                     and not self.can_overwrite
                 ):
                     logger.warning(
