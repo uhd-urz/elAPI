@@ -89,7 +89,7 @@ def get(
                 f"Data will be exported."
             )
             response = FixedExperimentEndpoint().get(
-                experiment_id, query={"format": data_format}
+                experiment_id, query={"format": data_format.lower()}
             )
             formatted_data = format(response_data := response.content)
         else:
