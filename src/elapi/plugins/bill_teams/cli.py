@@ -177,7 +177,9 @@ def get_owners(
     if sort_json_format:
         from .format import JSONSortedFormat  # noqa: F401
 
-    data_format, export_dest, export_file_ext = CLIExport(data_format, _export_dest, export_overwrite)
+    data_format, export_dest, export_file_ext = CLIExport(
+        data_format, _export_dest, export_overwrite
+    )
     format = CLIFormat(data_format, export_file_ext)
 
     from .bill_teams import (
@@ -324,6 +326,7 @@ def store_teams_and_owners(
     from ...validators import Validate, PathValidator, ValidationError
     from datetime import datetime
     from dateutil import parser
+    import re
 
     if teams_info_only is True and owners_info_only is True:
         print_typer_error(
@@ -347,12 +350,18 @@ def store_teams_and_owners(
         target_date = datetime.now()
     else:
         try:
-            target_date = parser.isoparse(target_date)
+            target_date = parser.isoparse(user_target_date := target_date.strip())
         except ValueError as e:
             print_typer_error(
                 f"'--target-date' is given an invalid ISO 8601 date '{target_date}'."
             )
             raise Exit(1) from e
+        else:
+            if not re.match(r"^\d+-\d{2}$", user_target_date):
+                print_typer_error(
+                    "'--target-date' is valid ISO 8601, but it must also be in 'YYYY-MM' format."
+                )
+                raise Exit(1)
     target_year = str(target_date.year)
     target_month = f"{target_date.month:02d}"
     store_location = root_directory / target_year / target_month
