@@ -162,7 +162,7 @@ class OwnersInformationValidator(Validator):
                 )
                 formatter.format(
                     team_id,
-                    spec.BILLING_MANAGEMENT_LIMITL,
+                    spec.BILLING_MANAGEMENT_LIMIT,
                     expected_pattern=r"^\d*\.?\d+$|^-1$",
                     function_to_apply=lambda x: -1 if float(x) == -1 else float(x),
                     allow_null=False,

@@ -224,8 +224,8 @@ class OwnersList:
             team_owners[team_id][spec.BILLING_MANAGEMENT_FACTOR] = team[
                 spec.BILLING_MANAGEMENT_FACTOR
             ]
-            team_owners[team_id][spec.BILLING_MANAGEMENT_LIMITL] = team[
-                spec.BILLING_MANAGEMENT_LIMITL
+            team_owners[team_id][spec.BILLING_MANAGEMENT_LIMIT] = team[
+                spec.BILLING_MANAGEMENT_LIMIT
             ]
 
             # Get billing address related information

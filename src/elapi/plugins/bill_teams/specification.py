@@ -10,7 +10,7 @@ class OwnersDataSpecification:
     TEAM_BILLABLE: str = "team_billable"
     BILLING_UNIT_COST: str = "billing_unitcost"
     BILLING_MANAGEMENT_FACTOR: str = "billing_managementfactor"
-    BILLING_MANAGEMENT_LIMITL: str = "billing_managementlimit"
+    BILLING_MANAGEMENT_LIMIT: str = "billing_managementlimit"
     BILLING_INSTITUTE1: str = "billing_institute1"
     BILLING_INSTITUTE2: str = "billing_institute2"
     BILLING_PERSON_GROUP: str = "billing_persongroup"
