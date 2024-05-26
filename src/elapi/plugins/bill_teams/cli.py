@@ -67,6 +67,7 @@ def get_teams(
         HostIdentityValidator,
         PermissionValidator,
     )
+    from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
     remove_csv_formatter_support()
 
@@ -104,7 +105,7 @@ def get_teams(
     if export:
         export_teams = Export(
             export_dest,
-            file_name_stub="teams_info",
+            file_name_stub=BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
             file_extension=format.convention,
             format_name=format.name,
         )
@@ -163,6 +164,7 @@ def get_owners(
         Exit,
         ValidationError,
     )
+    from .specification import BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB
 
     remove_csv_formatter_support()
 
@@ -210,7 +212,7 @@ def get_owners(
     if export:
         export_teams = Export(
             export_dest,
-            file_name_stub="owners_info",
+            file_name_stub=BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
             file_extension=format.convention,
             format_name=format.name,
         )
@@ -325,6 +327,10 @@ def store_teams_and_owners(
     from ...styles import print_typer_error
     from ...path import ProperPath
     from ...validators import Validate, PathValidator, ValidationError
+    from .specification import (
+        CLI_DATE_VALID_FORMAT,
+        CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
+    )
     from datetime import datetime
     from dateutil import parser
     import re
@@ -358,9 +364,12 @@ def store_teams_and_owners(
             )
             raise Exit(1) from e
         else:
-            if not re.match(r"^\d+-\d{2}$", user_target_date):
+            if not re.match(
+                rf"{CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN}", user_target_date
+            ):
                 print_typer_error(
-                    "'--target-date' is valid ISO 8601, but it must also be in 'YYYY-MM' format."
+                    f"'--target-date' is valid ISO 8601, but it must also be "
+                    f"in '{CLI_DATE_VALID_FORMAT}' format."
                 )
                 raise Exit(1)
     target_year = str(target_date.year)
