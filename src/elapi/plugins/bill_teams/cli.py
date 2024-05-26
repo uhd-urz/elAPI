@@ -10,13 +10,14 @@ from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...plugins.commons.cli_helpers import OrderedCommands
 from ...styles import stdin_console, stderr_console
-from ...validators import RuntimeValidationError, Exit
+from ...validators import RuntimeValidationError, Exit, ValidationError
 
+PLUGIN_NAME: str = "bill-teams"
 app = typer.Typer(
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
     no_args_is_help=True,
-    name="bill-teams",
+    name=PLUGIN_NAME,
     help="Manage bills incurred by teams.",
     cls=OrderedCommands,
 )
@@ -393,3 +394,106 @@ def store_teams_and_owners(
         export=True,
         _export_dest=store_location,
     )
+
+
+@app.command(name="generate-table")
+def generate_table(
+    root_directory: Annotated[
+        str,
+        typer.Option("--root-dir", help=docs["root_directory"], show_default=False),
+    ],
+    user_start_date: Annotated[
+        Optional[str],
+        typer.Option("--start-date", help="", show_default=False),
+    ] = None,
+    user_end_date: Annotated[
+        Optional[str],
+        typer.Option("--end-date", help="", show_default=False),
+    ] = None,
+) -> None:
+    """
+    Generate final table for billing, a.k.a. "output table".
+    """
+    import re
+    from dateutil import parser
+    from dateutil.relativedelta import relativedelta
+    from ...styles import print_typer_error
+    from ...path import ProperPath
+    from ...validators import Validate
+    from .validator import BillingInformationPathValidator
+    from .generate_table import get_billing_dates
+    from .specification import (
+        BILLING_BASE_DATE,
+        BILLING_PERIOD,
+        CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
+        CLI_DATE_VALID_FORMAT,
+    )
+
+    if not ProperPath(root_directory).kind == "dir":
+        print_typer_error("'--root-dir' must be a path to a directory.")
+        raise Exit(1)
+    base_date = BILLING_BASE_DATE
+
+    def parse_user_input_date(user_date: str, /, date_cli_arg: str):
+        if not isinstance(user_date, str):
+            raise ValueError("user_date must be a string.")
+        try:
+            date = parser.isoparse(user_date.strip())
+        except ValueError as error:
+            print_typer_error(
+                f"'{date_cli_arg}' is given an invalid ISO 8601 date '{user_date}'."
+            )
+            raise Exit(1) from error
+        else:
+            if not re.match(rf"{CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN}", user_date):
+                print_typer_error(
+                    f"{date_cli_arg} '{user_date}' is valid ISO 8601, but it must "
+                    f"also be in '{CLI_DATE_VALID_FORMAT}' format."
+                )
+                raise Exit(1)
+            return date
+
+    if not isinstance(user_start_date, (str, type(None))):
+        raise ValueError(
+            "'--start-date' received a value of unsupported type. "
+            f"Calling method isn't meant to be evoked from outside the CLI."
+            f"{APP_NAME} plugin {PLUGIN_NAME} will abort."
+        )
+    if not isinstance(user_end_date, (str, type(None))):
+        raise ValueError(
+            "'--end-date' received a value of unsupported type. "
+            "Calling method isn't meant to be evoked from outside the CLI. "
+            f"{APP_NAME} plugin {PLUGIN_NAME} will abort."
+        )
+    # The default values of start_date and end_date. I.e., if user_start_date is None and user_end_date is None.
+    start_date = base_date - relativedelta(months=BILLING_PERIOD)
+    end_date = base_date
+    if user_start_date is None and user_end_date is not None:
+        end_date = parse_user_input_date(user_end_date, "--end-date")
+        start_date = end_date - relativedelta(months=BILLING_PERIOD)
+    elif user_start_date is not None and user_end_date is None:
+        start_date = parse_user_input_date(user_start_date, "--start-date")
+        end_date = start_date + relativedelta(months=BILLING_PERIOD)
+    elif user_start_date is not None and user_end_date is not None:
+        start_date = parse_user_input_date(user_start_date, "--start-date")
+        end_date = parse_user_input_date(user_end_date, "--end-date")
+        if end_date < start_date:
+            print_typer_error(
+                f"--start-date '{user_start_date}' cannot be be ahead of "
+                f"--end-date '{user_end_date}'!"
+            )
+            raise Exit(1)
+
+    valid_paths: list[ProperPath] = []
+    for year, month in get_billing_dates(start_date, end_date):
+        try:
+            path = Validate(
+                BillingInformationPathValidator(
+                    root_directory, year, month, err_logger=logger
+                )
+            ).get()
+        except ValidationError as e:
+            logger.error(e)
+            raise Exit(1)
+        else:
+            valid_paths.append(path)
