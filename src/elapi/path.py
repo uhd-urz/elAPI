@@ -139,12 +139,12 @@ class ProperPath:
             else f"PATH={target}"
         )
 
-    def create(self) -> Union[Path, None]:
+    def create(self, verbose: bool = True) -> Union[Path, None]:
         path = self.expanded.resolve(strict=False)
         try:
             if self.kind == "file":
                 path_parent, path_file = path.parent, path.name
-                if not path_parent.exists():
+                if not path_parent.exists() and verbose:
                     self.err_logger.info(
                         f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} could not be "
                         f"found. An attempt to create directory {path_parent} will be made."
@@ -152,7 +152,7 @@ class ProperPath:
                 path_parent.mkdir(parents=True, exist_ok=True)
                 (path_parent / path_file).touch(exist_ok=True)
             elif self.kind == "dir":
-                if not path.exists():
+                if not path.exists() and verbose:
                     self.err_logger.info(
                         f"Directory {self._error_helper_compare_path_source(self.name, path)} could not be found. "
                         f"An attempt to create directory {path} will be made."
