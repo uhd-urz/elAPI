@@ -5,7 +5,7 @@ import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, TextIO, Generator
+from typing import Union, TextIO, Generator, Optional
 
 from ._exceptions import NoException
 from .loggers import SimpleLogger
@@ -16,7 +16,7 @@ class ProperPath:
         self,
         name: Union[str, Path, None, "ProperPath"],
         env_var: bool = False,
-        kind: Union[str, None] = "",
+        kind: Optional[str] = None,  # Here, None => Undefined/unknown
         err_logger: logging.Logger = SimpleLogger(),
     ):
         self.name = name
@@ -103,7 +103,7 @@ class ProperPath:
 
     @kind.setter
     def kind(self, value) -> None:
-        if not value:
+        if value is None:
             self._kind = (
                 "dir"
                 if self.expanded.is_dir()
