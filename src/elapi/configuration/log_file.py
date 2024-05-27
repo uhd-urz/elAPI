@@ -23,7 +23,7 @@ validate_path = Validate(
     PathValidator(
         [
             LOG_DIR_ROOT / LOG_FILE_NAME,
-            (XDG_DATA_HOME := ProperPath(os.getenv(ENV_XDG_DATA_HOME, os.devnull)))
+            (_XDG_DATA_HOME := ProperPath(os.getenv(ENV_XDG_DATA_HOME, os.devnull)))
             / APP_NAME
             / LOG_FILE_NAME,
             FALLBACK_DIR / LOG_FILE_NAME,

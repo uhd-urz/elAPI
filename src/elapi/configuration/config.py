@@ -5,7 +5,7 @@ from pathlib import Path
 from dynaconf import Dynaconf
 
 from ._config_history import ConfigHistory, InspectConfigHistory
-from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
+from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 
 # noinspection PyUnresolvedReferences
 from .._names import (
@@ -168,7 +168,7 @@ if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
     APP_DATA_DIR = LOG_FILE_PATH.parent
 else:
     validate_app_dir = Validate(
-        PathValidator([XDG_DATA_HOME / APP_NAME, FALLBACK_DIR / APP_NAME])
+        PathValidator([_XDG_DATA_HOME / APP_NAME, FALLBACK_DIR / APP_NAME])
     )
     try:
         APP_DATA_DIR = validate_app_dir.get()
