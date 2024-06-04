@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7.dev3] - 2024-06-06
+
+Third development release before the next stable version. This release adds a number of improvements and bug fixes.
+
+### Added
+
+- New `--overwrite` argument
+  for `--export/-E` ([!42](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/42))
+- Add `ValidationError` subclass `PathValidationError` for path related validation errors only
+- Add `verbose` optional parameter to `ProperPath` class's `create`
+  method for less noisy log messages ([!44](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/44))
+
+### Fixed
+
+- Fix `experiments` plugin not recognizing uppercase experiment `--format/-F`
+  name ([#33](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/33))
+
+### Changed
+
+- Version numbers will follow the following format: `Major.Minor.Patch.dev<Integer>`. Previously, we were
+  using `-dev<Integer>` instead of `.dev<Integer>`. `.dev<Integer>` is consistent with the versioning format
+  [normalized](https://sethmlarson.dev/pep-440#delimiter-normalization) by pip (`pip show elapi`).
+- elAPI only shows `An attempt to create directory <path> will be made` warning when `<path>` is a directory.
+
 ## [1.0.7-dev2] - 2024-04-15
 
 Second development release before the next stable version. This release adds a number of improvements and bug fixes.
