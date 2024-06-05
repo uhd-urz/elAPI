@@ -18,7 +18,9 @@ def get_location_from_headers(
     except KeyError as e:
         raise ValueError(f"Argument 'header' doesn't contain the key '{key}'") from e
     try:
-        _start, _end = re.match(pattern := r"[\w-]+(?=/)", location_backwards).span()
+        _start, _end = re.match(
+            pattern := r"^[\w-]+(?=/)|^[\w-]+(?==)", location_backwards
+        ).span()
     except AttributeError:
         # noinspection PyUnboundLocalVariable
         raise ValueError(
