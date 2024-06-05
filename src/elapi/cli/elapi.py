@@ -140,10 +140,10 @@ def init(
             try:
                 with path.open(mode="w") as f:
                     _configuration_yaml_text = f"""host: {host_url}
-    api_token: {api_token}
-    export_dir: {export_directory}
-    unsafe_api_token_warning: yes
-    """
+api_token: {api_token}
+export_dir: {export_directory}
+unsafe_api_token_warning: yes
+"""
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
                 logger.error(e)
