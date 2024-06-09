@@ -259,11 +259,11 @@ class BillingInformationPathValidator(Validator):
     def validate(self) -> tuple[ProperPath, ProperPath]:
         import re
         from dateutil import parser
+        from collections import namedtuple
         from .specification import (
             BILLING_INFO_OUTPUT_EXTENSION,
             BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
             BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
-            BILLING_INFO_OUTPUT_DATETIME_PARSE_FORMAT,
             BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN,
         )
 
@@ -286,13 +286,14 @@ class BillingInformationPathValidator(Validator):
                 f"Path in root directory with month '{self.month}' of year '{self.year}': "
                 f"'{root / self.year/ self.month}' doesn't exist!"
             )
-        teams_info_files: list[tuple[Path, str, datetime]] = []
-        owners_info_files: list[tuple[Path, str, datetime]] = []
+        PathInfoTuple = namedtuple("PathInfoTuple", ("parent", "name", "date"))
+        teams_info_files: list[PathInfoTuple[Path, str, datetime]] = []
+        owners_info_files: list[PathInfoTuple[Path, str, datetime]] = []
 
         for p in path.expanded.iterdir():
             if re.match(
                 rf"{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB[::-1]}",
-                    str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
+                str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
                 re.IGNORECASE,
             ):
                 if file_date := re.match(
@@ -313,10 +314,10 @@ class BillingInformationPathValidator(Validator):
                         )
                         continue
                     else:
-                        teams_info_files.append((p.parent, p.name, date))
+                        teams_info_files.append(PathInfoTuple(p.parent, p.name, date))
             if re.match(
                 rf"{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB[::-1]}",
-                    str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
+                str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
                 re.IGNORECASE,
             ):
                 if file_date := re.match(
@@ -337,7 +338,7 @@ class BillingInformationPathValidator(Validator):
                         )
                         continue
                     else:
-                        owners_info_files.append((p.parent, p.name, date))
+                        owners_info_files.append(PathInfoTuple(p.parent, p.name, date))
         if not teams_info_files:
             raise ValidationError(
                 f"No '{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB}' file that matches the valid naming format "
@@ -348,23 +349,9 @@ class BillingInformationPathValidator(Validator):
                 f"No '{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}' file that matches the valid naming format "
                 f"was found in path '{path}' for month '{self.month}' of '{self.year}'."
             )
-
-        latest_teams_info_date = latest_owners_info_date = datetime.datetime.min
-        for parent, name, date in teams_info_files:
-            latest_teams_info_date = max(latest_teams_info_date, date)
-        for parent, name, date in owners_info_files:
-            latest_owners_info_date = max(latest_owners_info_date, date)
-        reconstructed_latest_teams_info_file_name = (
-            f"{latest_teams_info_date.strftime(BILLING_INFO_OUTPUT_DATETIME_PARSE_FORMAT)}_"
-            f"{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB}."
-            f"{BILLING_INFO_OUTPUT_EXTENSION}"
-        )
-        reconstructed_latest_owners_info_file_name = (
-            f"{latest_owners_info_date.strftime(BILLING_INFO_OUTPUT_DATETIME_PARSE_FORMAT)}_"
-            f"{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}."
-            f"{BILLING_INFO_OUTPUT_EXTENSION}"
-        )
+        latest_teams_info_tuple = max(teams_info_files, key=lambda x: x.date)
+        latest_owners_info_tuple = max(owners_info_files, key=lambda x: x.date)
         return (
-            path / reconstructed_latest_teams_info_file_name,
-            path / reconstructed_latest_owners_info_file_name,
+            latest_teams_info_tuple.parent / latest_teams_info_tuple.name,
+            latest_owners_info_tuple.parent / latest_owners_info_tuple.name,
         )
