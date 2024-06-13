@@ -1,39 +1,14 @@
-from dataclasses import dataclass
-from typing import Optional, Callable, Union
+import datetime
+from pathlib import Path
+from typing import Optional, Callable, Union, Iterable
 
+from .specification import OwnersDataSpecification
 from ...loggers import Logger
+from ...path import ProperPath
 from ...styles import FormatError
 from ...validators import Validator, ValidationError
 
 logger = Logger()
-
-
-# noinspection SpellCheckingInspection
-@dataclass
-class OwnersDataSpecification:
-    TEAM_OWNER_ID: str = "team_owner_id"
-    TEAM_OWNER_FIRST_NAME: str = "team_owner_firstname"
-    TEAM_OWNER_LAST_NAME: str = "team_owner_lastname"
-    TEAM_OWNER_EMAIL: str = "team_owner_email"
-    TEAM_BILLABLE: str = "team_billable"
-    BILLING_UNIT_COST: str = "billing_unitcost"
-    BILLING_MANAGEMENT_FACTOR: str = "billing_managementfactor"
-    BILLING_MANAGEMENT_LIMITL: str = "billing_managementlimit"
-    BILLING_INSTITUTE1: str = "billing_institute1"
-    BILLING_INSTITUTE2: str = "billing_institute2"
-    BILLING_PERSON_GROUP: str = "billing_persongroup"
-    BILLING_STREET: str = "billing_street"
-    BILLING_POSTAL_CODE: str = "billing_postalcode"
-    BILLING_CITY: str = "billing_city"
-    BILLING_INT_EXT: str = "billing_intext"
-    BILLING_ACCOUNT_UNIT: str = "billing_accunit"
-    TEAM_ACRONYM_EXT: str = "team_acronymext"
-    TEAM_ACRONYM_INT: str = "team_acronymint"
-    TEAM_GONE: str = "team_gone"
-    TEAM_SPECIAL: str = "team_special"
-    TEAM_LIME_SURVEY: str = "team_limesurvey"
-    TEAM_SIGNED_CONTRACT: str = "team_signedcontract"
-    TEAM_END_DATE: str = "team_enddate"
 
 
 class SanitizationError(Exception): ...
@@ -190,7 +165,7 @@ class OwnersInformationValidator(Validator):
                 )
                 formatter.format(
                     team_id,
-                    spec.BILLING_MANAGEMENT_LIMITL,
+                    spec.BILLING_MANAGEMENT_LIMIT,
                     expected_pattern=r"^\d*\.?\d+$|^-1$",
                     function_to_apply=lambda x: -1 if float(x) == -1 else float(x),
                     allow_null=False,
@@ -219,3 +194,164 @@ class OwnersInformationValidator(Validator):
                     f"Team ID '{team_id}' exists in owners data that doesn't exist in eLabFTW teams database."
                 )
         return self.owners.items()
+
+
+class BillingInformationPathValidator(Validator):
+    def __init__(
+        self,
+        root_dir: Union[None, str, ProperPath, Path],
+        year: Union[int, str],
+        month: Union[int, str],
+        **kwargs,
+    ):
+        from ...loggers import Logger
+
+        self.root_dir = root_dir
+        self.year = year
+        self.month = month
+        self.err_logger = kwargs.get("err_logger", Logger())
+
+    @property
+    def root_dir(self):
+        return self._path
+
+    @root_dir.setter
+    def root_dir(self, value):
+        if not isinstance(value, str) and isinstance(value, Iterable):
+            raise ValueError(
+                f"{self.__class__.__name__} root path value '{value}' cannot be a "
+                f"container (iterable except strings)."
+            )
+        if not isinstance(value, (str, ProperPath, Path)):
+            raise ValueError(f"'{value}' must be an instance of str, ProperPath, Path.")
+        self._path = value
+
+    @property
+    def year(self) -> str:
+        return self._year
+
+    @year.setter
+    def year(self, value):
+        if isinstance(value, int):
+            try:
+                value = str(value)
+            except TypeError:
+                raise ValueError(
+                    "year attribute must be an instance of str or integer."
+                )
+            self._year = value
+
+    @property
+    def month(self) -> str:
+        return self._month
+
+    @month.setter
+    def month(self, value):
+        if isinstance(value, int):
+            try:
+                value = f"{value:02d}"
+            except TypeError:
+                raise ValueError(
+                    "month attribute must be an instance of str or integer."
+                )
+            self._month = value
+
+    def validate(self) -> tuple[ProperPath, ProperPath]:
+        import re
+        from dateutil import parser
+        from collections import namedtuple
+        from .specification import (
+            BILLING_INFO_OUTPUT_EXTENSION,
+            BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
+            BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
+            BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN,
+        )
+
+        if not isinstance(root := self.root_dir, ProperPath):
+            try:
+                root = ProperPath(self.root_dir, err_logger=self.err_logger)
+            except (ValueError, TypeError):
+                # Unlikely this will ever be triggered as we already do an instance check
+                raise ValidationError(
+                    f"Given root directory '{self.root_dir}' is not a valid path!"
+                )
+        if not root.expanded.exists():
+            raise ValidationError(f"Given root path '{self.root_dir}' doesn't exist!")
+        if not (root / self.year).expanded.exists():
+            raise ValidationError(
+                f"Path in root directory with year {self.year}: '{root / self.year}' doesn't exist!"
+            )
+        if not (path := root / self.year / self.month).expanded.exists():
+            raise ValidationError(
+                f"Path in root directory with month '{self.month}' of year '{self.year}': "
+                f"'{root / self.year/ self.month}' doesn't exist!"
+            )
+        PathInfoTuple = namedtuple("PathInfoTuple", ("parent", "name", "date"))
+        teams_info_files: list[PathInfoTuple[Path, str, datetime]] = []
+        owners_info_files: list[PathInfoTuple[Path, str, datetime]] = []
+
+        for p in path.expanded.iterdir():
+            if re.match(
+                rf"{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB[::-1]}",
+                str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
+                re.IGNORECASE,
+            ):
+                if file_date := re.match(
+                    rf"{BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN}",
+                    p.name,
+                ):
+                    if file_date is None:
+                        continue
+                    try:
+                        date = parser.isoparse(
+                            p.name[file_date.start() : file_date.end()]
+                        )
+                    except ValueError:
+                        logger.info(
+                            f"Detected '{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB}' in file '{p}', but "
+                            f"the datetime in file name '{p.name}' is not a valid ISO 8601 format. "
+                            f"The file will be ignored."
+                        )
+                        continue
+                    else:
+                        teams_info_files.append(PathInfoTuple(p.parent, p.name, date))
+            if re.match(
+                rf"{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB[::-1]}",
+                str(p).removesuffix(f".{BILLING_INFO_OUTPUT_EXTENSION}")[::-1],
+                re.IGNORECASE,
+            ):
+                if file_date := re.match(
+                    rf"{BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN}",
+                    p.name,
+                ):
+                    if file_date is None:
+                        continue
+                    try:
+                        date = parser.isoparse(
+                            p.name[file_date.start() : file_date.end()]
+                        )
+                    except ValueError:
+                        logger.info(
+                            f"Detected '{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}' file in '{p}', but "
+                            f"the datetime in file name '{p.name}' is not a valid ISO 8601 format. "
+                            f"The file will be ignored."
+                        )
+                        continue
+                    else:
+                        owners_info_files.append(PathInfoTuple(p.parent, p.name, date))
+        if not teams_info_files:
+            raise ValidationError(
+                f"No '{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB}' file that matches the valid naming format "
+                f"was found in path '{path}' for month '{self.month}' of '{self.year}'."
+            )
+        if not owners_info_files:
+            raise ValidationError(
+                f"No '{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}' file that matches the valid naming format "
+                f"was found in path '{path}' for month '{self.month}' of '{self.year}'."
+            )
+        latest_teams_info_tuple = max(teams_info_files, key=lambda x: x.date)
+        latest_owners_info_tuple = max(owners_info_files, key=lambda x: x.date)
+        return (
+            latest_teams_info_tuple.parent / latest_teams_info_tuple.name,
+            latest_owners_info_tuple.parent / latest_owners_info_tuple.name,
+        )
