@@ -235,8 +235,7 @@ def get(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} get --help' for more on exactly how to use --query.",
-            style="red",
+            f"See '{APP_NAME} get --help' for more on exactly how to use --query."
         )
         raise typer.Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(
@@ -366,8 +365,7 @@ def post(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --query.",
-            style="red",
+            f"See '{APP_NAME} post --help' for more on exactly how to use --query."
         )
         raise typer.Exit(1)
     # if json_:
@@ -376,8 +374,7 @@ def post(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --data.",
-            style="red",
+            f"See '{APP_NAME} post --help' for more on exactly how to use --data."
         )
         raise typer.Exit(1)
     # else:
@@ -391,8 +388,7 @@ def post(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --file has caused a syntax error. --file only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
-            style="red",
+            f"See '{APP_NAME} post --help' for more on exactly how to use --file."
         )
         raise typer.Exit(1)
     session = POSTRequest()
@@ -410,8 +406,7 @@ def post(
         except KeyError:
             logger.critical(
                 f"Error: Given value with --file doesn't follow the expected pattern. "
-                f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
-                style="red",
+                f"See '{APP_NAME} post --help' for more on exactly how to use --file."
             )
             raise typer.Exit(1)
         else:
@@ -461,8 +456,7 @@ def post(
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
-                f"The HTTP return was: '{raw_response}'.",
-                style="red",
+                f"The HTTP return was: '{raw_response}'."
             )
             raise typer.Exit(1)
     else:
@@ -537,8 +531,7 @@ def patch(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
-            style="red",
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --query."
         )
         raise typer.Exit(1)
     try:
@@ -546,8 +539,7 @@ def patch(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --data.",
-            style="red",
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --data."
         )
         raise typer.Exit(1)
     session = PATCHRequest()
@@ -572,8 +564,7 @@ def patch(
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
-                f"The HTTP return was: '{raw_response}'.",
-                style="red",
+                f"The HTTP return was: '{raw_response}'."
             )
             raise typer.Exit(1)
     else:
@@ -648,8 +639,7 @@ def delete(
     except SyntaxError:
         logger.critical(
             f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
-            style="red",
+            f"See '{APP_NAME} patch --help' for more on exactly how to use --query."
         )
         raise typer.Exit(1)
 
@@ -674,8 +664,7 @@ def delete(
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
-                f"The HTTP return was: '{raw_response}'.",
-                style="red",
+                f"The HTTP return was: '{raw_response}'."
             )
             raise typer.Exit(1)
     else:
