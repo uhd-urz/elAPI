@@ -218,12 +218,11 @@ def get(
     """
     import ast
     import re
-    from .. import APP_NAME
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import Export
-    from ..styles import Highlight
+    from ..styles import Highlight, print_typer_error
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -233,10 +232,8 @@ def get(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} get --help' for more on exactly how to use --query.",
-            style="red",
+        print_typer_error(
+            "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(
@@ -333,6 +330,18 @@ def post(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    verify: Annotated[
+        Optional[str],
+        typer.Option("--verify", help=docs["verify"], show_default=False),
+    ] = None,
+    timeout: Annotated[
+        Optional[float],
+        typer.Option("--timeout", help=docs["timeout"], show_default=False),
+    ] = None,
+    headers: Annotated[
+        Optional[str],
+        typer.Option("--headers", help=docs["headers"], show_default=False),
+    ] = "{}",
 ) -> Optional[dict]:
     """
     Make `POST` request to eLabFTW endpoints as documented in
@@ -355,7 +364,7 @@ def post(
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, print_typer_error
     from ..path import ProperPath
 
     validate_config = Validate(HostIdentityValidator())
@@ -364,20 +373,15 @@ def post(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --query.",
-            style="red",
+        print_typer_error(
+            "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    # if json_:
     try:
         data: dict = ast.literal_eval(json_)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --data.",
-            style="red",
+        print_typer_error(
+            "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
         raise typer.Exit(1)
     # else:
@@ -389,10 +393,8 @@ def post(
     try:
         file: Optional[dict] = ast.literal_eval(file)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --file has caused a syntax error. --file only supports JSON syntax. "
-            f"See '{APP_NAME} post --help' for more on exactly how to use --file.",
-            style="red",
+        print_typer_error(
+            "--file value has caused a syntax error. --file only supports JSON syntax. "
         )
         raise typer.Exit(1)
     session = POSTRequest()
@@ -527,7 +529,7 @@ def patch(
     from ..api import PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, print_typer_error
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -535,19 +537,15 @@ def patch(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
-            style="red",
+        print_typer_error(
+            "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
         data: dict = ast.literal_eval(json_)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --data has caused a syntax error. --data only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --data.",
-            style="red",
+        print_typer_error(
+            "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
         raise typer.Exit(1)
     session = PATCHRequest()
@@ -634,11 +632,10 @@ def delete(
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
     import ast
-    from .. import APP_NAME
     from ..api import DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, print_typer_error
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -646,10 +643,8 @@ def delete(
     try:
         query: dict = ast.literal_eval(query)
     except SyntaxError:
-        logger.critical(
-            f"Error: Given value with --query has caused a syntax error. --query only supports JSON syntax. "
-            f"See '{APP_NAME} patch --help' for more on exactly how to use --query.",
-            style="red",
+        print_typer_error(
+            "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
 
