@@ -83,11 +83,12 @@ def get(
         format = CLIFormat(data_format, export_file_ext)
 
         if isinstance(format, formats.BinaryFormat):
+            if not export:
+                logger.info(
+                    f"Data with format '{data_format}' cannot be shown on the terminal. "
+                    f"Data will be exported."
+                )
             export = True
-            logger.info(
-                f"Data with format '{data_format}' cannot be shown on the terminal. "
-                f"Data will be exported."
-            )
             response = FixedExperimentEndpoint().get(
                 experiment_id, query={"format": data_format.lower()}
             )
