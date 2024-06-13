@@ -19,6 +19,7 @@ class APIRequest(ABC):
         _client = Client if not self.is_async_client else AsyncClient
         self._client: Union[Client, AsyncClient] = _client(
             auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
+            http2=True,
             **kwargs,
         )
 
