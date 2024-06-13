@@ -36,10 +36,18 @@ httpx = "^0.24.1"
 httpx-auth = "^0.17.0"
 typer = { extras = ["all"], version = "^0.9.0" }
 pyyaml = "^6.0.1"
-python-dateutil = "^2.8.2"
-tenacity = "^8.2.3"
 mistune = "^3.0.2"
 h2 = "^4.1.0"
+
+[project.optional-dependencies]
+uhd-urz = ["python-dateutil=^2.8.2", "tenacity=^8.2.3"]
+
+[tool.poetry.group.uhd-urz]
+optional = true
+
+[tool.poetry.group.uhd-urz.dependencies]
+python-dateutil = "^2.8.2"
+tenacity = "^8.2.3"
 
 [tool.poetry.group.dev.dependencies]
 ptpython = "^3.0.23"
