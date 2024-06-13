@@ -49,6 +49,8 @@ typer.rich_utils._get_help_text = (
     get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
 )
 
+RAW_API_COMMANDS_PANEL_NAME = "RAW eLab API commands"
+
 
 @app.command(short_help=f"Initialize {APP_NAME} configuration file.")
 def init(
@@ -158,7 +160,10 @@ unsafe_api_token_warning: yes
                 )
 
 
-@app.command(short_help="Make `GET` requests to eLabFTW endpoints.")
+@app.command(
+    short_help="Make `GET` requests to eLabFTW endpoints.",
+    rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
+)
 def get(
     endpoint_name: Annotated[
         str, typer.Argument(help=docs["endpoint_name"], show_default=False)
@@ -352,6 +357,7 @@ def get(
 @app.command(
     short_help="Make `POST` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
 def post(
     endpoint_name: Annotated[
@@ -587,6 +593,7 @@ def post(
 @app.command(
     short_help="Make `PATCH` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
 def patch(
     endpoint_name: Annotated[
@@ -755,6 +762,7 @@ def patch(
 @app.command(
     short_help="Make `DELETE` request to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
 def delete(
     endpoint_name: Annotated[
