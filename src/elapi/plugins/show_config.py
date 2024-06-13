@@ -2,12 +2,14 @@ from ..configuration import (
     APP_NAME,
     inspect,
     UNSAFE_TOKEN_WARNING,
+    ENABLE_HTTP2,
     EXPORT_DIR,
     APP_DATA_DIR,
     TMP_DIR,
     KEY_HOST,
     KEY_API_TOKEN,
     KEY_UNSAFE_TOKEN_WARNING,
+    KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     LOG_FILE_PATH,
 )
@@ -33,6 +35,15 @@ except KeyError:
     unsafe_token_use_source = FALLBACK
 finally:
     unsafe_token_use_value = "Yes" if UNSAFE_TOKEN_WARNING else "No"
+
+try:
+    enable_http2_source = detected_config[KEY_ENABLE_HTTP2].source
+    enable_http2_source = detected_config_files[enable_http2_source]
+except KeyError:
+    enable_http2_source = FALLBACK
+finally:
+    enable_http2_value = "Yes" if ENABLE_HTTP2 else "No"
+
 
 try:
     host_value = detected_config[KEY_HOST].value or "''"
@@ -109,6 +120,14 @@ The following debug information includes configuration values and their sources 
             else ""
         )
         + f": {unsafe_token_use_value} ← `{unsafe_token_use_source}`"
+        + "\n"
+        + f"- {ColorText('Enable HTTP/2').colorize(LIGHTGREEN)}"
+        + (
+            f" **[{ColorText(KEY_ENABLE_HTTP2.lower()).colorize(YELLOW)}]**"
+            if not no_keys
+            else ""
+        )
+        + f": {enable_http2_value} ← `{enable_http2_source}`"
         + f"""
 
 
@@ -119,7 +138,8 @@ The following debug information includes configuration values and their sources 
             f"""
 - `{FALLBACK}`: Fallback value for when no user configuration is found.
 """
-            if FALLBACK in (export_dir_source, unsafe_token_use_source)
+            if FALLBACK
+            in (export_dir_source, unsafe_token_use_source, enable_http2_source)
             else ""
         )
     )

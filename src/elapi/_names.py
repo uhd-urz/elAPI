@@ -38,6 +38,7 @@ KEY_HOST: str = "HOST"
 KEY_API_TOKEN: str = "API_TOKEN"
 KEY_EXPORT_DIR: str = "EXPORT_DIR"
 KEY_UNSAFE_TOKEN_WARNING: str = "UNSAFE_API_TOKEN_WARNING"
+KEY_ENABLE_HTTP2: str = "ENABLE_HTTP2"
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")

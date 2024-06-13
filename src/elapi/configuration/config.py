@@ -6,7 +6,6 @@ from dynaconf import Dynaconf
 
 from ._config_history import ConfigHistory, InspectConfigHistory
 from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
-
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
@@ -24,6 +23,7 @@ from .._names import (
     KEY_API_TOKEN,
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
+    KEY_ENABLE_HTTP2,
 )
 from ..loggers import Logger
 from ..path import ProperPath
@@ -201,6 +201,14 @@ try:
         )
 except KeyError:
     ...
+# ENABLE_HTTP2 falls back to False if not defined in configuration
+try:
+    settings[KEY_ENABLE_HTTP2]
+except KeyError:
+    ENABLE_HTTP2: bool = False
+else:
+    ENABLE_HTTP2: bool = settings.as_bool(KEY_ENABLE_HTTP2)
+
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
