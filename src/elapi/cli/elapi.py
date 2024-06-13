@@ -354,7 +354,7 @@ def post(
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, NoteText
     from ..path import ProperPath
 
     validate_config = Validate(HostIdentityValidator())
@@ -458,6 +458,12 @@ def post(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
+            stdin_console.print(
+                NoteText(
+                    "This error can occur if you are passing any invalid JSON.",
+                    stem="Hint",
+                )
+            )
             raise typer.Exit(1)
     else:
         highlight = Highlight(format.name)
@@ -521,7 +527,7 @@ def patch(
     from ..api import PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, NoteText
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -565,6 +571,12 @@ def patch(
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
+            )
+            stdin_console.print(
+                NoteText(
+                    "This error can occur if you are passing any invalid JSON.",
+                    stem="Hint",
+                )
             )
             raise typer.Exit(1)
     else:
@@ -629,7 +641,7 @@ def delete(
     from ..api import DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
-    from ..styles import Format, Highlight
+    from ..styles import Format, Highlight, NoteText
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -665,6 +677,12 @@ def delete(
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
+            )
+            stdin_console.print(
+                NoteText(
+                    "This error can occur if you are passing any invalid JSON.",
+                    stem="Hint",
+                )
             )
             raise typer.Exit(1)
     else:
