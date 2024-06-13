@@ -138,10 +138,19 @@ class ElabFTWURL:
     @sub_endpoint_name.setter
     def sub_endpoint_name(self, value: str):
         if value is not None:
-            if value.lower() not in ElabFTWURL.VALID_ENDPOINTS[self.endpoint_name]:
+            if value.lower() not in (
+                valid_sub_endpoint_name := ElabFTWURL.VALID_ENDPOINTS[
+                    self.endpoint_name
+                ]
+            ):
+                if not valid_sub_endpoint_name:
+                    raise ElabFTWURLError(
+                        f"Endpoint '{self._endpoint_name}' does not have any sub-endpoint!"
+                    )
+
                 raise ElabFTWURLError(
                     f"A Sub-endpoint for endpoint '{self._endpoint_name}' must be "
-                    f"one of valid eLabFTW sub-endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS[self.endpoint_name])}."
+                    f"one of valid eLabFTW sub-endpoints: {', '.join(valid_sub_endpoint_name)}."
                 )
             self._sub_endpoint_name = value
         else:
