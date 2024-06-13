@@ -199,6 +199,18 @@ def get(
         bool,
         typer.Option("--overwrite", help=docs["export_overwrite"], show_default=False),
     ] = False,
+    verify: Annotated[
+        Optional[str],
+        typer.Option("--verify", help=docs["verify"], show_default=False),
+    ] = None,
+    timeout: Annotated[
+        Optional[float],
+        typer.Option("--timeout", help=docs["timeout"], show_default=False),
+    ] = None,
+    headers: Annotated[
+        Optional[str],
+        typer.Option("--headers", help=docs["headers"], show_default=False),
+    ] = "{}",
 ) -> dict:
     """
     Make `GET` requests to eLabFTW endpoints as documented in
@@ -217,12 +229,18 @@ def get(
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
     import ast
+    from httpx import ConnectError
+    from ssl import SSLError
     import re
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import Export
     from ..styles import Highlight, print_typer_error
+    from ..path import ProperPath
+    from ..validators import Exit
+    from httpx._config import DEFAULT_TIMEOUT_CONFIG
+    from ..configuration import HOST
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -236,6 +254,13 @@ def get(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
+    try:
+        headers: dict = ast.literal_eval(headers)
+    except SyntaxError:
+        print_typer_error(
+            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
+        )
+        raise typer.Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(
         data_format, _export_dest, export_overwrite
     )
@@ -247,14 +272,49 @@ def get(
         )
         format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
 
-    session = GETRequest()
+    if verify is not None:
+        if re.match(r"^true$", verify, re.IGNORECASE):
+            verify = True
+        elif re.match(r"^false$", verify, re.IGNORECASE):
+            verify = False
+        else:
+            try:
+                verify = ProperPath(verify)
+            except ValueError as e:
+                print_typer_error(
+                    "--verify received an invalid value. It can only be "
+                    "'true', 'false', or a path to SSL certificate."
+                )
+                raise Exit(1) from e
+            else:
+                if verify.kind != "file":
+                    print_typer_error("--verify path must be a path to a file!")
+                    raise Exit(1)
+                verify = verify.expanded
+    try:
+        session = GETRequest(verify=verify)
+    except SSLError as e:
+        logger.error(e)
+        raise Exit() from e
     try:
         raw_response = session(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
+            headers=headers,
         )
     except ElabFTWURLError as e:
         logger.error(e)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
+    except ConnectError as e:
+        logger.error(
+            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"Exception details: {e}"
+        )
+        raise Exit(1) from e
     try:
         formatted_data = format(response_data := raw_response.json())
     except UnicodeDecodeError:
@@ -359,13 +419,19 @@ def post(
     will create a new user.
     """
     import ast
+    import re
+    from httpx import ConnectError
+    from ssl import SSLError
     from .. import APP_NAME
     from ..api import POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
     from ..styles import Format, Highlight, print_typer_error
+    from ..validators import Exit
     from ..path import ProperPath
+    from httpx._config import DEFAULT_TIMEOUT_CONFIG
+    from ..configuration import HOST
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -375,6 +441,13 @@ def post(
     except SyntaxError:
         print_typer_error(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
+        )
+        raise typer.Exit(1)
+    try:
+        headers: dict = ast.literal_eval(headers)
+    except SyntaxError:
+        print_typer_error(
+            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
@@ -397,7 +470,30 @@ def post(
             "--file value has caused a syntax error. --file only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    session = POSTRequest()
+    if verify is not None:
+        if re.match(r"^true$", verify, re.IGNORECASE):
+            verify = True
+        elif re.match(r"^false$", verify, re.IGNORECASE):
+            verify = False
+        else:
+            try:
+                verify = ProperPath(verify)
+            except ValueError as e:
+                print_typer_error(
+                    "--verify received an invalid value. It can only be "
+                    "'true', 'false', or a path to SSL certificate."
+                )
+                raise Exit(1) from e
+            else:
+                if verify.kind != "file":
+                    print_typer_error("--verify path must be a path to a file!")
+                    raise Exit(1)
+                verify = verify.expanded
+    try:
+        session = POSTRequest(verify=verify)
+    except SSLError as e:
+        logger.error(e)
+        raise Exit() from e
     if file:
         try:
             try:
@@ -433,10 +529,18 @@ def post(
             query,
             data=data,
             files=file,
+            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
+            headers=headers,
         )
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
+    except ConnectError as e:
+        logger.error(
+            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"Exception details: {e}"
+        )
+        raise Exit(1) from e
     try:
         # noinspection PyUnboundLocalVariable
         _file_obj.close()
@@ -509,6 +613,18 @@ def patch(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    verify: Annotated[
+        Optional[str],
+        typer.Option("--verify", help=docs["verify"], show_default=False),
+    ] = None,
+    timeout: Annotated[
+        Optional[float],
+        typer.Option("--timeout", help=docs["timeout"], show_default=False),
+    ] = None,
+    headers: Annotated[
+        Optional[str],
+        typer.Option("--headers", help=docs["headers"], show_default=False),
+    ] = "{}",
 ) -> Optional[dict]:
     """
     Make `PATCH` request to eLabFTW endpoints as documented in
@@ -525,11 +641,17 @@ def patch(
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
     import ast
-    from .. import APP_NAME
+    import re
+    from httpx import ConnectError
+    from ssl import SSLError
     from ..api import PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..styles import Format, Highlight, print_typer_error
+    from ..validators import Exit
+    from ..path import ProperPath
+    from httpx._config import DEFAULT_TIMEOUT_CONFIG
+    from ..configuration import HOST
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -542,13 +664,43 @@ def patch(
         )
         raise typer.Exit(1)
     try:
+        headers: dict = ast.literal_eval(headers)
+    except SyntaxError:
+        print_typer_error(
+            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
+        )
+        raise typer.Exit(1)
+    try:
         data: dict = ast.literal_eval(json_)
     except SyntaxError:
         print_typer_error(
             "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    session = PATCHRequest()
+    if verify is not None:
+        if re.match(r"^true$", verify, re.IGNORECASE):
+            verify = True
+        elif re.match(r"^false$", verify, re.IGNORECASE):
+            verify = False
+        else:
+            try:
+                verify = ProperPath(verify)
+            except ValueError as e:
+                print_typer_error(
+                    "--verify received an invalid value. It can only be "
+                    "'true', 'false', or a path to SSL certificate."
+                )
+                raise Exit(1) from e
+            else:
+                if verify.kind != "file":
+                    print_typer_error("--verify path must be a path to a file!")
+                    raise Exit(1)
+                verify = verify.expanded
+    try:
+        session = PATCHRequest(verify=verify)
+    except SSLError as e:
+        logger.error(e)
+        raise Exit() from e
     try:
         raw_response = session(
             endpoint_name,
@@ -557,10 +709,18 @@ def patch(
             sub_endpoint_id,
             query,
             data=data,
+            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
+            headers=headers,
         )
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
+    except ConnectError as e:
+        logger.error(
+            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"Exception details: {e}"
+        )
+        raise Exit(1) from e
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
@@ -612,6 +772,18 @@ def delete(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    verify: Annotated[
+        Optional[str],
+        typer.Option("--verify", help=docs["verify"], show_default=False),
+    ] = None,
+    timeout: Annotated[
+        Optional[float],
+        typer.Option("--timeout", help=docs["timeout"], show_default=False),
+    ] = None,
+    headers: Annotated[
+        Optional[str],
+        typer.Option("--headers", help=docs["headers"], show_default=False),
+    ] = "{}",
 ) -> Optional[dict]:
     """
     Make `DELETE` request to eLabFTW endpoints as documented in
@@ -632,10 +804,17 @@ def delete(
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
     import ast
+    import re
+    from httpx import ConnectError
+    from ssl import SSLError
     from ..api import DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..validators import Validate, HostIdentityValidator
     from ..styles import Format, Highlight, print_typer_error
+    from ..validators import Exit
+    from ..path import ProperPath
+    from httpx._config import DEFAULT_TIMEOUT_CONFIG
+    from ..configuration import HOST
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -647,8 +826,37 @@ def delete(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
-
-    session = DELETERequest()
+    try:
+        headers: dict = ast.literal_eval(headers)
+    except SyntaxError:
+        print_typer_error(
+            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
+        )
+        raise typer.Exit(1)
+    if verify is not None:
+        if re.match(r"^true$", verify, re.IGNORECASE):
+            verify = True
+        elif re.match(r"^false$", verify, re.IGNORECASE):
+            verify = False
+        else:
+            try:
+                verify = ProperPath(verify)
+            except ValueError as e:
+                print_typer_error(
+                    "--verify received an invalid value. It can only be "
+                    "'true', 'false', or a path to SSL certificate."
+                )
+                raise Exit(1) from e
+            else:
+                if verify.kind != "file":
+                    print_typer_error("--verify path must be a path to a file!")
+                    raise Exit(1)
+                verify = verify.expanded
+    try:
+        session = DELETERequest(verify=verify)
+    except SSLError as e:
+        logger.error(e)
+        raise Exit() from e
     try:
         raw_response = session(
             endpoint_name,
@@ -656,10 +864,18 @@ def delete(
             sub_endpoint_name,
             sub_endpoint_id,
             query,
+            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
+            headers=headers,
         )
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
+    except ConnectError as e:
+        logger.error(
+            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"Exception details: {e}"
+        )
+        raise Exit(1) from e
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())

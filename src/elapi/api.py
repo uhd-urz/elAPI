@@ -19,7 +19,6 @@ class APIRequest(ABC):
         _client = Client if not self.is_async_client else AsyncClient
         self._client: Union[Client, AsyncClient] = _client(
             auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
-            verify=True,
             **kwargs,
         )
 
@@ -205,12 +204,14 @@ class GETRequest(APIRequest):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _make(self, *args) -> Response:
+    def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
-        return super().client.get(url.get(), headers={"Accept": "application/json"})
+        return super().client.get(
+            url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
+        )
 
     def close(self):
         super().close()
@@ -222,9 +223,15 @@ class GETRequest(APIRequest):
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
+        **kwargs,
     ) -> Response:
         return super().__call__(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
 
@@ -234,7 +241,7 @@ class POSTRequest(APIRequest):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _make(self, *args, **kwargs) -> Response:
+    def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
@@ -246,7 +253,8 @@ class POSTRequest(APIRequest):
         files = kwargs.pop("files", None)
         return super().client.post(
             url.get(),
-            headers={
+            headers=headers
+            or {
                 "Accept": "*/*",
                 # If json argument isn't empty, '"Content-Type": "application/json"' is automatically set.
                 # '"Content-Type": "multipart/form-data"', takes no effect, and
@@ -293,7 +301,7 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def _make(self, *args, **kwargs) -> Response:
+    async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
@@ -305,7 +313,7 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
         files = kwargs.pop("files", None)
         return await super().client.post(
             url.get(),
-            headers={"Accept": "*/*"},
+            headers=headers or {"Accept": "*/*"},
             json=data,
             files=files,
             **kwargs,
@@ -349,14 +357,13 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def _make(self, *args) -> Response:
+    async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
         return await super().client.get(
-            url.get(),
-            headers={"Accept": "application/json"},
+            url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
     async def close(self):
@@ -370,9 +377,15 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
+        **kwargs,
     ) -> Response:
         response = await self._make(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
         if not self.keep_session_open:
             await self.close()
@@ -385,7 +398,7 @@ class PATCHRequest(APIRequest):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _make(self, *args, **kwargs) -> Response:
+    def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
@@ -396,7 +409,8 @@ class PATCHRequest(APIRequest):
         }
         return super().client.patch(
             url.get(),
-            headers={
+            headers=headers
+            or {
                 "Accept": "application/json"
             },  # '"Content-Type": "application/json"' is passed automatically when json argument is passed.
             json=data,
@@ -437,7 +451,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def _make(self, *args, **kwargs) -> Response:
+    async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
@@ -448,7 +462,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         }
         return await super().client.patch(
             url.get(),
-            headers={"Accept": "application/json"},
+            headers=headers or {"Accept": "application/json"},
             json=data,
             **kwargs,
         )
@@ -485,13 +499,15 @@ class DELETERequest(APIRequest):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _make(self, *args) -> Response:
+    def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
         return super().client.delete(
-            url.get(), headers={"Accept": "*/*", "Content-Type": "application/json"}
+            url.get(),
+            headers=headers or {"Accept": "*/*", "Content-Type": "application/json"},
+            **kwargs,
         )
 
     def close(self):
@@ -504,9 +520,15 @@ class DELETERequest(APIRequest):
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
+        **kwargs,
     ) -> Response:
         return super().__call__(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
 
 
@@ -522,14 +544,15 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def _make(self, *args) -> Response:
+    async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
         return await super().client.delete(
             url.get(),
-            headers={"Accept": "*/*", "Content-Type": "application/json"},
+            headers=headers or {"Accept": "*/*", "Content-Type": "application/json"},
+            **kwargs,
         )
 
     async def close(self):
@@ -543,9 +566,15 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
         sub_endpoint_name: Optional[str] = None,
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
+        **kwargs,
     ) -> Response:
         response = await self._make(
-            endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
+            endpoint_name,
+            endpoint_id,
+            sub_endpoint_name,
+            sub_endpoint_id,
+            query,
+            **kwargs,
         )
         if not self.keep_session_open:
             await self.close()

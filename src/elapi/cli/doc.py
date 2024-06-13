@@ -82,6 +82,15 @@ __PARAMETERS__doc__ = {
               " to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output format "
               f"falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
+    "verify": "SSL certificates are verified for HTTPS requests by default. Passing _'--verify False'_ will "
+              "disable the verification. This can be useful during local development. You can also pass a "
+              "path to SSL certificate (a.k.a CA bundle) file to --verify.",
+    "timeout": f"Maximum number of seconds {APP_NAME} will wait for response before giving up. "
+               f"Default timeout is **5** seconds.",
+    "headers": f"{APP_NAME} decides the appropriate headers in most cases. --headers will let you overwrite "
+               f"the default headers sent. The value for --headers should be in **JSON** format. E.g., "
+               f"`{APP_NAME} get info --headers '{{\"Accept\": \"application/json\", \"User-Agent\": "
+               f"\"My custom agent 1.0\"}}'`.",
     "no_keys": "Do not show the names of configuration keywords.",
     "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
