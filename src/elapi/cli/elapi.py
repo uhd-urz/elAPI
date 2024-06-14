@@ -49,7 +49,7 @@ typer.rich_utils._get_help_text = (
     get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
 )
 
-RAW_API_COMMANDS_PANEL_NAME = "RAW eLab API commands"
+RAW_API_COMMANDS_PANEL_NAME = "Raw API commands"
 
 
 @app.command(short_help=f"Initialize {APP_NAME} configuration file.")
