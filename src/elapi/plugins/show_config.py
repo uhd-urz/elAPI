@@ -112,7 +112,7 @@ The following debug information includes configuration values and their sources 
         + f"""
 
 
-{ColorText("Detected configuration files that are in use:").colorize(BLUE)}
+{ColorText("Detected configuration sources that are in use:").colorize(BLUE)}
 {detected_config_files_formatted}
 """
         + (
