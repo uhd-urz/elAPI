@@ -355,7 +355,7 @@ def get(
 
 
 @app.command(
-    short_help="Make `POST` request to eLabFTW endpoints.",
+    short_help="Make `POST` requests to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
     rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
@@ -591,7 +591,7 @@ def post(
 
 
 @app.command(
-    short_help="Make `PATCH` request to eLabFTW endpoints.",
+    short_help="Make `PATCH` requests to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
     rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
@@ -760,7 +760,7 @@ def patch(
 
 
 @app.command(
-    short_help="Make `DELETE` request to eLabFTW endpoints.",
+    short_help="Make `DELETE` requests to eLabFTW endpoints.",
     # context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
     rich_help_panel=RAW_API_COMMANDS_PANEL_NAME,
 )
