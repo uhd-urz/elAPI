@@ -73,7 +73,7 @@ configuration file present in the currently active directory has the highest pri
 directory has the lowest.
 
 The following parameters are currently configurable, with `host` and `api_token` being the required fields. For testing
-purposes it would be safe to store everything in `$HOME/.config/elapi.yml`.
+purposes, it would be safe to store everything in `$HOME/.config/elapi.yml`.
 
 ```yaml
 # elAPI configuration
@@ -86,12 +86,42 @@ api_token: <token with at least read-access>
 # You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
 unsafe_api_token_warning: yes
+enable_http2: no
 ```
 
-You can get an overview of detected configurations.
+`export_dir` is where elAPI will export response content to if no path is provided to `--export/-E`.
+When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're storing `elapi.yml` in the current
+working directory, as it typically happens that developers accidentally commit and push configuration files with
+secrets. `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
+of [known issues](https://github.com/encode/httpx/discussions/2112) with
+HTTP/2 if you are making async requests with heavy load.
+
+You can get an overview of detected configuration with `elapi show-config`. `show-config` makes it easier to verify
+which configuration values are actually used by elAPI, if you are working with multiple configuration files.
 
 ```shell
 $ elapi show-config
+
+
+                                                       elapi configuration information
+
+The following debug information includes configuration values and their sources as detected by elapi.
+
+▌ Name [Key]: Value ← Source
+
+ • Log file path: /Users/<username>/.local/share/elapi/elapi.log
+ • Host address [host]: https://demo.elabftw.net/api/v2 ← USER LEVEL
+ • API Token [api_token]: 00-55******55555 ← USER LEVEL
+ • Export directory [export_dir]: /Users/<username>/Downloads/elapi ← USER LEVEL
+ • App data directory: /Users/<username>/.local/share/elapi
+ • Caching directory: /private/var/tmp/elapi
+ • Unsafe API token use warning [unsafe_api_token_warning]: Yes ← USER LEVEL
+ • Enable HTTP/2 [enable_http2]: Yes ← USER LEVEL
+
+Detected configuration sources that are in use:
+
+ • USER LEVEL: /Users/<username>/.config/elapi.yml
+
 ```
 
 If both `host` and `api_token` are detected, you are good to go!
