@@ -53,7 +53,7 @@ def cli_startup(
     import click
     from sys import orig_argv
     import json
-    from ..styles import print_typer_error
+    from ..styles import print_typer_error, NoteText
     from ..configuration import (
         KEY_API_TOKEN,
         AppliedConfigIdentity,
@@ -73,20 +73,36 @@ def cli_startup(
         raise typer.Exit(1)
     else:
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
-        for key, value in override_config.items():
-            if key.lower() == KEY_API_TOKEN.lower():
-                try:
-                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
-                        APIToken(value), OVERRIDABLE_FIELDS_SOURCE
-                    )
-                except ValueError:
+        try:
+            for key, value in override_config.items():
+                if key.lower() == KEY_API_TOKEN.lower():
+                    try:
+                        minimal_active_configuration[key.upper()] = (
+                            AppliedConfigIdentity(
+                                APIToken(value), OVERRIDABLE_FIELDS_SOURCE
+                            )
+                        )
+                    except ValueError:
+                        minimal_active_configuration[key.upper()] = (
+                            AppliedConfigIdentity(value, OVERRIDABLE_FIELDS_SOURCE)
+                        )
+                else:
                     minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
                     )
-            else:
-                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
-                    value, OVERRIDABLE_FIELDS_SOURCE
+        except AttributeError:
+            print_typer_error(
+                "Valid JSON format to --override-config/--OC was passed, "
+                "but it could not be understood."
+            )
+            stdin_console.print(
+                NoteText(
+                    "An example of proper JSON format passed to --override-config/--OC: "
+                    '[code]elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml[/code]',
+                    stem="Note",
                 )
+            )
+            raise Exit(1)
         if (
             (
                 calling_sub_command_name := (
