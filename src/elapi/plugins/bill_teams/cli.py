@@ -16,17 +16,13 @@ else:
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
     from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
     from ...loggers import Logger
-    from ...plugins.commons.cli_helpers import OrderedCommands
     from ...styles import stdin_console, stderr_console
-    from ...validators import RuntimeValidationError, Exit, ValidationError
+    from ...core_validators import RuntimeValidationError, Exit, ValidationError
+    from ..commons.cli_helpers import Typer
 
-    app = typer.Typer(
-        rich_markup_mode="markdown",
-        pretty_exceptions_show_locals=False,
-        no_args_is_help=True,
+    app = Typer(
         name=PLUGIN_NAME,
         help="Manage bills incurred by teams.",
-        cls=OrderedCommands,
     )
 
     logger = Logger()
@@ -70,11 +66,8 @@ else:
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
-        from ...validators import (
-            Validate,
-            HostIdentityValidator,
-            PermissionValidator,
-        )
+        from ...core_validators import Validate
+        from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
         remove_csv_formatter_support()
@@ -166,13 +159,12 @@ else:
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
-        from ...validators import (
+        from ...core_validators import (
             Validate,
-            HostIdentityValidator,
-            PermissionValidator,
             Exit,
             ValidationError,
         )
+        from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB
 
         remove_csv_formatter_support()
@@ -336,7 +328,7 @@ else:
         """
         from ...styles import print_typer_error
         from ...path import ProperPath
-        from ...validators import Validate, PathValidator, ValidationError
+        from ...core_validators import Validate, PathValidator, ValidationError
         from .specification import (
             CLI_DATE_VALID_FORMAT,
             CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
@@ -437,8 +429,8 @@ else:
         from dateutil.relativedelta import relativedelta
         from ...styles import print_typer_error
         from ...path import ProperPath
-        from ...validators import Validate
-        from .validator import BillingInformationPathValidator
+        from ...core_validators import Validate
+        from .validators import BillingInformationPathValidator
         from .generate_table import get_billing_dates
         from .specification import (
             BILLING_BASE_DATE,
