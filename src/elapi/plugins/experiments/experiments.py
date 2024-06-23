@@ -2,9 +2,9 @@ import re
 from pathlib import Path
 from typing import Union, Optional, Tuple
 
-from ...endpoint import FixedEndpoint
+from ...api.endpoint import FixedEndpoint
 from ...path import ProperPath
-from ...validators import ValidationError, Validator
+from ...core_validators import ValidationError, Validator
 
 
 class FixedExperimentEndpoint:
