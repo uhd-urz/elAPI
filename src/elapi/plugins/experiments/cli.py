@@ -3,28 +3,21 @@ from typing import Annotated, Optional
 import typer
 
 from ._doc import __PARAMETERS__doc__ as docs
-from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-from ...loggers import Logger
-from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, OrderedCommands
-from ...plugins.experiments.experiments import (
+from .experiments import (
     ExperimentIDValidator,
     FixedExperimentEndpoint,
     append_to_experiment,
 )
+from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
+from ...core_validators import ValidationError
+from ...loggers import Logger
+from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, Typer
 from ...styles import stdin_console, stderr_console
-from ...validators import ValidationError
 
 logger = Logger()
 
 
-app = typer.Typer(
-    name="experiments",
-    help="Manage experiments.",
-    rich_markup_mode="markdown",
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    cls=OrderedCommands,
-)
+app = Typer(name="experiments", help="Manage experiments.")
 
 
 # noinspection PyCallingNonCallable,PyUnresolvedReferences
@@ -59,7 +52,8 @@ def get(
     """
     Read or download an experiment.
     """
-    from ...validators import Validate, HostIdentityValidator
+    from ...core_validators import Validate
+    from ...api.validators import HostIdentityValidator
     from ..commons import Export
     from ...styles import Highlight
     from . import (
@@ -148,7 +142,8 @@ def append(
     """
     Add new content to an existing experiment.
     """
-    from ...validators import Validate, HostIdentityValidator
+    from ...core_validators import Validate
+    from ...api.validators import HostIdentityValidator
     from ...path import ProperPath
 
     validate_config = Validate(HostIdentityValidator())
@@ -218,7 +213,8 @@ def upload_attachment(
     """
     Add a file to an existing experiment.
     """
-    from ...validators import Validate, HostIdentityValidator
+    from ...core_validators import Validate
+    from ...api.validators import HostIdentityValidator
     from .experiments import attach_to_experiment
 
     validate_config = Validate(HostIdentityValidator())
@@ -274,7 +270,8 @@ def download_attachment(
     """
     Download an attachment from an experiment.
     """
-    from ...validators import Validate, HostIdentityValidator
+    from ...core_validators import Validate
+    from ...api.validators import HostIdentityValidator
     from ...plugins.commons import Export
     from .experiments import download_attachment
 
