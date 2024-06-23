@@ -4,7 +4,7 @@ from typing import Any, Union, Iterable, Optional
 
 from ...loggers import Logger
 from ...path import ProperPath
-from ...validators import PathValidator, ValidationError
+from ...core_validators import PathValidator, ValidationError
 
 logger = Logger()
 
@@ -96,9 +96,10 @@ class ExportPathValidator(PathValidator):
         self._can_overwrite = value
 
     def validate(self) -> ProperPath:
-        from ...configuration import APP_NAME, EXPORT_DIR
+        from ...configuration import APP_NAME, get_active_export_dir
         from ...styles import stdin_console, NoteText
 
+        export_dir = get_active_export_dir()
         if self.export_path is not None:
             try:
                 path = ProperPath(super().validate(), err_logger=logger)
@@ -124,6 +125,6 @@ class ExportPathValidator(PathValidator):
                             stem="Note",
                         )
                     )
-                    return ProperPath(EXPORT_DIR, err_logger=logger)
+                    return ProperPath(export_dir, err_logger=logger)
                 return path
-        return ProperPath(EXPORT_DIR, err_logger=logger)
+        return ProperPath(export_dir, err_logger=logger)
