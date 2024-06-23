@@ -106,11 +106,14 @@ class ElabFTWURL:
             "experiments_status",
             "items_status",
             "teamgroups",
+            "tags",
         ),
         "todolist": (),
         "unfinished_steps": (),
         "users": ("notifications",),
         "idps": (),
+        "import": (),
+        "exports": (),
     }
 
     def __init__(
