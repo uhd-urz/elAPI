@@ -6,7 +6,7 @@ from .specification import OwnersDataSpecification
 from ...loggers import Logger
 from ...path import ProperPath
 from ...styles import FormatError
-from ...validators import Validator, ValidationError
+from ...core_validators import Validator, ValidationError
 
 logger = Logger()
 
