@@ -1,10 +1,14 @@
-import errno
 import os
 from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from ._config_history import ConfigHistory, InspectConfigHistory
+from ._config_history import (
+    ConfigHistory,
+    InspectConfigHistory,
+    AppliedConfigIdentity,
+    MinimalActiveConfiguration,
+)
 from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
@@ -12,8 +16,8 @@ from .._names import (
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
-    FALLBACK_EXPORT_DIR,
-    CONFIG_FILE_NAME,
+    FALLBACK_EXPORT_DIR,  # noqa: F401
+    CONFIG_FILE_NAME,  # noqa: F401
     TMP_DIR,
     SYSTEM_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
@@ -24,17 +28,18 @@ from .._names import (
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_ENABLE_HTTP2,
+    KEY_VERIFY_SSL,
+    KEY_TIMEOUT,
 )
-from ..loggers import Logger
-from ..path import ProperPath
-from ..styles import stdin_console, NoteText
-from ..validators import (
+from ..core_validators import (
     Validate,
     ValidationError,
     CriticalValidationError,
     PathValidator,
-    PathValidationError,
 )
+from ..loggers import Logger
+from ..path import ProperPath
+from ..styles import Missing
 
 logger = Logger()
 
@@ -43,6 +48,7 @@ LOCAL_CONFIG_LOC: Path = LOCAL_CONFIG_LOC
 PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 
 env_var_app_name = APP_NAME.upper().replace("-", "_")
+FALLBACK_SOURCE_NAME: str = "DEFAULT"
 
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
@@ -56,11 +62,10 @@ settings = Dynaconf(
 )
 
 history = ConfigHistory(settings)
+minimal_active_configuration: MinimalActiveConfiguration = MinimalActiveConfiguration()
 
 # Host URL
-HOST: str = settings.get(
-    KEY_HOST
-)  # case-insensitive: settings.get("HOST") == settings.get("host")
+HOST = settings.get(KEY_HOST, None)
 
 
 # API token (api_key)
@@ -106,62 +111,18 @@ class APIToken:
         return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[:-expose-1:-1][::-1]}"
 
 
-API_TOKEN: str = settings.get(KEY_API_TOKEN)
-if not API_TOKEN:
-    ...
-    # Note elabftw-python uses the term "api_key" for "API_TOKEN"
-else:
-    history.patch(KEY_API_TOKEN, APIToken(API_TOKEN))
+# Note elabftw-python uses the term "api_key" for "API_TOKEN"
+API_TOKEN: str = settings.get(KEY_API_TOKEN, None)
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
+_XDG_DOWNLOAD_DIR = os.getenv(ENV_XDG_DOWNLOAD_DIR, None)
+
 # Export location
-CONFIG_EXPORT_DIR = ProperPath(
-    (_CONFIG_EXPORT_DIR_ORIGINAL := settings.get(KEY_EXPORT_DIR)) or os.devnull,
-    kind=(_CONFIG_EXPORT_DIR_ORIGINAL and "dir") or "file",
-    err_logger=logger,
-)  # the default "os.devnull" saves ProperPath from TypeError, ValueError
-# for when settings.get(KEY_EXPORT_DIR) is None/"".
-try:
-    EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
-except PathValidationError as e:
-    if _CONFIG_EXPORT_DIR_ORIGINAL:
-        if e.errno == errno.EEXIST:
-            logger.warning(
-                f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file is not a directory!"
-            )
-            stdin_console.print(
-                NoteText(
-                    "If you want to export to a file use '--export <path-to-file>'.\n",
-                    stem="Note",
-                )
-            )
-        logger.warning(
-            f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
-        )
-    try:
-        history.delete(KEY_EXPORT_DIR)
-    except KeyError:
-        ...
-    try:
-        EXPORT_DIR = Validate(
-            PathValidator(
-                [
-                    os.getenv(ENV_XDG_DOWNLOAD_DIR, None),
-                    FALLBACK_EXPORT_DIR,
-                ]
-            )
-        ).get()
-    except ValidationError:
-        logger.critical(
-            f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
-            f"This is a fatal error. To quickly fix this error define an export directory "
-            f"with '{KEY_EXPORT_DIR}' in configuration file. {APP_NAME} will not run!"
-        )
-        raise CriticalValidationError
-# Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
+EXPORT_DIR = settings.get(KEY_EXPORT_DIR, None)
+# # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
 if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
@@ -183,36 +144,49 @@ else:
 inspect = InspectConfigHistory(history)
 
 # UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
-try:
-    settings[KEY_UNSAFE_TOKEN_WARNING]
-except KeyError:
-    UNSAFE_TOKEN_WARNING: bool = True
-else:
-    UNSAFE_TOKEN_WARNING: bool = settings.as_bool(KEY_UNSAFE_TOKEN_WARNING)
-    # equivalent to settings.get(<key>, cast='@bool')
-try:
-    if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN].source == str(
-        PROJECT_CONFIG_LOC
-    ):
-        logger.warning(
-            f"'{KEY_API_TOKEN}' field in project-based configuration file {PROJECT_CONFIG_LOC} found. "
-            f"This is highly discouraged. The token is at risk of being leaked into public repositories. "
-            f"If you still insist, please make sure {CONFIG_FILE_NAME} is included in .gitignore."
-        )
-except KeyError:
-    ...
+UNSAFE_TOKEN_WARNING_DEFAULT_VAL: bool = True
+UNSAFE_TOKEN_WARNING = settings.get(KEY_UNSAFE_TOKEN_WARNING, None)
+
 # ENABLE_HTTP2 falls back to False if not defined in configuration
-try:
-    settings[KEY_ENABLE_HTTP2]
-except KeyError:
-    ENABLE_HTTP2: bool = False
-else:
-    ENABLE_HTTP2: bool = settings.as_bool(KEY_ENABLE_HTTP2)
+ENABLE_HTTP2_DEFAULT_VAL: bool = False
+ENABLE_HTTP2 = settings.get(KEY_ENABLE_HTTP2, None)
+
+# VERIFY_SSL falls back to True if not defined in configuration
+VERIFY_SSL_DEFAULT_VAL: bool = True
+VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
+
+# TIMEOUT falls back to 5.0 seconds if not defined in configuration
+TIMEOUT_DEFAULT_VAL: float = 5.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
+TIMEOUT = settings.get(KEY_TIMEOUT, None)
+
+for key_name, key_val in [
+    (KEY_HOST, HOST),
+    (KEY_API_TOKEN, API_TOKEN),
+    (KEY_EXPORT_DIR, EXPORT_DIR),
+    (KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING),
+    (KEY_ENABLE_HTTP2, ENABLE_HTTP2),
+    (KEY_VERIFY_SSL, VERIFY_SSL),
+    (KEY_TIMEOUT, TIMEOUT),
+]:
+    try:
+        history.patch(key_name, key_val)
+    except KeyError:
+        minimal_active_configuration[key_name] = AppliedConfigIdentity(Missing(), None)
+    else:
+        if key_name == KEY_API_TOKEN:
+            try:
+                history.patch(key_name, APIToken(key_val))
+            except ValueError:
+                ...
+        minimal_active_configuration[key_name] = InspectConfigHistory(
+            history
+        ).applied_config[key_name]
 
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
 
+# Plugin file definitions and locations
 ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
 INTERNAL_PLUGIN_DIRECTORY_NAME: str = "plugins"
 INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = "cli"
