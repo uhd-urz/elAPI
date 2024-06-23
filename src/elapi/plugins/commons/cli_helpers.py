@@ -1,13 +1,15 @@
+import re
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Literal, Type
 
+import typer
 from click import Context
 from typer.core import TyperGroup
 
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...loggers import Logger
 from ...path import ProperPath
-from ...validators import Exit
+from ...core_validators import Exit
 
 logger = Logger()
 
@@ -20,7 +22,7 @@ class CLIExport:
         can_overwrite: bool = False,
     ):
         from collections import namedtuple
-        from ...validators import Validate
+        from ...core_validators import Validate
         from .export import ExportPathValidator
 
         try:
@@ -86,3 +88,34 @@ class OrderedCommands(TyperGroup):
 
     def list_commands(self, ctx: Context) -> Iterable[str]:
         return self.commands.keys()
+
+
+class Typer(typer.Typer):
+    def __new__(
+        cls,
+        rich_markup_mode: Literal["markdown", "rich"] = "markdown",
+        cls_: Optional[Type[TyperGroup]] = OrderedCommands,
+        **kwargs,
+    ):
+        try:
+            return typer.Typer(
+                pretty_exceptions_show_locals=False,
+                no_args_is_help=True,
+                rich_markup_mode=rich_markup_mode,
+                cls=cls_,
+                **kwargs,
+            )
+        except TypeError as e:
+            if re.search(
+                r"got multiple values for keyword argument",
+                error_verbose := str(e),
+                re.IGNORECASE,
+            ):
+                _reserved_key_end = re.match(
+                    r"^'\w+'", error_verbose[::-1], re.IGNORECASE
+                ).end()
+                raise AttributeError(
+                    f"{APP_NAME} overloaded class '{__package__}.{Typer.__name__}' reserves the keyword argument "
+                    f"'{error_verbose[- _reserved_key_end + 1: - 1]}' for {typer.Typer.__name__} class."
+                ) from e
+            raise e
