@@ -1,6 +1,7 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
+from .._names import CONFIG_FILE_NAME
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT, EXPORT_DIR
 from ..styles import BaseFormat
 
@@ -96,5 +97,13 @@ __PARAMETERS__doc__ = {
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
                       'Make sure your API key has proper permission for your future tasks.',
     "init_export_dir": f"Preferred export directory. If '--export-dir' isn't passed, {EXPORT_DIR} will be "
-                        "set as the export directory."
+                        "set as the export directory.",
+    "cli_startup": f"⚡️Force override detected configuration from '{CONFIG_FILE_NAME}'. "
+                     "The value should be in **JSON** format. This option can only be passed "
+                     "**before** passing any other argument/option/command. E.g., "
+                     '`elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml`. '
+                   'You can use tools like [yq](https://mikefarah.gitbook.io/yq) and '
+                   '[jq](https://jqlang.github.io/jq/) to read values from YAML and JSON _files_ respectively, '
+                   'if you do not wish to hand-type JSON syntax. E.g.,: '
+                   '`elapi --OC "$(cat ~/params.yml | yq e -o json -I0)" experiments get -i <experiment ID> -F csv`.',
 }

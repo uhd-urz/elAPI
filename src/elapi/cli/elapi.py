@@ -22,25 +22,150 @@ from typing_extensions import Annotated
 from ._plugin_handler import internal_plugin_typer_apps
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
-from ..configuration import EXPORT_DIR
+from ..configuration import FALLBACK_EXPORT_DIR
 from ..loggers import Logger
-from ..plugins.commons.cli_helpers import OrderedCommands
+from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console
 
 logger = Logger()
-
-
 pretty.install()
-app = typer.Typer(
-    rich_markup_mode="markdown",
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    cls=OrderedCommands,
-)
+
+app = Typer()
+INSENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
+SPECIAL_INSENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
+COMMANDS_TO_SKIP_CLI_STARTUP: list = list(INSENSITIVE_PLUGIN_NAMES)
+
+
+@app.callback()
+def cli_startup(
+    override_config: Annotated[
+        Optional[str],
+        typer.Option(
+            "--override-config",
+            "--OC",
+            help=docs["cli_startup"],
+            show_default=False,
+            rich_help_panel=f"{APP_NAME} global options",
+        ),
+    ] = "{}",
+) -> type(None):
+    import click
+    from sys import orig_argv
+    import json
+    from ..styles import print_typer_error
+    from ..configuration import (
+        KEY_API_TOKEN,
+        AppliedConfigIdentity,
+        minimal_active_configuration,
+    )
+    from ..configuration.config import APIToken
+    from ..configuration.validators import ValidateMainConfiguration
+    from ..core_validators import Validate, ValidationError, Exit
+
+    try:
+        override_config: dict = json.loads(override_config)
+    except (SyntaxError, ValueError):
+        print_typer_error(
+            "--override-config/--OC value has caused a syntax error. "
+            "--override-config only supports JSON syntax."
+        )
+        raise typer.Exit(1)
+    else:
+        OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
+        for key, value in override_config.items():
+            if key.lower() == KEY_API_TOKEN.lower():
+                try:
+                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                        APIToken(value), OVERRIDABLE_FIELDS_SOURCE
+                    )
+                except ValueError:
+                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                        value, OVERRIDABLE_FIELDS_SOURCE
+                    )
+            else:
+                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    value, OVERRIDABLE_FIELDS_SOURCE
+                )
+        if (
+            (
+                calling_sub_command_name := (
+                    ctx := click.get_current_context()
+                ).invoked_subcommand
+            )
+            not in COMMANDS_TO_SKIP_CLI_STARTUP
+            and ctx.command.name != calling_sub_command_name
+        ):
+            if (
+                orig_argv[-1] != (ARG_TO_SKIP := "--help")
+                or ARG_TO_SKIP not in orig_argv
+            ):
+                if override_config or not ValidateMainConfiguration.ALREADY_VALIDATED:
+                    _validate = Validate(ValidateMainConfiguration())
+                    try:
+                        _validate()
+                    except ValidationError:
+                        raise Exit(1)
+                    else:
+                        ValidateMainConfiguration.ALREADY_VALIDATED = True
+        else:
+            if calling_sub_command_name in INSENSITIVE_PLUGIN_NAMES:
+                if override_config:
+                    print_typer_error(
+                        f"{APP_NAME} command '{calling_sub_command_name}' does not support the override argument "
+                        f"--override-config/--OC."
+                    )
+                    raise Exit(1)
+                if calling_sub_command_name in SPECIAL_INSENSITIVE_PLUGIN_NAMES:
+                    from ..configuration.validators import (
+                        ExportDirConfigurationValidator,
+                        BooleanWithFallbackConfigurationValidator,
+                        DecimalWithFallbackConfigurationValidator,
+                    )
+
+                    _validate = Validate(
+                        ValidateMainConfiguration(
+                            limited_to=[
+                                ExportDirConfigurationValidator,
+                                BooleanWithFallbackConfigurationValidator,
+                                DecimalWithFallbackConfigurationValidator,
+                            ]
+                        )
+                    )
+                    _validate()
+
+
+def cli_startup_for_plugins(
+    override_config: Annotated[
+        Optional[str],
+        typer.Option(
+            "--override-config",
+            "--OC",
+            help=docs["cli_startup"],
+            show_default=False,
+            rich_help_panel=f"{APP_NAME} global options",
+        ),
+    ] = None,
+):
+    from ..styles import print_typer_error
+    from ..validators import Exit
+
+    if override_config is not None:
+        print_typer_error(
+            f"--override-config/--OC can only be passed after "
+            f"the main program name '{APP_NAME}', and not after a plugin name."
+        )
+        raise Exit(1)
+    return cli_startup()
+
 
 for _app in internal_plugin_typer_apps:
-    app.add_typer(_app, rich_help_panel="Plugins")
+    COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
+    app.add_typer(
+        _app,
+        rich_help_panel="Plugins",
+        callback=cli_startup_for_plugins,
+    )
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
@@ -49,7 +174,7 @@ typer.rich_utils._get_help_text = (
     get_custom_help_text  # fixes https://github.com/tiangolo/typer/issues/447
 )
 
-RAW_API_COMMANDS_PANEL_NAME = "Raw API commands"
+RAW_API_COMMANDS_PANEL_NAME: str = "Raw API commands"
 
 
 @app.command(short_help=f"Initialize {APP_NAME} configuration file.")
@@ -73,14 +198,14 @@ def init(
         ),
     ],
     export_directory: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--export-dir",
             help=docs["init_export_dir"],
             show_default=False,
             prompt=f'Enter your {docs["init_export_dir"][0]}{docs["init_export_dir"][1:].rstrip(".")}',
         ),
-    ] = EXPORT_DIR,
+    ] = FALLBACK_EXPORT_DIR,
 ) -> None:
     """
     A quick and simple command to initialize elAPI configuration file.
@@ -101,8 +226,8 @@ def init(
     """
     from .._names import CONFIG_FILE_NAME
     from ..configuration import LOCAL_CONFIG_LOC
-    from ..validators import Validate, ValidationError
-    from ..validators import PathValidator
+    from ..core_validators import Validate, ValidationError
+    from ..core_validators import PathValidator
     from ..path import ProperPath
     from time import sleep
 
@@ -144,7 +269,10 @@ def init(
                     _configuration_yaml_text = f"""host: {host_url}
 api_token: {api_token}
 export_dir: {export_directory}
-unsafe_api_token_warning: yes
+unsafe_api_token_warning: true
+enable_http2: false
+verify_ssl: true
+timeout: 5
 """
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
@@ -204,14 +332,6 @@ def get(
         bool,
         typer.Option("--overwrite", help=docs["export_overwrite"], show_default=False),
     ] = False,
-    verify: Annotated[
-        Optional[str],
-        typer.Option("--verify", help=docs["verify"], show_default=False),
-    ] = None,
-    timeout: Annotated[
-        Optional[float],
-        typer.Option("--timeout", help=docs["timeout"], show_default=False),
-    ] = None,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -239,16 +359,15 @@ def get(
     import re
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
-    from ..validators import Validate, HostIdentityValidator
+    from ..core_validators import Validate
+    from ..api.validators import HostIdentityValidator
     from ..plugins.commons import Export
     from ..styles import Highlight, print_typer_error
-    from ..path import ProperPath
-    from ..validators import Exit
-    from httpx._config import DEFAULT_TIMEOUT_CONFIG
-    from ..configuration import HOST
+    from ..core_validators import Exit
+    from ..configuration import get_active_host
 
-    validate_config = Validate(HostIdentityValidator())
-    validate_config()
+    validate_identity = Validate(HostIdentityValidator())
+    validate_identity()
 
     if export is False:
         _export_dest = None
@@ -277,27 +396,8 @@ def get(
         )
         format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
 
-    if verify is not None:
-        if re.match(r"^true$", verify, re.IGNORECASE):
-            verify = True
-        elif re.match(r"^false$", verify, re.IGNORECASE):
-            verify = False
-        else:
-            try:
-                verify = ProperPath(verify)
-            except ValueError as e:
-                print_typer_error(
-                    "--verify received an invalid value. It can only be "
-                    "'true', 'false', or a path to SSL certificate."
-                )
-                raise Exit(1) from e
-            else:
-                if verify.kind != "file":
-                    print_typer_error("--verify path must be a path to a file!")
-                    raise Exit(1)
-                verify = verify.expanded
     try:
-        session = GETRequest(verify=verify)
+        session = GETRequest()
     except SSLError as e:
         logger.error(e)
         raise Exit() from e
@@ -308,7 +408,6 @@ def get(
             sub_endpoint_name,
             sub_endpoint_id,
             query,
-            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
             headers=headers,
         )
     except ElabFTWURLError as e:
@@ -316,7 +415,7 @@ def get(
         raise typer.Exit(1) from e
     except ConnectError as e:
         logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
             f"Exception details: {e}"
         )
         raise Exit(1) from e
@@ -396,14 +495,6 @@ def post(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
-    verify: Annotated[
-        Optional[str],
-        typer.Option("--verify", help=docs["verify"], show_default=False),
-    ] = None,
-    timeout: Annotated[
-        Optional[float],
-        typer.Option("--timeout", help=docs["timeout"], show_default=False),
-    ] = None,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -425,22 +516,21 @@ def post(
     will create a new user.
     """
     import ast
-    import re
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
     from ..api import POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
-    from ..validators import Validate, HostIdentityValidator
+    from ..core_validators import Validate
+    from ..api.validators import HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
     from ..styles import Format, Highlight, print_typer_error, NoteText
-    from ..validators import Exit
+    from ..core_validators import Exit
     from ..path import ProperPath
-    from httpx._config import DEFAULT_TIMEOUT_CONFIG
-    from ..configuration import HOST
+    from ..configuration import get_active_host
 
-    validate_config = Validate(HostIdentityValidator())
-    validate_config()
+    validate_identity = Validate(HostIdentityValidator())
+    validate_identity()
 
     try:
         query: dict = ast.literal_eval(query)
@@ -476,27 +566,8 @@ def post(
             "--file value has caused a syntax error. --file only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    if verify is not None:
-        if re.match(r"^true$", verify, re.IGNORECASE):
-            verify = True
-        elif re.match(r"^false$", verify, re.IGNORECASE):
-            verify = False
-        else:
-            try:
-                verify = ProperPath(verify)
-            except ValueError as e:
-                print_typer_error(
-                    "--verify received an invalid value. It can only be "
-                    "'true', 'false', or a path to SSL certificate."
-                )
-                raise Exit(1) from e
-            else:
-                if verify.kind != "file":
-                    print_typer_error("--verify path must be a path to a file!")
-                    raise Exit(1)
-                verify = verify.expanded
     try:
-        session = POSTRequest(verify=verify)
+        session = POSTRequest()
     except SSLError as e:
         logger.error(e)
         raise Exit() from e
@@ -534,7 +605,6 @@ def post(
             query,
             data=data,
             files=file,
-            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
             headers=headers,
         )
     except ElabFTWURLError as e:
@@ -542,7 +612,7 @@ def post(
         raise typer.Exit(1)
     except ConnectError as e:
         logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
             f"Exception details: {e}"
         )
         raise Exit(1) from e
@@ -624,14 +694,6 @@ def patch(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
-    verify: Annotated[
-        Optional[str],
-        typer.Option("--verify", help=docs["verify"], show_default=False),
-    ] = None,
-    timeout: Annotated[
-        Optional[float],
-        typer.Option("--timeout", help=docs["timeout"], show_default=False),
-    ] = None,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -652,20 +714,18 @@ def patch(
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
     import ast
-    import re
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
-    from ..validators import Validate, HostIdentityValidator
+    from ..core_validators import Validate
+    from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..validators import Exit
-    from ..path import ProperPath
-    from httpx._config import DEFAULT_TIMEOUT_CONFIG
-    from ..configuration import HOST
+    from ..core_validators import Exit
+    from ..configuration import get_active_host
 
-    validate_config = Validate(HostIdentityValidator())
-    validate_config()
+    validate_identity = Validate(HostIdentityValidator())
+    validate_identity()
 
     try:
         query: dict = ast.literal_eval(query)
@@ -688,27 +748,8 @@ def patch(
             "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    if verify is not None:
-        if re.match(r"^true$", verify, re.IGNORECASE):
-            verify = True
-        elif re.match(r"^false$", verify, re.IGNORECASE):
-            verify = False
-        else:
-            try:
-                verify = ProperPath(verify)
-            except ValueError as e:
-                print_typer_error(
-                    "--verify received an invalid value. It can only be "
-                    "'true', 'false', or a path to SSL certificate."
-                )
-                raise Exit(1) from e
-            else:
-                if verify.kind != "file":
-                    print_typer_error("--verify path must be a path to a file!")
-                    raise Exit(1)
-                verify = verify.expanded
     try:
-        session = PATCHRequest(verify=verify)
+        session = PATCHRequest()
     except SSLError as e:
         logger.error(e)
         raise Exit() from e
@@ -720,7 +761,6 @@ def patch(
             sub_endpoint_id,
             query,
             data=data,
-            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
             headers=headers,
         )
     except ElabFTWURLError as e:
@@ -728,7 +768,7 @@ def patch(
         raise typer.Exit(1)
     except ConnectError as e:
         logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
             f"Exception details: {e}"
         )
         raise Exit(1) from e
@@ -789,14 +829,6 @@ def delete(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
-    verify: Annotated[
-        Optional[str],
-        typer.Option("--verify", help=docs["verify"], show_default=False),
-    ] = None,
-    timeout: Annotated[
-        Optional[float],
-        typer.Option("--timeout", help=docs["timeout"], show_default=False),
-    ] = None,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -821,20 +853,18 @@ def delete(
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
     import ast
-    import re
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
-    from ..validators import Validate, HostIdentityValidator
+    from ..core_validators import Validate
+    from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..validators import Exit
-    from ..path import ProperPath
-    from httpx._config import DEFAULT_TIMEOUT_CONFIG
-    from ..configuration import HOST
+    from ..core_validators import Exit
+    from ..configuration import get_active_host
 
-    validate_config = Validate(HostIdentityValidator())
-    validate_config()
+    validate_identity = Validate(HostIdentityValidator())
+    validate_identity()
 
     try:
         query: dict = ast.literal_eval(query)
@@ -850,27 +880,8 @@ def delete(
             "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
         raise typer.Exit(1)
-    if verify is not None:
-        if re.match(r"^true$", verify, re.IGNORECASE):
-            verify = True
-        elif re.match(r"^false$", verify, re.IGNORECASE):
-            verify = False
-        else:
-            try:
-                verify = ProperPath(verify)
-            except ValueError as e:
-                print_typer_error(
-                    "--verify received an invalid value. It can only be "
-                    "'true', 'false', or a path to SSL certificate."
-                )
-                raise Exit(1) from e
-            else:
-                if verify.kind != "file":
-                    print_typer_error("--verify path must be a path to a file!")
-                    raise Exit(1)
-                verify = verify.expanded
     try:
-        session = DELETERequest(verify=verify)
+        session = DELETERequest()
     except SSLError as e:
         logger.error(e)
         raise Exit() from e
@@ -881,7 +892,6 @@ def delete(
             sub_endpoint_name,
             sub_endpoint_id,
             query,
-            timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
             headers=headers,
         )
     except ElabFTWURLError as e:
@@ -889,7 +899,7 @@ def delete(
         raise typer.Exit(1)
     except ConnectError as e:
         logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{HOST}'. "
+            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
             f"Exception details: {e}"
         )
         raise Exit(1) from e
