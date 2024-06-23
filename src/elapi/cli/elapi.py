@@ -370,7 +370,7 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
-    import ast
+    import json
     from httpx import ConnectError
     from ssl import SSLError
     import re
@@ -379,7 +379,7 @@ def get(
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import Export
-    from ..styles import Highlight, print_typer_error
+    from ..styles import Highlight, print_typer_error, NoteText
     from ..core_validators import Exit
     from ..configuration import get_active_host
 
@@ -389,15 +389,15 @@ def get(
     if export is False:
         _export_dest = None
     try:
-        query: dict = ast.literal_eval(query)
-    except SyntaxError:
+        query: dict = json.loads(query)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        headers: dict = ast.literal_eval(headers)
-    except SyntaxError:
+        headers: dict = json.loads(headers)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
@@ -427,6 +427,18 @@ def get(
             query,
             headers=headers,
         )
+    except (AttributeError, TypeError) as e:
+        print_typer_error(
+            f"Valid JSON format was passed, but it could not be understood. "
+            f'Exception details: "{e.__class__.__name__}: {e}".'
+        )
+        stdin_console.print(
+            NoteText(
+                "See --help for examples of how to pass values in JSON format.",
+                stem="Note",
+            )
+        )
+        raise Exit(1)
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1) from e
@@ -532,7 +544,7 @@ def post(
     `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
-    import ast
+    import json
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
@@ -550,22 +562,22 @@ def post(
     validate_identity()
 
     try:
-        query: dict = ast.literal_eval(query)
-    except SyntaxError:
+        query: dict = json.loads(query)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        headers: dict = ast.literal_eval(headers)
-    except SyntaxError:
+        headers: dict = json.loads(headers)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        data: dict = ast.literal_eval(json_)
-    except SyntaxError:
+        data: dict = json.loads(json_)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
@@ -577,8 +589,8 @@ def post(
     # data_values: list[str, ...] = data.args[1::2]
     # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     try:
-        file: Optional[dict] = ast.literal_eval(file)
-    except SyntaxError:
+        file: Optional[dict] = json.loads(file)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--file value has caused a syntax error. --file only supports JSON syntax. "
         )
@@ -624,6 +636,18 @@ def post(
             files=file,
             headers=headers,
         )
+    except (AttributeError, TypeError) as e:
+        print_typer_error(
+            f"Valid JSON format was passed, but it could not be understood. "
+            f'Exception details: "{e.__class__.__name__}: {e}".'
+        )
+        stdin_console.print(
+            NoteText(
+                "See --help for examples of how to pass values in JSON format.",
+                stem="Note",
+            )
+        )
+        raise Exit(1)
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
@@ -730,7 +754,7 @@ def patch(
     <br/>
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
-    import ast
+    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import PATCHRequest, ElabFTWURLError
@@ -745,22 +769,22 @@ def patch(
     validate_identity()
 
     try:
-        query: dict = ast.literal_eval(query)
-    except SyntaxError:
+        query: dict = json.loads(query)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        headers: dict = ast.literal_eval(headers)
-    except SyntaxError:
+        headers: dict = json.loads(headers)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        data: dict = ast.literal_eval(json_)
-    except SyntaxError:
+        data: dict = json.loads(json_)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--data value has caused a syntax error. --data only supports JSON syntax. "
         )
@@ -780,6 +804,18 @@ def patch(
             data=data,
             headers=headers,
         )
+    except (AttributeError, TypeError) as e:
+        print_typer_error(
+            f"Valid JSON format was passed, but it could not be understood. "
+            f'Exception details: "{e.__class__.__name__}: {e}".'
+        )
+        stdin_console.print(
+            NoteText(
+                "See --help for examples of how to pass values in JSON format.",
+                stem="Note",
+            )
+        )
+        raise Exit(1)
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
@@ -869,7 +905,7 @@ def delete(
     <br/>
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
-    import ast
+    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import DELETERequest, ElabFTWURLError
@@ -884,15 +920,15 @@ def delete(
     validate_identity()
 
     try:
-        query: dict = ast.literal_eval(query)
-    except SyntaxError:
+        query: dict = json.loads(query)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--query value has caused a syntax error. --query only supports JSON syntax. "
         )
         raise typer.Exit(1)
     try:
-        headers: dict = ast.literal_eval(headers)
-    except SyntaxError:
+        headers: dict = json.loads(headers)
+    except (SyntaxError, ValueError):
         print_typer_error(
             "--headers value has caused a syntax error. --headers only supports JSON syntax. "
         )
@@ -911,6 +947,18 @@ def delete(
             query,
             headers=headers,
         )
+    except (AttributeError, TypeError) as e:
+        print_typer_error(
+            f"Valid JSON format was passed, but it could not be understood. "
+            f'Exception details: "{e.__class__.__name__}: {e}".'
+        )
+        stdin_console.print(
+            NoteText(
+                "See --help for examples of how to pass values in JSON format.",
+                stem="Note",
+            )
+        )
+        raise Exit(1)
     except ElabFTWURLError as e:
         logger.error(e)
         raise typer.Exit(1)
