@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from ...loggers import Logger
 from ...path import ProperPath
-from ...validators import Exit
+from ...core_validators import Exit
 
 logger = Logger()
 
@@ -197,7 +197,7 @@ class OwnersList:
         self.owners = owners_information
 
     def items(self) -> dict:
-        from .validator import OwnersDataSpecification
+        from .validators import OwnersDataSpecification
 
         team_owners: dict = {}
         spec = OwnersDataSpecification()
