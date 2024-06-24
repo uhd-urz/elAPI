@@ -35,6 +35,7 @@ app = Typer()
 INSENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
 SPECIAL_INSENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
 COMMANDS_TO_SKIP_CLI_STARTUP: list = list(INSENSITIVE_PLUGIN_NAMES)
+CLI_STARTUP_CALLBACK_PANEL_NAME: str = f"{APP_NAME} global options"
 
 
 @app.callback()
@@ -46,7 +47,7 @@ def cli_startup(
             "--OC",
             help=docs["cli_startup"],
             show_default=False,
-            rich_help_panel=f"{APP_NAME} global options",
+            rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = "{}",
 ) -> type(None):
@@ -159,7 +160,7 @@ def cli_startup_for_plugins(
             "--OC",
             help=docs["cli_startup"],
             show_default=False,
-            rich_help_panel=f"{APP_NAME} global options",
+            rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = None,
 ):
