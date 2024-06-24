@@ -60,7 +60,7 @@ def cli_startup(
         minimal_active_configuration,
     )
     from ..configuration.config import APIToken
-    from ..configuration.validators import ValidateMainConfiguration
+    from ..configuration.validators import MainConfigurationValidator
     from ..core_validators import Validate, ValidationError, Exit
 
     try:
@@ -116,14 +116,14 @@ def cli_startup(
                 orig_argv[-1] != (ARG_TO_SKIP := "--help")
                 or ARG_TO_SKIP not in orig_argv
             ):
-                if override_config or not ValidateMainConfiguration.ALREADY_VALIDATED:
-                    _validate = Validate(ValidateMainConfiguration())
+                if override_config or not MainConfigurationValidator.ALREADY_VALIDATED:
+                    _validate = Validate(MainConfigurationValidator())
                     try:
                         _validate()
                     except ValidationError:
                         raise Exit(1)
                     else:
-                        ValidateMainConfiguration.ALREADY_VALIDATED = True
+                        MainConfigurationValidator.ALREADY_VALIDATED = True
         else:
             if calling_sub_command_name in INSENSITIVE_PLUGIN_NAMES:
                 if override_config:
@@ -140,7 +140,7 @@ def cli_startup(
                     )
 
                     _validate = Validate(
-                        ValidateMainConfiguration(
+                        MainConfigurationValidator(
                             limited_to=[
                                 ExportDirConfigurationValidator,
                                 BooleanWithFallbackConfigurationValidator,

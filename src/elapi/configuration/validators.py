@@ -364,7 +364,7 @@ class DecimalWithFallbackConfigurationValidator(Validator):
         return float(value)
 
 
-class ValidateMainConfiguration(Validator):
+class MainConfigurationValidator(Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 

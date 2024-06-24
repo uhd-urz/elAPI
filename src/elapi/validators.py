@@ -8,7 +8,7 @@ from .api.validators import (
 
 # ruff: noqa: F401
 # noinspection PyUnresolvedReferences
-from .configuration.validators import ValidateMainConfiguration
+from .configuration.validators import MainConfigurationValidator
 
 # ruff: noqa: F401
 # noinspection PyUnresolvedReferences
