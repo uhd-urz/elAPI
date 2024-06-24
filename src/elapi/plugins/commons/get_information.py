@@ -6,7 +6,7 @@ import httpx
 from httpx import Response
 
 from ...loggers import Logger
-from ...validators import Exit
+from ...core_validators import Exit
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -69,7 +69,7 @@ class RecursiveInformation:
             event_loop.stop()  # Will raise RuntimeError
 
     async def items(self):
-        from ...endpoint import FixedAsyncEndpoint, RecursiveGETEndpoint
+        from ...api.endpoint import FixedAsyncEndpoint, RecursiveGETEndpoint
         from rich.progress import track
 
         event_loop = asyncio.get_running_loop()

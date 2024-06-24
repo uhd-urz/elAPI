@@ -13,6 +13,8 @@ from ..loggers import Logger
 
 logger = Logger()
 
+AppliedConfigIdentity = namedtuple("AppliedConfigIdentity", ["value", "source"])
+
 
 class ConfigHistory:
     def __init__(self, setting: Dynaconf, /):
@@ -106,9 +108,7 @@ class InspectConfigHistory:
 
     @property
     def applied_config(self) -> dict:
-        applied_config, AppliedConfigIdentity = {}, namedtuple(
-            "AppliedConfigIdentity", ["value", "source"]
-        )
+        applied_config = {}
         for config in self.history:
             for k, v in config["value"].items():
                 applied_config.update(
@@ -122,3 +122,49 @@ class InspectConfigHistory:
             f"{self.__class__.__name__} instance cannot modify configuration history. "
             "Use ConfigHistory to modify history."
         )
+
+
+class MinimalActiveConfiguration:
+    _instance = None
+    _container = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(MinimalActiveConfiguration, cls).__new__(cls)
+        return cls._instance
+
+    @classmethod
+    def __getitem__(cls, item) -> AppliedConfigIdentity:
+        return cls._container[item]
+
+    @classmethod
+    def __setitem__(cls, key, value):
+        cls._container[key] = value
+
+    @classmethod
+    def update(cls, value: dict):
+        if not isinstance(value, AppliedConfigIdentity):
+            raise ValueError(
+                f"Value must be an instance of {AppliedConfigIdentity.__name__}."
+            )
+        cls._container.update(value)
+
+    @classmethod
+    def items(cls) -> dict:
+        return cls._container
+
+    @classmethod
+    def get(cls, key: str, /, default: Any = None) -> Any:
+        try:
+            return cls.__getitem__(key)
+        except KeyError:
+            return default
+
+    @classmethod
+    def get_value(cls, key: str, /, default: Any = None) -> Any:
+        try:
+            value, source = cls.__getitem__(key)
+        except KeyError:
+            return default
+        else:
+            return value

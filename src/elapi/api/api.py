@@ -5,21 +5,33 @@ from typing import Union, Optional, Tuple
 from httpx import Response, Client, AsyncClient, Limits
 from httpx_auth import HeaderApiKey
 
-from .configuration import API_TOKEN, TOKEN_BEARER, HOST, ENABLE_HTTP2
+from ..configuration import (
+    TOKEN_BEARER,
+    get_active_host,
+    get_active_api_token,
+    get_active_enable_http2,
+    get_active_verify_ssl,
+    get_active_timeout,
+)
 
 
 class APIRequest(ABC):
-    __slots__ = "keep_session_open", "_client"
-    host: str = HOST
-    api_token: str = API_TOKEN
-    header_name: str = TOKEN_BEARER
+    __slots__ = "keep_session_open", "_client", "host", "api_token", "header_name"
 
     def __init__(self, keep_session_open: bool = False, **kwargs):
+        self.host: str = get_active_host()
+        self.api_token: str = get_active_api_token().token
+        self.header_name: str = TOKEN_BEARER
         self.keep_session_open = keep_session_open
+        enable_http2 = get_active_enable_http2()
+        verify_ssl = get_active_verify_ssl()
+        timeout = get_active_timeout()
         _client = Client if not self.is_async_client else AsyncClient
         self._client: Union[Client, AsyncClient] = _client(
             auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
-            http2=ENABLE_HTTP2,
+            http2=enable_http2,
+            verify=verify_ssl,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -100,7 +112,6 @@ class ElabFTWURL:
         "users": ("notifications",),
         "idps": (),
     }
-    host = APIRequest.host
 
     def __init__(
         self,
@@ -115,6 +126,18 @@ class ElabFTWURL:
         self.sub_endpoint_name = sub_endpoint_name
         self.sub_endpoint_id = sub_endpoint_id
         self.query = query
+
+    @property
+    def host(self) -> str:
+        return get_active_host()
+
+    @host.setter
+    def host(self, value):
+        raise AttributeError("Host value cannot be modified!")
+
+    @host.deleter
+    def host(self):
+        raise AttributeError("Host cannot be deleted!")
 
     @property
     def endpoint_name(self) -> str:
@@ -200,7 +223,7 @@ class ElabFTWURL:
 
     def get(self) -> str:
         url = (
-            f"{ElabFTWURL.host}/{self.endpoint_name}/{self.endpoint_id}/"
+            f"{self.host}/{self.endpoint_name}/{self.endpoint_id}/"
             f"{self.sub_endpoint_name}/{self.sub_endpoint_id}"
         ).rstrip("/")
         if self.query:
@@ -302,12 +325,15 @@ class POSTRequest(APIRequest):
 class AsyncPOSTRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        limits=Limits(
+            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+        ),
+        **kwargs,
+    ):
         super().__init__(
-            timeout=180,
-            limits=Limits(
-                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-            ),
+            limits=limits,
             **kwargs,
         )
 
@@ -358,12 +384,15 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
 class AsyncGETRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        limits=Limits(
+            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+        ),
+        **kwargs,
+    ):
         super().__init__(
-            timeout=180,
-            limits=Limits(
-                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-            ),
+            limits=limits,
             **kwargs,
         )
 
@@ -452,12 +481,15 @@ class PATCHRequest(APIRequest):
 class AsyncPATCHRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        limits=Limits(
+            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+        ),
+        **kwargs,
+    ):
         super().__init__(
-            timeout=180,
-            limits=Limits(
-                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-            ),
+            limits=limits,
             **kwargs,
         )
 
@@ -545,12 +577,15 @@ class DELETERequest(APIRequest):
 class AsyncDELETERequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        limits=Limits(
+            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
+        ),
+        **kwargs,
+    ):
         super().__init__(
-            timeout=180,
-            limits=Limits(
-                max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-            ),
+            limits=limits,
             **kwargs,
         )
 

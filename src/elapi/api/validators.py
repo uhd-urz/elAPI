@@ -1,6 +1,105 @@
-from typing import Union, Optional
+from json import JSONDecodeError
+from typing import Union, Iterable, Optional
 
-from .base import Validator, RuntimeValidationError, CriticalValidationError
+import httpx
+
+from ..core_validators import Validator, RuntimeValidationError, CriticalValidationError
+from ..styles import stdin_console
+from ..styles.highlight import NoteText
+
+
+class HostIdentityValidator(Validator):
+    __slots__ = ()
+
+    def __init__(self, restrict_to: Union[str, Iterable[str], None] = None):
+        self.restrict_to = restrict_to
+
+    @property
+    def restrict_to(self) -> Iterable[str]:
+        return self._restrict_to
+
+    @restrict_to.setter
+    def restrict_to(self, value):
+        if value is None:
+            self._restrict_to = None
+        elif isinstance(value, str):
+            self._restrict_to = [value]
+        elif isinstance(value, Iterable):
+            self._restrict_to = value
+        else:
+            raise AttributeError(
+                "restrict_to must be a string of target host URL, or an iterable of strings where "
+                f"each string is a host URL that {HostIdentityValidator.__name__} validation will be restricted to."
+            )
+
+    @staticmethod
+    def check_endpoint():
+        from ..api import GETRequest
+
+        session = GETRequest()
+        return session(endpoint_name="apikeys", endpoint_id=None)
+
+    def validate(self):
+        from ..loggers import Logger
+        from ..configuration import get_active_host, get_active_api_token
+        from ..configuration import KEY_HOST
+
+        logger = Logger()
+        host = get_active_host()
+        api_token = get_active_api_token()
+        if self.restrict_to is not None:
+            if host not in self.restrict_to:
+                logger.error(
+                    f"Detected '{KEY_HOST.lower()}' is different from the restricted host. "
+                    f"'{KEY_HOST.lower()}' could not be validated!"
+                )
+                try:
+                    stdin_console.print(
+                        NoteText(
+                            f"Detected '{KEY_HOST.lower()}': '{host}'. "
+                            f"Host(s) restricted by {HostIdentityValidator.__name__}: '{', '.join(self.restrict_to)}'."
+                        )
+                    )
+                except TypeError as e:
+                    raise ValueError(
+                        f"An invalid value might have been given to restrict_to "
+                        f"attribute of {HostIdentityValidator.__name__}. Validation could not be completed!"
+                    ) from e
+                raise CriticalValidationError
+
+        API_TOKEN_MASKED = api_token
+        try:
+            response: httpx.Response = self.check_endpoint()
+            response.json()
+        except (httpx.HTTPError, JSONDecodeError) as error:
+            logger.critical(
+                f"There was a problem accessing host '{host}' with API token '{API_TOKEN_MASKED}'."
+            )
+            try:
+                # noinspection PyUnboundLocalVariable
+                logger.info(
+                    f"Returned response: '{response.status_code}: {response.text}'"
+                )
+            except UnboundLocalError:
+                logger.info(
+                    f"No request was made to the host URL! Exception details: '{error!r}'"
+                )
+                raise RuntimeValidationError
+            if response.is_server_error:
+                logger.critical(
+                    f"There was a problem with the host server: '{host}'. "
+                    f"Please contact an administrator."
+                )
+                raise RuntimeValidationError
+            stdin_console.print(
+                NoteText(
+                    "There is likely nothing wrong with the host server. "
+                    "Possible reasons for failure:\n"
+                    "• Invalid/expired/incorrect API token\n"
+                    "• Incorrect host URL\n",
+                )
+            )
+            raise RuntimeValidationError
 
 
 class PermissionValidator(Validator):
@@ -63,13 +162,12 @@ class PermissionValidator(Validator):
     def validate(self) -> None:
         from ..api import GETRequest
         from ..loggers import Logger
-        from .identity import COMMON_NETWORK_ERRORS, HostIdentityValidator
 
         logger = Logger()
         try:
             session = GETRequest(keep_session_open=True)
             caller_data: dict = session(endpoint_name="users", endpoint_id="me").json()
-        except COMMON_NETWORK_ERRORS:
+        except (httpx.HTTPError, JSONDecodeError):
             logger.critical(
                 "Something went wrong while trying to read user information! "
                 f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
@@ -111,7 +209,6 @@ class APITokenRWValidator(Validator):
 
     def validate(self):
         from ..api import GETRequest
-        from .identity import COMMON_NETWORK_ERRORS, HostIdentityValidator
         from ..loggers import Logger
 
         logger = Logger()
@@ -121,7 +218,7 @@ class APITokenRWValidator(Validator):
                 api_token_data: Optional[dict] = _session(
                     endpoint_name="apikeys", endpoint_id="me"
                 ).json()[0]
-            except COMMON_NETWORK_ERRORS:
+            except (httpx.HTTPError, JSONDecodeError):
                 logger.critical(
                     "Something went wrong while trying to read API token information! "
                     f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
