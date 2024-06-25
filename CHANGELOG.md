@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7.dev5] - 2024-06-25
+
+The fourth development release was not the penultimate one before the final release. We now release the fifth
+development version. This release brings lots of bug fixes, improvements, new features and architectural changes
+necessary for upcoming 3rd-part plugin support.
+
+### Added
+
+- Refactor and restructure design pattern; current design pattern observably follows "simple layered design
+  pattern" that allows proper 3rd-party plugin
+  support [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- New global
+  option `--override-config/--OC` [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- Add support for new configuration
+  fields: `enable_http2`, `verify_ssl`, `timeout` [#55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- Add startup callback
+  function `cli_startup` [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+    - Validate configuration during startup
+- Add `typer.Typer` overloaded
+  class `elapi.plugins.commons.Typer`  [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- Add singleton class `MinimalActiveConfiguration` in `elapi.configuration` that can always be used to get overloaded
+  configuration values [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- Make all HTTP client APIs
+  configurable [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+- Add `generate-table` sub-command for `bill-teams` plugin
+
+### Fixed
+
+- Fix too many `INFO` messages [#42](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/42)
+- Fix logger throwing an exception [#45](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/45)
+- Fix configuration not being validated [#30](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/30)
+- Fix "current" as valid endpoint ID [#49](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/49)
+- Fix JSON input parser issue [#48](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/48)
+
+### Changed
+
+- Move raw command panel to `RAW API commands` panel
+- Make `bill-teams` plugin optional. This plugin can only be installed
+  with `pipx install elapi[uhd-urz]`  [!53](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/53)
+- Move `api.py`, `endpoint.py` to its own package directory `api/`
+- Relocate validator classes; add `validators.py` that aggregates all necessary validators to retain backward
+  compatibility
+- Increased default timeout to 30
+  seconds [!59](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/59)
+- Remove default keyword arguments (`timeout`) from HTTP clients
+
 ## [1.0.7.dev4] - 2024-06-06
 
 Fourth development release before the next stable version. This is mainly a hot-patch release. Big thanks to
