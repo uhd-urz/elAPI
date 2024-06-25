@@ -5,7 +5,7 @@ import typer
 PLUGIN_NAME: str = "bill-teams"
 
 if not (find_spec("tenacity") and find_spec("dateutil")):
-    app = typer.Typer()
+    ...
 else:
     from typing import Annotated, Optional
 
