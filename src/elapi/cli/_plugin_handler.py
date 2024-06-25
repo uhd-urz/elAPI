@@ -38,7 +38,10 @@ class InternalPluginHandler:
             )  # Python will find module relative to __package__ path,
             # without this module.__package__ change Python will throw an ImportError.
             spec.loader.exec_module(module)
-            yield getattr(module, INTERNAL_PLUGIN_TYPER_APP_VAR_NAME)
+            try:
+                yield getattr(module, INTERNAL_PLUGIN_TYPER_APP_VAR_NAME)
+            except AttributeError:
+                yield
 
 
 internal_plugin_typer_apps = InternalPluginHandler().get_typer_apps()

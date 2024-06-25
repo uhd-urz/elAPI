@@ -174,12 +174,13 @@ def cli_startup_for_plugins(
 
 
 for _app in internal_plugin_typer_apps:
-    COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
-    app.add_typer(
-        _app,
-        rich_help_panel="Plugins",
-        callback=cli_startup_for_plugins,
-    )
+    if _app is not None:
+        COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
+        app.add_typer(
+            _app,
+            rich_help_panel="Plugins",
+            callback=cli_startup_for_plugins,
+        )
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
