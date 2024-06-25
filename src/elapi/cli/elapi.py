@@ -52,7 +52,7 @@ def cli_startup(
     ] = "{}",
 ) -> type(None):
     import click
-    from sys import orig_argv
+    from sys import argv
     import json
     from ..styles import print_typer_error, NoteText
     from ..configuration import (
@@ -113,10 +113,7 @@ def cli_startup(
             not in COMMANDS_TO_SKIP_CLI_STARTUP
             and ctx.command.name != calling_sub_command_name
         ):
-            if (
-                orig_argv[-1] != (ARG_TO_SKIP := "--help")
-                or ARG_TO_SKIP not in orig_argv
-            ):
+            if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 if override_config or not MainConfigurationValidator.ALREADY_VALIDATED:
                     _validate = Validate(MainConfigurationValidator())
                     try:
