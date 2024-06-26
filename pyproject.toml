@@ -39,15 +39,8 @@ pyyaml = "^6.0.1"
 mistune = "^3.0.2"
 h2 = "^4.1.0"
 
-[project.optional-dependencies]
-uhd_urz = ["python-dateutil=^2.8.2", "tenacity=^8.2.3"]
-
-[tool.poetry.group.uhd_urz]
-optional = true
-
-[tool.poetry.group.uhd_urz.dependencies]
-python-dateutil = "^2.8.2"
-tenacity = "^8.2.3"
+[tool.poetry.extras]
+uhd-urz = ["python-dateutil=^2.8.2", "tenacity=^8.2.3"]
 
 [tool.poetry.group.dev.dependencies]
 ptpython = "^3.0.23"
