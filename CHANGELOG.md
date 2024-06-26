@@ -5,23 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.7.dev7] - 2024-06-26
+## [1.0.7.dev8] - 2024-06-26
 
 Part of an important change (making `bill-teams` plugin
-optional [!53](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/53)) in previous
-version `1.0.7.dev6` unfortunately did not
-work as expected. Running `pipx install "elapi[uhd_urz]==1.0.7.dev6"` did not install the optional packages defined
-under `uhd_urz` in `pyproject.toml`. We update the table/dictionary name that defines "extras", and we rename the
-keyword back to `uhd-urz` in this hotfix release.
-
-## [1.0.7.dev6] - 2024-06-26
-
-Part of an important change (making `bill-teams` plugin
-optional [!53](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/53)) in previous
-version `1.0.7.dev5` unfortunately did not
-work as expected. Running `pipx install "elapi[uhd-urz]==1.0.7.dev5"` did not install the optional packages defined
-under `uhd-urz` in `pyproject.toml`. We rename the keyword to `uhd_urz` in this
-hotfix release.
+optional [!53](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/53)) unfortunately did not
+work as expected. We release a quick fix in this development version.
 
 ## [1.0.7.dev5] - 2024-06-25
 
