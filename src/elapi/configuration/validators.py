@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional, Iterable
 
-from ._config_history import MinimalActiveConfiguration
+from ._config_history import MinimalActiveConfiguration, FieldValueWithKey
 from ..core_validators import Validator, CriticalValidationError
 from ..styles import stdin_console, Missing
 from ..styles.highlight import NoteText
@@ -416,25 +416,15 @@ class MainConfigurationValidator(Validator):
             )
         self._active_configuration = value
 
-    def validate(self) -> None:
-        from ..loggers import Logger
-        from .config import (
-            FALLBACK_SOURCE_NAME,
-            KEY_EXPORT_DIR,
-            _XDG_DOWNLOAD_DIR,
-            ENV_XDG_DOWNLOAD_DIR,
-            FALLBACK_EXPORT_DIR,
-            history,
-        )
+    def validate(self) -> list[FieldValueWithKey]:
         from ..core_validators import Validate, ValidationError
-        from ._config_history import AppliedConfigIdentity
+        from .config import KEY_EXPORT_DIR
         from .config import KEY_ENABLE_HTTP2, ENABLE_HTTP2_DEFAULT_VAL
         from .config import KEY_VERIFY_SSL, VERIFY_SSL_DEFAULT_VAL
-        from .config import KEY_API_TOKEN, PROJECT_CONFIG_LOC, CONFIG_FILE_NAME
         from .config import KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING_DEFAULT_VAL
         from .config import KEY_TIMEOUT, TIMEOUT_DEFAULT_VAL
 
-        logger = Logger()
+        validated_fields: list[FieldValueWithKey] = []
 
         if HostConfigurationValidator in self.limited_to:
             _validate = Validate(HostConfigurationValidator(self.active_configuration))
@@ -459,27 +449,8 @@ class MainConfigurationValidator(Validator):
                 ).get()
             except ValidationError as e:
                 raise e
-            # Update setting history after validation
-            _val, _src = self.active_configuration[KEY_EXPORT_DIR]
-            self.active_configuration[KEY_EXPORT_DIR] = AppliedConfigIdentity(
-                export_dir, _src
-            )
-            if export_dir == _XDG_DOWNLOAD_DIR:
-                try:
-                    history.delete(KEY_EXPORT_DIR)
-                except KeyError:
-                    ...
-                self.active_configuration[KEY_EXPORT_DIR] = AppliedConfigIdentity(
-                    export_dir, ENV_XDG_DOWNLOAD_DIR
-                )
-            elif export_dir == FALLBACK_EXPORT_DIR:
-                try:
-                    history.delete(KEY_EXPORT_DIR)
-                except KeyError:
-                    ...
-                self.active_configuration[KEY_EXPORT_DIR] = AppliedConfigIdentity(
-                    export_dir, FALLBACK_SOURCE_NAME
-                )
+            # Update validated_fields after validation
+            validated_fields.append(FieldValueWithKey(KEY_EXPORT_DIR, export_dir))
         if BooleanWithFallbackConfigurationValidator in self.limited_to:
             unsafe_token_warning = Validate(
                 BooleanWithFallbackConfigurationValidator(
@@ -488,28 +459,10 @@ class MainConfigurationValidator(Validator):
                     UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
                 )
             ).get()
-            # Update setting history after validation
-            _val, _src = self.active_configuration[KEY_UNSAFE_TOKEN_WARNING]
-            self.active_configuration[KEY_UNSAFE_TOKEN_WARNING] = AppliedConfigIdentity(
-                unsafe_token_warning, _src
+            # Update validated_fields after validation
+            validated_fields.append(
+                FieldValueWithKey(KEY_UNSAFE_TOKEN_WARNING, unsafe_token_warning)
             )
-            if unsafe_token_warning != _val:
-                try:
-                    history.delete(KEY_UNSAFE_TOKEN_WARNING)
-                except KeyError:
-                    ...
-                self.active_configuration[KEY_UNSAFE_TOKEN_WARNING] = (
-                    AppliedConfigIdentity(unsafe_token_warning, FALLBACK_SOURCE_NAME)
-                )
-            if unsafe_token_warning and self.active_configuration[
-                KEY_API_TOKEN
-            ].source == str(PROJECT_CONFIG_LOC):
-                logger.warning(
-                    f"'{KEY_API_TOKEN}' field in project-based configuration file {PROJECT_CONFIG_LOC} found. "
-                    f"This is highly discouraged. The token is at risk of being leaked into public repositories. "
-                    f"If you still insist, please make sure {CONFIG_FILE_NAME} is included in .gitignore."
-                )
-
             for key_name, default_value in [
                 (KEY_ENABLE_HTTP2, ENABLE_HTTP2_DEFAULT_VAL),
                 (KEY_VERIFY_SSL, VERIFY_SSL_DEFAULT_VAL),
@@ -521,18 +474,8 @@ class MainConfigurationValidator(Validator):
                         default_value,
                     )
                 ).get()
-                # Update setting history after validation
-                _val, _src = self.active_configuration[key_name]
-                self.active_configuration[key_name] = AppliedConfigIdentity(value, _src)
-                if value != _val:
-                    try:
-                        history.delete(key_name)
-                    except KeyError:
-                        ...
-                    self.active_configuration[key_name] = AppliedConfigIdentity(
-                        value, FALLBACK_SOURCE_NAME
-                    )
-
+                # Update validated_fields after validation
+                validated_fields.append(FieldValueWithKey(key_name, value))
         if DecimalWithFallbackConfigurationValidator in self.limited_to:
             timeout = Validate(
                 DecimalWithFallbackConfigurationValidator(
@@ -541,16 +484,6 @@ class MainConfigurationValidator(Validator):
                     TIMEOUT_DEFAULT_VAL,
                 )
             ).get()
-            # Update setting history after validation
-            _val, _src = self.active_configuration[KEY_TIMEOUT]
-            self.active_configuration[KEY_TIMEOUT] = AppliedConfigIdentity(
-                timeout, _src
-            )
-            if timeout != _val:
-                try:
-                    history.delete(KEY_TIMEOUT)
-                except KeyError:
-                    ...
-                self.active_configuration[KEY_TIMEOUT] = AppliedConfigIdentity(
-                    timeout, FALLBACK_SOURCE_NAME
-                )
+            # Update validated_fields after validation
+            validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
+        return validated_fields

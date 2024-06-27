@@ -1,6 +1,6 @@
-# noinspection PyUnresolvedReferences
 # ruff: noqa: F401
-from ._config_history import AppliedConfigIdentity
+from ._config_history import AppliedConfigIdentity, FieldValueWithKey
+from ._overload_history import ApplyConfigHistory, reinitiate_config
 
 # noinspection PyUnresolvedReferences
 from .config import (
