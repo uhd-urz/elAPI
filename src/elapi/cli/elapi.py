@@ -62,7 +62,8 @@ def cli_startup(
     )
     from ..configuration.config import APIToken
     from ..configuration.validators import MainConfigurationValidator
-    from ..core_validators import Validate, ValidationError, Exit
+    from ..core_validators import Exit
+    from ..configuration import reinitiate_config
 
     try:
         override_config: dict = json.loads(override_config)
@@ -115,13 +116,7 @@ def cli_startup(
         ):
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 if override_config or not MainConfigurationValidator.ALREADY_VALIDATED:
-                    _validate = Validate(MainConfigurationValidator())
-                    try:
-                        _validate()
-                    except ValidationError:
-                        raise Exit(1)
-                    else:
-                        MainConfigurationValidator.ALREADY_VALIDATED = True
+                    reinitiate_config()
         else:
             if calling_sub_command_name in INSENSITIVE_PLUGIN_NAMES:
                 if override_config:
@@ -131,22 +126,7 @@ def cli_startup(
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_INSENSITIVE_PLUGIN_NAMES:
-                    from ..configuration.validators import (
-                        ExportDirConfigurationValidator,
-                        BooleanWithFallbackConfigurationValidator,
-                        DecimalWithFallbackConfigurationValidator,
-                    )
-
-                    _validate = Validate(
-                        MainConfigurationValidator(
-                            limited_to=[
-                                ExportDirConfigurationValidator,
-                                BooleanWithFallbackConfigurationValidator,
-                                DecimalWithFallbackConfigurationValidator,
-                            ]
-                        )
-                    )
-                    _validate()
+                    reinitiate_config(ignore_essential_validation=True)
 
 
 def cli_startup_for_plugins(

@@ -14,6 +14,7 @@ from ..loggers import Logger
 logger = Logger()
 
 AppliedConfigIdentity = namedtuple("AppliedConfigIdentity", ["value", "source"])
+FieldValueWithKey = namedtuple("FieldValueWithKey", ["key_name", "value"])
 
 
 class ConfigHistory:
