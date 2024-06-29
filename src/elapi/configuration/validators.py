@@ -292,7 +292,6 @@ class BooleanWithFallbackConfigurationValidator(Validator):
 
     def validate(self) -> bool:
         from ..loggers import Logger
-        from .config import settings
 
         logger = Logger()
         if isinstance(
@@ -305,7 +304,7 @@ class BooleanWithFallbackConfigurationValidator(Validator):
                 f"but it's null."
             )
             return self.fallback_value
-        if not isinstance(value := settings.as_bool(self.key_name), bool):
+        if not isinstance(value, bool):
             logger.warning(
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's not a boolean."
@@ -423,6 +422,7 @@ class MainConfigurationValidator(Validator):
         from .config import KEY_VERIFY_SSL, VERIFY_SSL_DEFAULT_VAL
         from .config import KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING_DEFAULT_VAL
         from .config import KEY_TIMEOUT, TIMEOUT_DEFAULT_VAL
+        from .config import KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL
 
         validated_fields: list[FieldValueWithKey] = []
 
@@ -466,6 +466,7 @@ class MainConfigurationValidator(Validator):
             for key_name, default_value in [
                 (KEY_ENABLE_HTTP2, ENABLE_HTTP2_DEFAULT_VAL),
                 (KEY_VERIFY_SSL, VERIFY_SSL_DEFAULT_VAL),
+                (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL),
             ]:
                 value = Validate(
                     BooleanWithFallbackConfigurationValidator(
