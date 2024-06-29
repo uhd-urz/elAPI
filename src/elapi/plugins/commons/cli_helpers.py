@@ -1,4 +1,3 @@
-import re
 from collections.abc import Iterable
 from typing import Optional, Literal, Type
 
@@ -7,9 +6,10 @@ from click import Context
 from typer.core import TyperGroup
 
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
+from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
-from ...core_validators import Exit
+from ...utils import check_reserved_keyword
 
 logger = Logger()
 
@@ -106,16 +106,9 @@ class Typer(typer.Typer):
                 **kwargs,
             )
         except TypeError as e:
-            if re.search(
-                r"got multiple values for keyword argument",
-                error_verbose := str(e),
-                re.IGNORECASE,
-            ):
-                _reserved_key_end = re.match(
-                    r"^'\w+'", error_verbose[::-1], re.IGNORECASE
-                ).end()
-                raise AttributeError(
-                    f"{APP_NAME} overloaded class '{__package__}.{Typer.__name__}' reserves the keyword argument "
-                    f"'{error_verbose[- _reserved_key_end + 1: - 1]}' for {typer.Typer.__name__} class."
-                ) from e
+            check_reserved_keyword(
+                e,
+                what=f"{APP_NAME} overloaded class '{__package__}.{Typer.__name__}'",
+                against=f"{typer.Typer.__name__} class",
+            )
             raise e
