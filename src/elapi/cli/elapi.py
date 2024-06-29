@@ -12,30 +12,58 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
         $ elapi get users --id <id>
 """
 
+from functools import partial
 from typing import Optional
 
 import typer
 from rich import pretty
 from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 from typing_extensions import Annotated
 
-from ._plugin_handler import internal_plugin_typer_apps
+from ._plugin_handler import PluginInfo
+from ._plugin_handler import (
+    internal_plugin_typer_apps,
+    external_local_plugin_typer_apps,
+    PLUGIN_ERROR_MESSAGES,
+)
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR
 from ..loggers import Logger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
-from ..styles import stdin_console, stderr_console
+from ..styles import stdin_console, stderr_console, rich_format_help_with_callback
 
 logger = Logger()
 pretty.install()
 
+
 app = Typer()
-INSENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
-SPECIAL_INSENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
-COMMANDS_TO_SKIP_CLI_STARTUP: list = list(INSENSITIVE_PLUGIN_NAMES)
+SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
+SPECIAL_SENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
+COMMANDS_TO_SKIP_CLI_STARTUP: list = list(SENSITIVE_PLUGIN_NAMES)
 CLI_STARTUP_CALLBACK_PANEL_NAME: str = f"{APP_NAME} global options"
+RESERVED_PLUGIN_NAMES: tuple[str, ...] = (
+    "apikeys",
+    "config",
+    "info",
+    "items",
+    "events",
+    "todolist",
+    "users",
+    "idps",
+    "import",
+    "exports",
+    APP_NAME,
+)
+INTERNAL_PLUGIN_NAME_REGISTRY: dict = {}
+EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY: dict = {}
+
+INTERNAL_PLUGIN_PANEL_NAME: str = "Built-in plugins"
+THIRD_PARTY_PLUGIN_PANEL_NAME: str = "Third-party plugins"
 
 
 @app.callback()
@@ -118,14 +146,14 @@ def cli_startup(
                 if override_config or not MainConfigurationValidator.ALREADY_VALIDATED:
                     reinitiate_config()
         else:
-            if calling_sub_command_name in INSENSITIVE_PLUGIN_NAMES:
+            if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
                     print_typer_error(
                         f"{APP_NAME} command '{calling_sub_command_name}' does not support the override argument "
                         f"--override-config/--OC."
                     )
                     raise Exit(1)
-                if calling_sub_command_name in SPECIAL_INSENSITIVE_PLUGIN_NAMES:
+                if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
                     reinitiate_config(ignore_essential_validation=True)
 
 
@@ -155,12 +183,72 @@ def cli_startup_for_plugins(
 
 for _app in internal_plugin_typer_apps:
     if _app is not None:
+        INTERNAL_PLUGIN_NAME_REGISTRY[app_name := _app.info.name] = _app
         COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
         app.add_typer(
             _app,
-            rich_help_panel="Plugins",
+            rich_help_panel=INTERNAL_PLUGIN_PANEL_NAME,
             callback=cli_startup_for_plugins,
         )
+
+
+def disable_plugin(
+    main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
+):
+    PLUGIN_ERROR_MESSAGES.append(err_msg)
+    for i, registered_app in enumerate(main_app.registered_groups):
+        if plugin_name == registered_app.typer_instance.info.name:
+            main_app.registered_groups.pop(i)
+            break
+
+    @main_app.command(
+        name=plugin_name,
+        rich_help_panel=panel_name,
+        help="🚫️ Disabled due to name conflict. See `--help` or log file to know more.",
+    )
+    def name_conflict_error():
+        from ..core_validators import Exit
+
+        logger.error(err_msg)
+        raise Exit(1)
+
+
+def plugin_warning_panel():
+    from ..styles import NoteText
+    from ..configuration import CONFIG_FILE_NAME
+
+    if PLUGIN_ERROR_MESSAGES:
+        grid = Table.grid(expand=True, padding=1)
+        grid.add_column(style="bold")
+        grid.add_column()
+        for i, message in enumerate(PLUGIN_ERROR_MESSAGES, start=1):
+            with stderr_console.capture() as capture:
+                logger.handlers[-1]._log_render.show_path = False
+                logger.warning(message)
+            message = Text.from_ansi(capture.get())
+            grid.add_row(f"{i}.", message)
+        logger.handlers[-1]._log_render.show_path = True
+        grid.add_row(
+            "",
+            NoteText(
+                f"{APP_NAME} will continue to work despite the above warnings. "
+                f"Set [dim]development_mode: True[/dim] in {CONFIG_FILE_NAME} configuration "
+                "file to debug these errors with Python traceback (if any).",
+                stem="Note",
+            ),
+        )
+        stderr_console.print(
+            Panel(
+                grid,
+                title=f"[yellow]Important message{'s' if len(PLUGIN_ERROR_MESSAGES) > 1 else ''}[/yellow]",
+                title_align="left",
+            )
+        )
+
+
+typer.rich_utils.rich_format_help = partial(
+    rich_format_help_with_callback, result_callback=plugin_warning_panel
+)
 
 typer.rich_utils.STYLE_HELPTEXT = (
     ""  # fixes https://github.com/tiangolo/typer/issues/437
@@ -1017,3 +1105,72 @@ def cleanup() -> None:
         typer.echo()  # mainly for a newline!
         ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
     stdin_console.print("Done!", style="green")
+
+
+for plugin_info in external_local_plugin_typer_apps:
+    if plugin_info is not None:
+        _app, path = plugin_info
+    else:
+        continue
+    if _app is not None:
+        original_name: str = _app.info.name
+        app_name: str = original_name.lower()
+        if app_name in EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY:
+            error_message = (
+                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"existing third-party plugin from {EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name].path}. "
+                f"Please rename the plugin."
+            )
+            error_message += (
+                " Note, plugin names are case-insensitive."
+                if original_name != app_name
+                else ""
+            )
+            disable_plugin(
+                app,
+                plugin_name=app_name,
+                err_msg=error_message,
+                panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+            )
+        elif app_name in INTERNAL_PLUGIN_NAME_REGISTRY:
+            error_message = (
+                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"existing built-in plugin name. "
+                f"Please rename the plugin."
+            )
+            error_message += (
+                " Note, plugin names are case-insensitive."
+                if original_name != app_name
+                else ""
+            )
+            disable_plugin(
+                app,
+                plugin_name=app_name,
+                err_msg=error_message,
+                panel_name=INTERNAL_PLUGIN_PANEL_NAME,
+            )
+        elif app_name in RESERVED_PLUGIN_NAMES:
+            error_message = (
+                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"reserved name. "
+                f"Please rename the plugin."
+            )
+            error_message += (
+                " Note, plugin names are case-insensitive."
+                if original_name != app_name
+                else ""
+            )
+            disable_plugin(
+                app,
+                plugin_name=app_name,
+                err_msg=error_message,
+                panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+            )
+        else:
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, path)
+            COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
+            app.add_typer(
+                _app,
+                rich_help_panel=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                callback=cli_startup_for_plugins,
+            )
