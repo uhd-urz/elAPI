@@ -7,9 +7,11 @@ from .config import history, FALLBACK_SOURCE_NAME
 class ApplyConfigHistory:
     def __init__(self, configuration_fields: list[FieldValueWithKey]):
         from ._config_history import MinimalActiveConfiguration
+        from .config import settings
 
         self.configuration_fields = configuration_fields
         self.active_configuration = MinimalActiveConfiguration()
+        self.settings = settings
 
     @property
     def configuration_fields(self):
@@ -49,6 +51,7 @@ class ApplyConfigHistory:
             KEY_ENABLE_HTTP2,
             KEY_VERIFY_SSL,
             KEY_TIMEOUT,
+            KEY_DEVELOPMENT_MODE,
             _XDG_DOWNLOAD_DIR,
             PROJECT_CONFIG_LOC,
             ENV_XDG_DOWNLOAD_DIR,
@@ -93,7 +96,12 @@ class ApplyConfigHistory:
                         f"If you still insist, please make sure {CONFIG_FILE_NAME} "
                         f"is included in .gitignore."
                     )
-            elif key_name in [KEY_ENABLE_HTTP2, KEY_VERIFY_SSL, KEY_TIMEOUT]:
+            elif key_name in [
+                KEY_ENABLE_HTTP2,
+                KEY_VERIFY_SSL,
+                KEY_TIMEOUT,
+                KEY_DEVELOPMENT_MODE,
+            ]:
                 self._modify_history(key_name, value)
 
 

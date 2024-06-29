@@ -43,3 +43,10 @@ def get_active_timeout() -> float:
     from .config import KEY_TIMEOUT, MinimalActiveConfiguration
 
     return MinimalActiveConfiguration().get_value(KEY_TIMEOUT)
+
+
+def get_development_mode() -> bool:
+    from .config import KEY_DEVELOPMENT_MODE, MinimalActiveConfiguration
+
+    return MinimalActiveConfiguration().get_value(KEY_DEVELOPMENT_MODE)
+
