@@ -224,10 +224,7 @@ def messages_panel():
     messages = MessagesList()
 
     if messages:
-        handler = RichHandler(
-            show_path=False,
-            show_time=False,
-        )
+        handler = RichHandler(show_path=False, show_time=False)
         log_record = logging.LogRecord(
             logger.name,
             level=logging.NOTSET,
@@ -247,6 +244,8 @@ def messages_panel():
             )
             log_record.levelno = log_tuple.level
             log_record.levelname = logging.getLevelName(log_tuple.level)
+            # The following is the only way that I could figure out for the log
+            # message to show up in rich panel without breaking the pretty rich formatting.
             message = handler.render(
                 record=log_record,
                 traceback=None,
