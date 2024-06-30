@@ -20,9 +20,9 @@ from ..configuration.config import (
     EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME,
 )
 from ..loggers import Logger
+from ..utils import add_message
 
 logger = Logger()
-PLUGIN_ERROR_MESSAGES: list = []
 PluginInfo = namedtuple("PluginInfo", ["plugin_app", "path"])
 
 
@@ -70,6 +70,7 @@ class ExternalPluginHandler:
 
     def get_typer_apps(self) -> Generator[typer.Typer, None, None]:
         import sys
+        import logging
 
         for plugin_name, path in self.plugin_locations:
             spec = importlib.util.spec_from_file_location(
@@ -89,12 +90,13 @@ class ExternalPluginHandler:
                 try:
                     spec.loader.exec_module(module)
                 except (Exception, BaseException) as e:
-                    PLUGIN_ERROR_MESSAGES.append(
+                    message: str = (
                         f"An exception occurred while trying to load a local "
                         f"plugin '{plugin_name}' in path {cli_script_path}. "
                         f"Plugin '{plugin_name}' will be ignored. "
                         f'Exception details: "{e.__class__.__name__}: {e}"'
                     )
+                    add_message(message, logging.WARNING)
                     yield
             try:
                 yield PluginInfo(
