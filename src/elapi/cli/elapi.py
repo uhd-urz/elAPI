@@ -924,15 +924,15 @@ def delete(
     ] = None,
     sub_endpoint_name: Annotated[
         str,
-        typer.Option("--sub", show_default=False),
+        typer.Option("--sub", help=docs["sub_endpoint_name"], show_default=False),
     ] = None,
     sub_endpoint_id: Annotated[
         str,
-        typer.Option("--sub-id", show_default=False),
+        typer.Option("--sub-id", help=docs["sub_endpoint_id"], show_default=False),
     ] = None,
     query: Annotated[
         str,
-        typer.Option("--query", show_default=False),
+        typer.Option("--query", help=docs["query"], show_default=False),
     ] = "{}",
     data_format: Annotated[
         str,
