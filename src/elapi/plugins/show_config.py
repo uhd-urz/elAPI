@@ -1,12 +1,14 @@
 from .._names import ENV_XDG_DOWNLOAD_DIR
 from ..configuration import (
     APP_NAME,
+    APP_BRAND_NAME,
     inspect,
     get_active_unsafe_token_warning,
     get_active_enable_http2,
     get_active_export_dir,
     get_active_verify_ssl,
     get_active_timeout,
+    get_development_mode,
     APP_DATA_DIR,
     TMP_DIR,
     KEY_HOST,
@@ -15,13 +17,15 @@ from ..configuration import (
     KEY_ENABLE_HTTP2,
     KEY_VERIFY_SSL,
     KEY_TIMEOUT,
+    KEY_DEVELOPMENT_MODE,
     KEY_EXPORT_DIR,
     LOG_FILE_PATH,
+    EXTERNAL_LOCAL_PLUGIN_DIR,
     FALLBACK_SOURCE_NAME,
     minimal_active_configuration,
 )
 from ..styles import Missing, ColorText
-from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
+from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN, LIGHTCYAN
 
 detected_config = minimal_active_configuration
 detected_config_files = inspect.applied_config_files
@@ -40,7 +44,7 @@ try:
 except KeyError:
     unsafe_token_use_source = FALLBACK_SOURCE_NAME
 finally:
-    unsafe_token_use_value = "Yes" if get_active_unsafe_token_warning() else "No"
+    unsafe_token_use_value = "True" if get_active_unsafe_token_warning() else "False"
 
 try:
     enable_http2_source = detected_config[KEY_ENABLE_HTTP2].source
@@ -48,7 +52,7 @@ try:
 except KeyError:
     enable_http2_source = FALLBACK_SOURCE_NAME
 finally:
-    enable_http2_value = "Yes" if get_active_enable_http2() else "No"
+    enable_http2_value = "True" if get_active_enable_http2() else "False"
 
 
 try:
@@ -57,7 +61,7 @@ try:
 except KeyError:
     verify_ssl_source = FALLBACK_SOURCE_NAME
 finally:
-    verify_ssl_value = "Yes" if get_active_verify_ssl() else "No"
+    verify_ssl_value = "True" if get_active_verify_ssl() else "False"
 
 
 try:
@@ -68,6 +72,15 @@ except KeyError:
 finally:
     timeout_value = get_active_timeout()
     timeout_value = f"{timeout_value} " + ("seconds" if timeout_value > 1 else "second")
+
+
+try:
+    development_mode_source = detected_config[KEY_DEVELOPMENT_MODE].source
+    development_mode_source = detected_config_files[development_mode_source]
+except KeyError:
+    development_mode_source = FALLBACK_SOURCE_NAME
+finally:
+    development_mode_value = "True" if get_development_mode() else "False"
 
 
 try:
@@ -91,8 +104,8 @@ detected_config_files_formatted = "\n- " + "\n- ".join(
 def show(no_keys: bool) -> str:
     _info = (
         f"""
-## {APP_NAME} configuration information
-The following debug information includes configuration values and their sources as detected by {APP_NAME}. 
+## {APP_BRAND_NAME} configuration information
+The following information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name [Key]: Value ← Source
 
 - {ColorText('Log file path').colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
@@ -136,6 +149,7 @@ The following debug information includes configuration values and their sources 
         + f": {get_active_export_dir()} ← `{export_dir_source}`"
         + f"""
 - {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {EXTERNAL_LOCAL_PLUGIN_DIR}
 - {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR}
 """
         + "\n"
@@ -170,6 +184,14 @@ The following debug information includes configuration values and their sources 
             else ""
         )
         + f": {timeout_value} ← `{timeout_source}`"
+        + "\n"
+        + f"- {ColorText('Development mode').colorize(LIGHTGREEN)}"
+        + (
+            f" **[{ColorText(KEY_DEVELOPMENT_MODE.lower()).colorize(YELLOW)}]**"
+            if not no_keys
+            else ""
+        )
+        + f": {development_mode_value} ← `{development_mode_source}`"
         + f"""
 
 
@@ -178,7 +200,7 @@ The following debug information includes configuration values and their sources 
 """
         + (
             f"""
-- `{FALLBACK_SOURCE_NAME}`: Fallback value for when no user configuration is found.
+- `{FALLBACK_SOURCE_NAME}`: Fallback value for when no user configuration is found or found to be invalid.
 """
             if FALLBACK_SOURCE_NAME
             in (
@@ -186,6 +208,7 @@ The following debug information includes configuration values and their sources 
                 unsafe_token_use_source,
                 enable_http2_source,
                 verify_ssl_source,
+                development_mode_source,
             )
             else ""
         )

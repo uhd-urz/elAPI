@@ -5,6 +5,7 @@ from typing import Union, Optional, Tuple
 from httpx import Response, Client, AsyncClient, Limits
 from httpx_auth import HeaderApiKey
 
+from .. import APP_NAME
 from ..configuration import (
     TOKEN_BEARER,
     get_active_host,
@@ -19,6 +20,9 @@ class APIRequest(ABC):
     __slots__ = "keep_session_open", "_client", "host", "api_token", "header_name"
 
     def __init__(self, keep_session_open: bool = False, **kwargs):
+        from ..utils import check_reserved_keyword
+        from .._names import CONFIG_FILE_NAME
+
         self.host: str = get_active_host()
         self.api_token: str = get_active_api_token().token
         self.header_name: str = TOKEN_BEARER
@@ -27,13 +31,23 @@ class APIRequest(ABC):
         verify_ssl = get_active_verify_ssl()
         timeout = get_active_timeout()
         _client = Client if not self.is_async_client else AsyncClient
-        self._client: Union[Client, AsyncClient] = _client(
-            auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
-            http2=enable_http2,
-            verify=verify_ssl,
-            timeout=timeout,
-            **kwargs,
-        )
+        try:
+            self._client: Union[Client, AsyncClient] = _client(
+                auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
+                http2=enable_http2,
+                verify=verify_ssl,
+                timeout=timeout,
+                **kwargs,
+            )
+        except TypeError as e:
+            check_reserved_keyword(
+                e,
+                what=f"{APP_NAME}",
+                against=f"abstract class {APIRequest.__name__}, "
+                f"so the parameter remains user-configurable "
+                f"through {CONFIG_FILE_NAME} configuration file",
+            )
+            raise e
 
     # noinspection PyMethodOverriding
     def __init_subclass__(cls, /, is_async_client: bool = False, **kwargs):

@@ -7,8 +7,8 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Union, TextIO, Generator, Optional
 
-from ._exceptions import NoException
 from .loggers import SimpleLogger
+from .utils import NoException
 
 
 class ProperPath:

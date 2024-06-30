@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
+    APP_BRAND_NAME,  # noqa: F401
+    CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
@@ -30,6 +33,7 @@ from .._names import (
     KEY_ENABLE_HTTP2,
     KEY_VERIFY_SSL,
     KEY_TIMEOUT,
+    KEY_DEVELOPMENT_MODE,
 )
 from ..core_validators import (
     Validate,
@@ -40,6 +44,7 @@ from ..core_validators import (
 from ..loggers import Logger
 from ..path import ProperPath
 from ..styles import Missing
+from ..utils import add_message
 
 logger = Logger()
 
@@ -50,6 +55,23 @@ PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 env_var_app_name = APP_NAME.upper().replace("-", "_")
 FALLBACK_SOURCE_NAME: str = "DEFAULT"
 
+_CANON_YAML_EXTENSION: str = "yaml"
+_CANON_CONFIG_FILE_NAME: str = f"{APP_NAME}.{_CANON_YAML_EXTENSION}"
+for path in [
+    SYSTEM_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    LOCAL_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    PROJECT_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+]:
+    if path.exists():
+        message = (
+            f"File '{_CANON_CONFIG_FILE_NAME}' detected in location {path}. "
+            f"If it is meant to be {APP_NAME} configuration file, "
+            f"please rename the file extension from '{_CANON_YAML_EXTENSION}' "
+            f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+            f"as file extension for configuration files."
+        )
+        add_message(message, logging.INFO)
+        break
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
     env_switcher=f"{env_var_app_name}_ENV",
@@ -159,6 +181,11 @@ VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
 TIMEOUT_DEFAULT_VAL: float = 30.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
 TIMEOUT = settings.get(KEY_TIMEOUT, None)
 
+# DEVELOPMENT_MODE falls back to false if not defined in configuration
+DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
+DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
+
+
 for key_name, key_val in [
     (KEY_HOST, HOST),
     (KEY_API_TOKEN, API_TOKEN),
@@ -167,6 +194,7 @@ for key_name, key_val in [
     (KEY_ENABLE_HTTP2, ENABLE_HTTP2),
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
+    (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
 ]:
     try:
         history.patch(key_name, key_val)
@@ -194,3 +222,11 @@ INTERNAL_PLUGIN_TYPER_APP_FILE_NAME: str = (
     f"{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}.py"
 )
 INTERNAL_PLUGIN_TYPER_APP_VAR_NAME: str = "app"
+# Local external/3rd-party plugin definitions
+EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME: str = INTERNAL_PLUGIN_DIRECTORY_NAME
+EXTERNAL_LOCAL_PLUGIN_DIR: Path = APP_DATA_DIR / EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = (
+    INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX
+)
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME: str = INTERNAL_PLUGIN_TYPER_APP_FILE_NAME
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME: str = INTERNAL_PLUGIN_TYPER_APP_VAR_NAME
