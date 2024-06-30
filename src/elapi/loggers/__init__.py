@@ -1,4 +1,5 @@
-from .base import MainLogger, SimpleLogger
+from .base import LogMessageTuple  # noqa: F401
+from .base import MainLogger, SimpleLogger, FileLogger  # noqa: F401
 
 
 class Logger:
