@@ -5,6 +5,7 @@ from pathlib import Path
 # In which case, import their counterparts from src/config.py
 # name definitions
 APP_NAME: str = "elapi"
+APP_BRAND_NAME: str = "elAPI"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
 CONFIG_FILE_EXTENSION: str = "yml"
 CONFIG_FILE_NAME: str = f"{APP_NAME}.{CONFIG_FILE_EXTENSION}"
