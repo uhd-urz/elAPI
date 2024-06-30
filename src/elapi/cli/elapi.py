@@ -513,8 +513,9 @@ def get(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1) from e
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -712,8 +713,9 @@ def post(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -873,8 +875,9 @@ def patch(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -1012,8 +1015,9 @@ def delete(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
