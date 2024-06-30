@@ -14,6 +14,7 @@ from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
+    APP_BRAND_NAME,  # noqa: F401
     CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,

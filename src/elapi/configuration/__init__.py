@@ -5,6 +5,7 @@ from ._overload_history import ApplyConfigHistory, reinitiate_config
 # noinspection PyUnresolvedReferences
 from .config import (
     APP_NAME,
+    APP_BRAND_NAME,
     FALLBACK_SOURCE_NAME,
     SYSTEM_CONFIG_LOC,
     LOCAL_CONFIG_LOC,
@@ -29,6 +30,10 @@ from .config import (
     ENABLE_HTTP2,
     DEVELOPMENT_MODE,
     TMP_DIR,
+    EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME,
+    EXTERNAL_LOCAL_PLUGIN_DIR,
+    EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME,
+    EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME,
     history,
     inspect,
     MinimalActiveConfiguration,
