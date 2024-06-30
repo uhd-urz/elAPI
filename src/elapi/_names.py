@@ -6,7 +6,8 @@ from pathlib import Path
 # name definitions
 APP_NAME: str = "elapi"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
-CONFIG_FILE_NAME: str = f"{APP_NAME}.yml"
+CONFIG_FILE_EXTENSION: str = "yml"
+CONFIG_FILE_NAME: str = f"{APP_NAME}.{CONFIG_FILE_EXTENSION}"
 DEFAULT_EXPORT_DATA_FORMAT: str = "json"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
