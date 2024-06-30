@@ -99,11 +99,9 @@ __PARAMETERS__doc__ = {
     "init_export_dir": f"Preferred export directory. If '--export-dir' isn't passed, {EXPORT_DIR} will be "
                         "set as the export directory.",
     "cli_startup": f"⚡️Force override detected configuration from '{CONFIG_FILE_NAME}'. "
-                     "The value should be in **JSON** format. This option can only be passed "
-                     "**before** passing any other argument/option/command. E.g., "
-                     '`elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml`. '
-                   'You can use tools like [yq](https://mikefarah.gitbook.io/yq) and '
-                   '[jq](https://jqlang.github.io/jq/) to read values from YAML and JSON _files_ respectively, '
-                   'if you do not wish to hand-type JSON syntax. E.g., '
-                   '`elapi --OC "$(cat ~/params.yml | yq e -o json -I0)" experiments get -i <experiment ID> -F csv`.',
+                     "The value can be in **JSON** format as a string, or a JSON or YAML **file path**. "
+                     "This option can only be passed **before** passing any other "
+                     "argument/option/command. E.g., "
+                     '`elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml`, '
+                     'or `elapi --OC "~/.quick-config.yml" get info -F yml`.',
 }

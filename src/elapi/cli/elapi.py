@@ -80,8 +80,7 @@ def cli_startup(
 ) -> type(None):
     import click
     from sys import argv
-    import json
-    from ..styles import print_typer_error, NoteText
+    from ..styles import print_typer_error
     from ..configuration import (
         KEY_API_TOKEN,
         AppliedConfigIdentity,
@@ -91,47 +90,30 @@ def cli_startup(
     from ..configuration.validators import MainConfigurationValidator
     from ..core_validators import Exit
     from ..configuration import reinitiate_config
+    from ..plugins.commons.get_data_from_input_or_path import get_structured_data
 
     try:
-        override_config: dict = json.loads(override_config)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--override-config/--OC value has caused a syntax error. "
-            "--override-config only supports JSON syntax."
+        override_config: dict = get_structured_data(
+            override_config, option_name="--override-config/--OC"
         )
-        raise typer.Exit(1)
+    except ValueError:
+        raise Exit(1)
     else:
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
-        try:
-            for key, value in override_config.items():
-                if key.lower() == KEY_API_TOKEN.lower():
-                    try:
-                        minimal_active_configuration[key.upper()] = (
-                            AppliedConfigIdentity(
-                                APIToken(value), OVERRIDABLE_FIELDS_SOURCE
-                            )
-                        )
-                    except ValueError:
-                        minimal_active_configuration[key.upper()] = (
-                            AppliedConfigIdentity(value, OVERRIDABLE_FIELDS_SOURCE)
-                        )
-                else:
+        for key, value in override_config.items():
+            if key.lower() == KEY_API_TOKEN.lower():
+                try:
+                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                        APIToken(value), OVERRIDABLE_FIELDS_SOURCE
+                    )
+                except ValueError:
                     minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
                     )
-        except AttributeError:
-            print_typer_error(
-                "Valid JSON format to --override-config/--OC was passed, "
-                "but it could not be understood."
-            )
-            stdin_console.print(
-                NoteText(
-                    "An example of proper JSON format passed to --override-config/--OC: "
-                    '[code]elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml[/code]',
-                    stem="Note",
+            else:
+                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    value, OVERRIDABLE_FIELDS_SOURCE
                 )
-            )
-            raise Exit(1)
         if (
             (
                 calling_sub_command_name := (
@@ -148,8 +130,8 @@ def cli_startup(
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
                     print_typer_error(
-                        f"{APP_NAME} command '{calling_sub_command_name}' does not support the override argument "
-                        f"--override-config/--OC."
+                        f"{APP_NAME} command '{calling_sub_command_name}' does not support "
+                        f"the override argument --override-config/--OC."
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
