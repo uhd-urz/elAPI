@@ -1,6 +1,7 @@
 from .._names import ENV_XDG_DOWNLOAD_DIR
 from ..configuration import (
     APP_NAME,
+    APP_BRAND_NAME,
     inspect,
     get_active_unsafe_token_warning,
     get_active_enable_http2,
@@ -19,11 +20,12 @@ from ..configuration import (
     KEY_DEVELOPMENT_MODE,
     KEY_EXPORT_DIR,
     LOG_FILE_PATH,
+    EXTERNAL_LOCAL_PLUGIN_DIR,
     FALLBACK_SOURCE_NAME,
     minimal_active_configuration,
 )
 from ..styles import Missing, ColorText
-from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN
+from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN, LIGHTCYAN
 
 detected_config = minimal_active_configuration
 detected_config_files = inspect.applied_config_files
@@ -102,8 +104,8 @@ detected_config_files_formatted = "\n- " + "\n- ".join(
 def show(no_keys: bool) -> str:
     _info = (
         f"""
-## {APP_NAME} configuration information
-The following debug information includes configuration values and their sources as detected by {APP_NAME}. 
+## {APP_BRAND_NAME} configuration information
+The following information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name [Key]: Value ← Source
 
 - {ColorText('Log file path').colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
@@ -147,6 +149,7 @@ The following debug information includes configuration values and their sources 
         + f": {get_active_export_dir()} ← `{export_dir_source}`"
         + f"""
 - {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {EXTERNAL_LOCAL_PLUGIN_DIR}
 - {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR}
 """
         + "\n"
