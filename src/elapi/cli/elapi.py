@@ -31,12 +31,13 @@ from ._plugin_handler import (
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR
-from ..loggers import Logger
+from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console, rich_format_help_with_callback
 
 logger = Logger()
+file_logger = FileLogger()
 pretty.install()
 
 
@@ -446,12 +447,12 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     import re
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ..plugins.commons import get_structured_data
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import Export
@@ -465,19 +466,13 @@ def get(
     if export is False:
         _export_dest = None
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(
         data_format, _export_dest, export_overwrite
     )
@@ -504,10 +499,12 @@ def get(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -620,7 +617,6 @@ def post(
     `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
@@ -629,6 +625,7 @@ def post(
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
+    from ..plugins.commons import get_structured_data
     from ..styles import Format, Highlight, print_typer_error, NoteText
     from ..core_validators import Exit
     from ..path import ProperPath
@@ -638,26 +635,17 @@ def post(
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
-        data: dict = json.loads(json_)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--data value has caused a syntax error. --data only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        data: dict = get_structured_data(json_, option_name="--data/-d")
+    except ValueError:
+        raise Exit(1)
     # else:
     # TODO: Due to strange compatibility issue between typer.context and python 3.9,
     #   passing json_ as arguments is temporarily deprecated.
@@ -665,12 +653,9 @@ def post(
     # data_values: list[str, ...] = data.args[1::2]
     # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     try:
-        file: Optional[dict] = json.loads(file)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--file value has caused a syntax error. --file only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        file: Optional[dict] = get_structured_data(file, option_name="--file")
+    except ValueError:
+        raise Exit(1)
     try:
         session = POSTRequest()
     except SSLError as e:
@@ -713,10 +698,12 @@ def post(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -830,7 +817,6 @@ def patch(
     <br/>
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import PATCHRequest, ElabFTWURLError
@@ -840,31 +826,23 @@ def patch(
     from ..styles import Format, Highlight, NoteText, print_typer_error
     from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..plugins.commons import get_structured_data
 
     validate_identity = Validate(HostIdentityValidator())
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
-        data: dict = json.loads(json_)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--data value has caused a syntax error. --data only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        data: dict = get_structured_data(json_, option_name="--data/-d")
+    except ValueError:
+        raise Exit(1)
     try:
         session = PATCHRequest()
     except SSLError as e:
@@ -881,10 +859,12 @@ def patch(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -981,7 +961,6 @@ def delete(
     <br/>
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import DELETERequest, ElabFTWURLError
@@ -991,24 +970,19 @@ def delete(
     from ..styles import Format, Highlight, NoteText, print_typer_error
     from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..plugins.commons import get_structured_data
 
     validate_identity = Validate(HostIdentityValidator())
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
         session = DELETERequest()
     except SSLError as e:
@@ -1024,10 +998,12 @@ def delete(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
