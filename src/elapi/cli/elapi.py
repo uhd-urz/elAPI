@@ -12,6 +12,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
         $ elapi get users --id <id>
 """
 
+import logging
 from functools import partial
 from typing import Optional
 
@@ -20,14 +21,12 @@ from rich import pretty
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 from typing_extensions import Annotated
 
 from ._plugin_handler import PluginInfo
 from ._plugin_handler import (
     internal_plugin_typer_apps,
     external_local_plugin_typer_apps,
-    PLUGIN_ERROR_MESSAGES,
 )
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
@@ -195,7 +194,9 @@ for _app in internal_plugin_typer_apps:
 def disable_plugin(
     main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
 ):
-    PLUGIN_ERROR_MESSAGES.append(err_msg)
+    from ..utils import add_message
+
+    add_message(err_msg, logging.WARNING)
     for i, registered_app in enumerate(main_app.registered_groups):
         if plugin_name == registered_app.typer_instance.info.name:
             main_app.registered_groups.pop(i)
@@ -213,19 +214,47 @@ def disable_plugin(
         raise Exit(1)
 
 
-def plugin_warning_panel():
+def messages_panel():
     from ..styles import NoteText
     from ..configuration import CONFIG_FILE_NAME
+    from ..loggers import FileLogger
+    from rich.logging import RichHandler
+    from ..utils import MessagesList
 
-    if PLUGIN_ERROR_MESSAGES:
+    messages = MessagesList()
+
+    if messages:
+        handler = RichHandler(
+            show_path=False,
+            show_time=False,
+        )
+        log_record = logging.LogRecord(
+            logger.name,
+            level=logging.NOTSET,
+            pathname="",
+            lineno=0,
+            msg="",
+            args=None,
+            exc_info=None,
+        )
         grid = Table.grid(expand=True, padding=1)
         grid.add_column(style="bold")
         grid.add_column()
-        for i, message in enumerate(PLUGIN_ERROR_MESSAGES, start=1):
-            with stderr_console.capture() as capture:
-                logger.handlers[-1]._log_render.show_path = False
-                logger.warning(message)
-            message = Text.from_ansi(capture.get())
+        for i, log_tuple in enumerate(messages, start=1):
+            message, level, logger_ = log_tuple.__dict__.values()
+            FileLogger().log(level, message) if logger_ is None else logger_.log(
+                level, message
+            )
+            log_record.levelno = log_tuple.level
+            log_record.levelname = logging.getLevelName(log_tuple.level)
+            message = handler.render(
+                record=log_record,
+                traceback=None,
+                message_renderable=handler.render_message(
+                    record=log_record,
+                    message=log_tuple.message,
+                ),
+            )
             grid.add_row(f"{i}.", message)
         logger.handlers[-1]._log_render.show_path = True
         grid.add_row(
@@ -240,14 +269,14 @@ def plugin_warning_panel():
         stderr_console.print(
             Panel(
                 grid,
-                title=f"[yellow]Important message{'s' if len(PLUGIN_ERROR_MESSAGES) > 1 else ''}[/yellow]",
+                title=f"[yellow]ⓘ Message{'s' if len(messages) > 1 else ''}[/yellow]",
                 title_align="left",
             )
         )
 
 
 typer.rich_utils.rich_format_help = partial(
-    rich_format_help_with_callback, result_callback=plugin_warning_panel
+    rich_format_help_with_callback, result_callback=messages_panel
 )
 
 typer.rich_utils.STYLE_HELPTEXT = (
