@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
+    CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
@@ -41,6 +43,7 @@ from ..core_validators import (
 from ..loggers import Logger
 from ..path import ProperPath
 from ..styles import Missing
+from ..utils import add_message
 
 logger = Logger()
 
@@ -51,6 +54,23 @@ PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 env_var_app_name = APP_NAME.upper().replace("-", "_")
 FALLBACK_SOURCE_NAME: str = "DEFAULT"
 
+_CANON_YAML_EXTENSION: str = "yaml"
+_CANON_CONFIG_FILE_NAME: str = f"{APP_NAME}.{_CANON_YAML_EXTENSION}"
+for path in [
+    SYSTEM_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    LOCAL_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    PROJECT_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+]:
+    if path.exists():
+        message = (
+            f"File '{_CANON_CONFIG_FILE_NAME}' detected in location {path}. "
+            f"If it is meant to be {APP_NAME} configuration file, "
+            f"please rename the file extension from '{_CANON_YAML_EXTENSION}' "
+            f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+            f"as file extension for configuration files."
+        )
+        add_message(message, logging.INFO)
+        break
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
     env_switcher=f"{env_var_app_name}_ENV",
