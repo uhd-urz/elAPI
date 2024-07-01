@@ -177,8 +177,8 @@ ENABLE_HTTP2 = settings.get(KEY_ENABLE_HTTP2, None)
 VERIFY_SSL_DEFAULT_VAL: bool = True
 VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
 
-# TIMEOUT falls back to 30.0 seconds if not defined in configuration
-TIMEOUT_DEFAULT_VAL: float = 30.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
+# TIMEOUT falls back to 90.0 seconds if not defined in configuration
+TIMEOUT_DEFAULT_VAL: float = 90.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
 TIMEOUT = settings.get(KEY_TIMEOUT, None)
 
 # DEVELOPMENT_MODE falls back to false if not defined in configuration

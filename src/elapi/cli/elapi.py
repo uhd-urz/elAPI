@@ -366,7 +366,7 @@ export_dir: {export_directory}
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
-timeout: 5
+timeout: 90
 """
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
