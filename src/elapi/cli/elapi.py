@@ -12,15 +12,11 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
         $ elapi get users --id <id>
 """
 
-import logging
 from functools import partial
 from typing import Optional
 
 import typer
 from rich import pretty
-from rich.markdown import Markdown
-from rich.panel import Panel
-from rich.table import Table
 from typing_extensions import Annotated
 
 from ._plugin_handler import PluginInfo
@@ -177,6 +173,7 @@ for _app in internal_plugin_typer_apps:
 def disable_plugin(
     main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
 ):
+    import logging
     from ..utils import add_message
 
     add_message(err_msg, logging.WARNING)
@@ -198,9 +195,12 @@ def disable_plugin(
 
 
 def messages_panel():
+    import logging
     from ..styles import NoteText
     from ..configuration import CONFIG_FILE_NAME
     from ..loggers import FileLogger
+    from rich.panel import Panel
+    from rich.table import Table
     from rich.logging import RichHandler
     from ..utils import MessagesList
 
@@ -1061,6 +1061,7 @@ def show_config(
     """
     Get information about detected configuration values.
     """
+    from rich.markdown import Markdown
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
