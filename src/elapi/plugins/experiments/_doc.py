@@ -20,7 +20,8 @@ supported_format_values = ", ".join(
 
 __PARAMETERS__doc__ = {
     "experiment_id": "ID of an existing experiment. ID can be found on the URL of the experiment. "
-                     "ID can also be 'Unique eLabID' that is visible on an experiment page.",
+                     "ID can also be 'Unique eLabID' that is visible on an experiment page. Note, "
+                     "unique eLabIDs aren't persistent across different eLabFTW instances.",
     "append_content_text": "Raw text to append to an experiment body. Text must be UTF-8 encoded.",
     "append_content_path": "Path to a file whose content to append to an experiment. File content must be UTF-8 encoded. "
                            "If both --path and --text are passed, the expected outcome can be ambiguous, "

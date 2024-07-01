@@ -366,7 +366,7 @@ export_dir: {export_directory}
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
-timeout: 5
+timeout: 90
 """
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
@@ -447,17 +447,16 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
+    import re
     from httpx import ConnectError
     from ssl import SSLError
-    import re
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..plugins.commons import get_structured_data
-    from ..core_validators import Validate
+    from ..core_validators import Validate, Exit
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import Export
     from ..styles import Highlight, print_typer_error, NoteText
-    from ..core_validators import Exit
     from ..configuration import get_active_host
 
     validate_identity = Validate(HostIdentityValidator())
@@ -546,12 +545,25 @@ def get(
             file_extension=format.convention,
             format_name=format.name,
         )
-        export(data=formatted_data, verbose=True)
+        if not raw_response.is_success:
+            export(data=formatted_data, verbose=False)
+            logger.warning(
+                "Request was not successful. "
+                f"Response for '{export.file_name_stub}' is exported to "
+                f"{export.destination} anyway in {export.format_name} format."
+            )
+            raise Exit(1)
+        else:
+            export(data=formatted_data, verbose=False)
+            logger.info(
+                f"Response for '{export.file_name_stub}' is successfully exported to "
+                f"{export.destination} in {export.format_name} format."
+            )
     else:
         highlight = Highlight(format.name)
         if not raw_response.is_success:
             stderr_console.print(highlight(formatted_data))
-            raise typer.Exit(1)
+            raise Exit(1)
         stdin_console.print(highlight(formatted_data))
     return response_data
 
