@@ -1100,7 +1100,7 @@ def cleanup() -> None:
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, path = plugin_info
+        _app, _path = plugin_info
     else:
         continue
     if _app is not None:
@@ -1108,7 +1108,7 @@ for plugin_info in external_local_plugin_typer_apps:
         app_name: str = original_name.lower()
         if app_name in EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"existing third-party plugin from {EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name].path}. "
                 f"Please rename the plugin."
             )
@@ -1125,7 +1125,7 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         elif app_name in INTERNAL_PLUGIN_NAME_REGISTRY:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"existing built-in plugin name. "
                 f"Please rename the plugin."
             )
@@ -1142,7 +1142,7 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         elif app_name in RESERVED_PLUGIN_NAMES:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"reserved name. "
                 f"Please rename the plugin."
             )
@@ -1158,7 +1158,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
             )
         else:
-            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, path)
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, _path)
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(
                 _app,
