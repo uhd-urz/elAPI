@@ -12,15 +12,11 @@ documented in https://doc.elabftw.net/api/v2/ with ease. elAPI treats eLabFTW AP
         $ elapi get users --id <id>
 """
 
-import logging
 from functools import partial
 from typing import Optional
 
 import typer
 from rich import pretty
-from rich.markdown import Markdown
-from rich.panel import Panel
-from rich.table import Table
 from typing_extensions import Annotated
 
 from ._plugin_handler import PluginInfo
@@ -31,12 +27,13 @@ from ._plugin_handler import (
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR
-from ..loggers import Logger
+from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
 from ..styles import stdin_console, stderr_console, rich_format_help_with_callback
 
 logger = Logger()
+file_logger = FileLogger()
 pretty.install()
 
 
@@ -80,8 +77,7 @@ def cli_startup(
 ) -> type(None):
     import click
     from sys import argv
-    import json
-    from ..styles import print_typer_error, NoteText
+    from ..styles import print_typer_error
     from ..configuration import (
         KEY_API_TOKEN,
         AppliedConfigIdentity,
@@ -91,47 +87,30 @@ def cli_startup(
     from ..configuration.validators import MainConfigurationValidator
     from ..core_validators import Exit
     from ..configuration import reinitiate_config
+    from ..plugins.commons.get_data_from_input_or_path import get_structured_data
 
     try:
-        override_config: dict = json.loads(override_config)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--override-config/--OC value has caused a syntax error. "
-            "--override-config only supports JSON syntax."
+        override_config: dict = get_structured_data(
+            override_config, option_name="--override-config/--OC"
         )
-        raise typer.Exit(1)
+    except ValueError:
+        raise Exit(1)
     else:
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
-        try:
-            for key, value in override_config.items():
-                if key.lower() == KEY_API_TOKEN.lower():
-                    try:
-                        minimal_active_configuration[key.upper()] = (
-                            AppliedConfigIdentity(
-                                APIToken(value), OVERRIDABLE_FIELDS_SOURCE
-                            )
-                        )
-                    except ValueError:
-                        minimal_active_configuration[key.upper()] = (
-                            AppliedConfigIdentity(value, OVERRIDABLE_FIELDS_SOURCE)
-                        )
-                else:
+        for key, value in override_config.items():
+            if key.lower() == KEY_API_TOKEN.lower():
+                try:
+                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                        APIToken(value), OVERRIDABLE_FIELDS_SOURCE
+                    )
+                except ValueError:
                     minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
                     )
-        except AttributeError:
-            print_typer_error(
-                "Valid JSON format to --override-config/--OC was passed, "
-                "but it could not be understood."
-            )
-            stdin_console.print(
-                NoteText(
-                    "An example of proper JSON format passed to --override-config/--OC: "
-                    '[code]elapi --OC \'{"timeout": "10", "verify_ssl": "false"}\' get info -F yml[/code]',
-                    stem="Note",
+            else:
+                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    value, OVERRIDABLE_FIELDS_SOURCE
                 )
-            )
-            raise Exit(1)
         if (
             (
                 calling_sub_command_name := (
@@ -148,8 +127,8 @@ def cli_startup(
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
                     print_typer_error(
-                        f"{APP_NAME} command '{calling_sub_command_name}' does not support the override argument "
-                        f"--override-config/--OC."
+                        f"{APP_NAME} command '{calling_sub_command_name}' does not support "
+                        f"the override argument --override-config/--OC."
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
@@ -194,6 +173,7 @@ for _app in internal_plugin_typer_apps:
 def disable_plugin(
     main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
 ):
+    import logging
     from ..utils import add_message
 
     add_message(err_msg, logging.WARNING)
@@ -215,9 +195,12 @@ def disable_plugin(
 
 
 def messages_panel():
+    import logging
     from ..styles import NoteText
     from ..configuration import CONFIG_FILE_NAME
     from ..loggers import FileLogger
+    from rich.panel import Panel
+    from rich.table import Table
     from rich.logging import RichHandler
     from ..utils import MessagesList
 
@@ -464,12 +447,12 @@ def get(
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     import re
     from ..api import GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ..plugins.commons import get_structured_data
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import Export
@@ -483,19 +466,13 @@ def get(
     if export is False:
         _export_dest = None
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     data_format, export_dest, export_file_ext = CLIExport(
         data_format, _export_dest, export_overwrite
     )
@@ -522,10 +499,12 @@ def get(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -534,8 +513,9 @@ def get(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1) from e
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -638,7 +618,6 @@ def post(
     `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
@@ -647,6 +626,7 @@ def post(
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
+    from ..plugins.commons import get_structured_data
     from ..styles import Format, Highlight, print_typer_error, NoteText
     from ..core_validators import Exit
     from ..path import ProperPath
@@ -656,26 +636,17 @@ def post(
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
-        data: dict = json.loads(json_)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--data value has caused a syntax error. --data only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        data: dict = get_structured_data(json_, option_name="--data/-d")
+    except ValueError:
+        raise Exit(1)
     # else:
     # TODO: Due to strange compatibility issue between typer.context and python 3.9,
     #   passing json_ as arguments is temporarily deprecated.
@@ -683,12 +654,9 @@ def post(
     # data_values: list[str, ...] = data.args[1::2]
     # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
     try:
-        file: Optional[dict] = json.loads(file)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--file value has caused a syntax error. --file only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        file: Optional[dict] = get_structured_data(file, option_name="--file")
+    except ValueError:
+        raise Exit(1)
     try:
         session = POSTRequest()
     except SSLError as e:
@@ -731,10 +699,12 @@ def post(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -743,8 +713,9 @@ def post(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -848,7 +819,6 @@ def patch(
     <br/>
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import PATCHRequest, ElabFTWURLError
@@ -858,31 +828,23 @@ def patch(
     from ..styles import Format, Highlight, NoteText, print_typer_error
     from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..plugins.commons import get_structured_data
 
     validate_identity = Validate(HostIdentityValidator())
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
-        data: dict = json.loads(json_)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--data value has caused a syntax error. --data only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        data: dict = get_structured_data(json_, option_name="--data/-d")
+    except ValueError:
+        raise Exit(1)
     try:
         session = PATCHRequest()
     except SSLError as e:
@@ -899,10 +861,12 @@ def patch(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -911,8 +875,9 @@ def patch(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -962,15 +927,15 @@ def delete(
     ] = None,
     sub_endpoint_name: Annotated[
         str,
-        typer.Option("--sub", show_default=False),
+        typer.Option("--sub", help=docs["sub_endpoint_name"], show_default=False),
     ] = None,
     sub_endpoint_id: Annotated[
         str,
-        typer.Option("--sub-id", show_default=False),
+        typer.Option("--sub-id", help=docs["sub_endpoint_id"], show_default=False),
     ] = None,
     query: Annotated[
         str,
-        typer.Option("--query", show_default=False),
+        typer.Option("--query", help=docs["query"], show_default=False),
     ] = "{}",
     data_format: Annotated[
         str,
@@ -999,7 +964,6 @@ def delete(
     <br/>
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
-    import json
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import DELETERequest, ElabFTWURLError
@@ -1009,24 +973,19 @@ def delete(
     from ..styles import Format, Highlight, NoteText, print_typer_error
     from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..plugins.commons import get_structured_data
 
     validate_identity = Validate(HostIdentityValidator())
     validate_identity()
 
     try:
-        query: dict = json.loads(query)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--query value has caused a syntax error. --query only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        query: dict = get_structured_data(query, option_name="--query")
+    except ValueError:
+        raise Exit(1)
     try:
-        headers: dict = json.loads(headers)
-    except (SyntaxError, ValueError):
-        print_typer_error(
-            "--headers value has caused a syntax error. --headers only supports JSON syntax. "
-        )
-        raise typer.Exit(1)
+        headers: dict = get_structured_data(headers, option_name="--headers")
+    except ValueError:
+        raise Exit(1)
     try:
         session = DELETERequest()
     except SSLError as e:
@@ -1042,10 +1001,12 @@ def delete(
             headers=headers,
         )
     except (AttributeError, TypeError) as e:
-        print_typer_error(
-            f"Valid JSON format was passed, but it could not be understood. "
+        err_msg = (
+            f"Given data was successfully parsed but there was an error while processing it. "
             f'Exception details: "{e.__class__.__name__}: {e}".'
         )
+        file_logger.error(err_msg)
+        print_typer_error(err_msg)
         stdin_console.print(
             NoteText(
                 "See --help for examples of how to pass values in JSON format.",
@@ -1054,8 +1015,9 @@ def delete(
         )
         raise Exit(1)
     except ElabFTWURLError as e:
-        logger.error(e)
-        raise typer.Exit(1)
+        file_logger.error(e)
+        print_typer_error(f"{e}")
+        raise Exit(1) from e
     except ConnectError as e:
         logger.error(
             f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
@@ -1099,6 +1061,7 @@ def show_config(
     """
     Get information about detected configuration values.
     """
+    from rich.markdown import Markdown
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
@@ -1137,7 +1100,7 @@ def cleanup() -> None:
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, path = plugin_info
+        _app, _path = plugin_info
     else:
         continue
     if _app is not None:
@@ -1145,7 +1108,7 @@ for plugin_info in external_local_plugin_typer_apps:
         app_name: str = original_name.lower()
         if app_name in EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"existing third-party plugin from {EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name].path}. "
                 f"Please rename the plugin."
             )
@@ -1162,7 +1125,7 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         elif app_name in INTERNAL_PLUGIN_NAME_REGISTRY:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"existing built-in plugin name. "
                 f"Please rename the plugin."
             )
@@ -1179,7 +1142,7 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         elif app_name in RESERVED_PLUGIN_NAMES:
             error_message = (
-                f"Plugin name '{original_name}' from {path} conflicts with an "
+                f"Plugin name '{original_name}' from {_path} conflicts with an "
                 f"reserved name. "
                 f"Please rename the plugin."
             )
@@ -1195,7 +1158,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
             )
         else:
-            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, path)
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, _path)
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(
                 _app,
