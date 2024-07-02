@@ -205,10 +205,12 @@ class ExternalPluginLocationValidator(Validator):
                     parsed_metadata[
                         EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
                     ] = external_local_plugin_typer_app_file
-                PLUGIN_NAME = self.location.name
-                parsed_metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME] = (
-                    PLUGIN_NAME
-                )
+                    PLUGIN_NAME = self.location.name
+                    parsed_metadata[
+                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
+                    ] = PLUGIN_NAME
+                else:
+                    raise ValueError(f"{self.location} may not be a plugin directory.")
             os.chdir(actual_cwd)
         else:
             raise ValueError(f"{self.location} is not a directory.")
