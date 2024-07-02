@@ -147,8 +147,20 @@ def cli_startup_for_plugins(
         ),
     ] = None,
 ):
+    import click
     from ..styles import print_typer_error
     from ..validators import Exit
+    from ._venv_state_manager import switch_venv_state
+
+    try:
+        switch_venv_state(
+            True,
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
+                click.get_current_context().command.name
+            ].venv,
+        )
+    except KeyError:
+        ...
 
     if override_config is not None:
         print_typer_error(
@@ -157,6 +169,21 @@ def cli_startup_for_plugins(
         )
         raise Exit(1)
     return cli_startup()
+
+
+def cli_cleanup_for_third_party_plugins(*args, override_config=None):
+    import click
+    from ._venv_state_manager import switch_venv_state
+
+    try:
+        switch_venv_state(
+            False,
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
+                click.get_current_context().command.name
+            ].venv,
+        )
+    except KeyError:
+        ...
 
 
 for _app in internal_plugin_typer_apps:
@@ -1112,7 +1139,7 @@ def cleanup() -> None:
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, _path = plugin_info
+        _app, _path, _venv = plugin_info
     else:
         continue
     if _app is not None:
@@ -1170,10 +1197,13 @@ for plugin_info in external_local_plugin_typer_apps:
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
             )
         else:
-            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(_app, _path)
+            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
+                _app, _path, _venv
+            )
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(
                 _app,
                 rich_help_panel=THIRD_PARTY_PLUGIN_PANEL_NAME,
                 callback=cli_startup_for_plugins,
+                result_callback=cli_cleanup_for_third_party_plugins,
             )
