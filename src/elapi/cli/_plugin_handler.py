@@ -190,6 +190,12 @@ class ExternalPluginLocationValidator(Validator):
                                 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
                             ] = self.location.name
                         else:
+                            if self.location.name != PLUGIN_NAME:
+                                raise ValidationError(
+                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME}' "
+                                    f"exists in {plugin_metadata_file}, but it must be the same "
+                                    f"name as the directory name the metadata file is in."
+                                )
                             parsed_metadata[
                                 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
                             ] = PLUGIN_NAME
