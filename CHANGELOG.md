@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2024-07-03
+
+The first-iteration of our long-awaited 2.0.
+
+### Added
+
+- File path support for `--OC`, `--data`, `--headers`, `--query`, `--file` (#112)
+- Third-party plugin support (#111)
+- Third-party plugin support with virtual environments (#114)
+
+### Fixed
+
+- Fix printing misleading success message (#35)
+- Fix `bill-teams` involving plugin issue (#51)
+
+### Changed
+
+- Default `timeout` is increased to `90`s (52)
+
 ## [1.0.7.dev8] - 2024-06-26
 
 Part of an important change (making `bill-teams` plugin
