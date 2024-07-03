@@ -1,11 +1,14 @@
 # elAPI
 
-elAPI is a powerful, extensible API client for eLabFTW built for
+<a href="https://pypi.org/project/elapi/">
+    <img src="https://badge.fury.io/py/elapi.svg" alt="Package version">
+</a>
+
+elAPI is a powerful, extensible API client for eLabFTW developed at
 the [University Computing Centre](https://www.urz.uni-heidelberg.de/en) (
-URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) at
-Universität Heidelberg. It supports serving almost all kinds of requests documented on
-[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI treats eLabFTW API endpoints as its
-arguments.
+URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
+[University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented on
+[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease.
 
 **Example:**
 
@@ -85,8 +88,10 @@ host: <host API url>
 api_token: <token with at least read-access>
 # You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
-unsafe_api_token_warning: yes
-enable_http2: no
+unsafe_api_token_warning: true
+enable_http2: false
+verify_ssl: true
+timeout: 90
 ```
 
 `export_dir` is where elAPI will export response content to if no path is provided to `--export/-E`.
@@ -94,7 +99,11 @@ When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're s
 working directory, as it typically happens that developers accidentally commit and push configuration files with
 secrets. `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
 of [known issues](https://github.com/encode/httpx/discussions/2112) with
-HTTP/2 if you are making async requests with heavy load.
+HTTP/2 if you are making async requests with heavy load. `verify_ssl` can be turned off with `False` if you are trying
+out a development server that doesn't provide a valid SSL certificate. `timeout` can be modified to your needs. E.g., a
+poor internet connection might benefit from a higher timeout number. THe default timeout is `90` seconds.
+
+### `show-config`
 
 You can get an overview of detected configuration with `elapi show-config`. `show-config` makes it easier to verify
 which configuration values are actually used by elAPI, if you are working with multiple configuration files.
@@ -102,29 +111,39 @@ which configuration values are actually used by elAPI, if you are working with m
 ```shell
 $ elapi show-config
 
-
-                                                       elapi configuration information
+elapi configuration information
 
 The following debug information includes configuration values and their sources as detected by elapi.
 
 ▌ Name [Key]: Value ← Source
 
- • Log file path: /Users/<username>/.local/share/elapi/elapi.log
- • Host address [host]: https://demo.elabftw.net/api/v2 ← USER LEVEL
- • API Token [api_token]: 00-55******55555 ← USER LEVEL
- • Export directory [export_dir]: /Users/<username>/Downloads/elapi ← USER LEVEL
- • App data directory: /Users/<username>/.local/share/elapi
- • Caching directory: /private/var/tmp/elapi
- • Unsafe API token use warning [unsafe_api_token_warning]: Yes ← USER LEVEL
- • Enable HTTP/2 [enable_http2]: Yes ← USER LEVEL
+• Log file path: /Users/ <username >/.local/share/elapi/elapi.log
+• Host address [host]: https://demo.elabftw.net/api/v2 ← USER LEVEL
+• API Token [api_token]: 00-55******55555 ← USER LEVEL
+• Export directory [export_dir]: /Users/ ← USER LEVEL <username >/Downloads/elapi
+• App data directory: /Users/ <username >/.local/share/elapi
+• Third-party plugins directory: /Users/ <username >/.local/share/elapi/plugins
+• Caching directory: /private/var/tmp/elapi
+• Unsafe API token use warning [unsafe_api_token_warning]: True ← USER LEVEL
+• Enable HTTP/2 [enable_http2]: False ← USER LEVEL
+• Verify SSL certificate [verify_ssl]: True ← USER LEVEL
+• Timeout duration [timeout]: 90.0 seconds ← USER LEVEL
+• Development mode [development_mode]: False ← USER LEVEL
 
 Detected configuration sources that are in use:
 
- • USER LEVEL: /Users/<username>/.config/elapi.yml
+• USER LEVEL: /Users/ <username >/.config/elapi.yml
 
 ```
 
 If both `host` and `api_token` are detected, you are good to go!
+
+### Override configuration
+
+elAPI now supports `--override/--OC` as a global option that can be used to override the configuration parameters
+as detected by `elapi show-cofig`. All plugins will also automatically listen to the overridden configuration. This can
+be useful to set certain configurations temporarily. E.g., `elapi --OC '{"timeout": 300"}' get info` will override
+the `timeout` from the configuration files.
 
 ## Usage
 
@@ -213,19 +232,58 @@ You can also upload an attachment to an experiment.
 $ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
 ```
 
-### Bill teams
+### Plugins
 
-You can get a list of all teams and its users for billing purposes and export it to home directory.
+elAPI has seamless support with tight-integration for third-party plugins. A simple third-party plugin can be created in
+a few easy steps:
 
-```shell
-$ elapi bill-teams teams-info --export ~
+1. Create a new subfolder under `~/.local/share/elapi/plugins` with the name for your new plugin (e.g, a folder named "
+   test")
+2. Create a `cli.py` in the subfolder with the following snippet:
+
+```python
+from elapi.plugins.commons import Typer
+
+app = Typer(name="test", help="Test plugin.")
+
 ```
 
-Most sub-commands available under `elapi bill-teams` plugin are for Universität Heidelberg specific use-cases.
+3. Run `elapi` again to see your plugin name under `Third-party plugins` list
 
-## Open-source
+Plugins are integrated in a way such that a plugin will **not** fail elAPI. So, even if one erroneous plugin is loaded,
+all
+other plugins and elAPI itself will remain unaffected. elAPI will show the error message on the "Message" panel.
 
-elAPI is open-source and published under AGPLv3 license. The repository is however hosted internally within
-Universität Heidelberg's network. The codebase can still be accessed from [PyPI](https://pypi.org/project/elapi/#files).
-If you express interest in having the repository made completely public, or if you have any question, feel free
-to [contact us](mailto:elabftw@uni-heidelberg.de).
+If you try to import a package that is not a dependency of elAPI inside `cli.py`, your plugin will fail. In that case,
+you want to create a plugin metadata file `elapi_plugin_metadata.yml` (notice only `.yml` extension is allowed), and
+define the virtual environment that your plugin specifically requires.
+
+```python
+import requests
+
+from elapi.api import GETRequest
+from elapi.plugins.commons import Typer
+
+# Plugin metadata
+app = Typer(name="awesome", help="An awesome elAPI plugin.")
+
+
+@app.command(name="get-request", short_help=f"Make a GET request")
+def get_request(endpoint_name):
+    r = GETRequest()
+    print(r(endpoint_name).json())
+
+
+@app.command(name="get-wiki-status", short_help=f"Show status of Wikipedia")
+def wiki_status():
+    r = requests.get("https://wikipedia.org")
+    print(r)
+```
+
+And the path to virtual environment will be defined in the metadata file:
+
+```yaml
+plugin_name: test
+cli_script: ./cli.py  # Path to the cli.py script
+venv_dir: ./.venv  # Path to the virtual environment
+```
