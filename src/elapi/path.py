@@ -5,23 +5,25 @@ import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, TextIO
+from typing import Union, TextIO, Generator, Optional
 
 from .loggers import SimpleLogger
+from .utils import NoException
 
 
 class ProperPath:
     def __init__(
         self,
-        name: Union[str, Path, None],
+        name: Union[str, Path, None, "ProperPath"],
         env_var: bool = False,
-        kind: Union[str, None] = "",
+        kind: Optional[str] = None,  # Here, None => Undefined/unknown
         err_logger: logging.Logger = SimpleLogger(),
     ):
         self.name = name
         self.env_var = env_var
         self.kind = kind
         self.err_logger = err_logger
+        self.PathException = NoException
 
     def __str__(self):
         return str(self.expanded)
@@ -63,6 +65,24 @@ class ProperPath:
         self._err_logger = value
 
     @property
+    def PathException(self) -> type:
+        return self._PathException
+
+    # noinspection PyAttributeOutsideInit
+    @PathException.setter
+    def PathException(self, value: type) -> None:
+        if not issubclass(value, (Exception, BaseException)):
+            raise ValueError(
+                "Only an instance of Exception or BaseException can be "
+                "assigned to descriptor PathException."
+            )
+        self._PathException = value
+
+    @PathException.deleter
+    def PathException(self):
+        raise AttributeError("PathException cannot be deleted!")
+
+    @property
     def expanded(self) -> Path:
         if self.env_var:
             try:
@@ -83,7 +103,7 @@ class ProperPath:
 
     @kind.setter
     def kind(self, value) -> None:
-        if not value:
+        if value is None:
             self._kind = (
                 "dir"
                 if self.expanded.is_dir()
@@ -119,25 +139,43 @@ class ProperPath:
             else f"PATH={target}"
         )
 
-    def create(self) -> Union[Path, None]:
-        if not (path := self.expanded.resolve(strict=False)).exists():
-            # except FileNotFoundError:
-            message = (
-                f"{self._error_helper_compare_path_source(self.name, path)} could not be found. "
-                f"An attempt to create PATH={path} will be made."
-            )
-            self.err_logger.warning(message)
+    def create(self, verbose: bool = True) -> Union[Path, None]:
+        path = self.expanded.resolve(strict=False)
         try:
             if self.kind == "file":
                 path_parent, path_file = path.parent, path.name
+                if not path_parent.exists() and verbose:
+                    self.err_logger.info(
+                        f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} could not be "
+                        f"found. An attempt to create directory {path_parent} will be made."
+                    )
                 path_parent.mkdir(parents=True, exist_ok=True)
                 (path_parent / path_file).touch(exist_ok=True)
             elif self.kind == "dir":
+                if not path.exists() and verbose:
+                    self.err_logger.info(
+                        f"Directory {self._error_helper_compare_path_source(self.name, path)} could not be found. "
+                        f"An attempt to create directory {path} will be made."
+                    )
                 path.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
+        except (exception := PermissionError) as e:
             message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
             self.err_logger.error(message)
+            self.PathException = exception
             raise e
+        except (exception := NotADirectoryError) as e:
+            # Both "file" and "dir" cases are handled, but when path is under special files like
+            # /dev/null/<directory name>, os.mkdir() will throw NotADirectoryError.
+            message = f"Couldn't create {self._error_helper_compare_path_source(self.name, path)}."
+            self.err_logger.error(message)
+            self.PathException = exception
+            raise e
+        except (exception := OSError) as os_err:
+            # When an attempt to create a file or directory inside root (e.g., '/foo')
+            # is made, OS can throw OSError with error no. 30 instead of PermissionError.
+            self.err_logger.error(os_err)
+            self.PathException = exception
+            raise os_err
         else:
             return path
 
@@ -153,10 +191,12 @@ class ProperPath:
             file.unlink()
         except FileNotFoundError as e:
             # unlink() throws FileNotFoundError when a directory is passed as it expects files only
-            raise ValueError(f"{file} doesn't exist or isn't a valid file!") from e
-        except PermissionError as e:
+            self.PathException = exception = ValueError
+            raise exception(f"{file} doesn't exist or isn't a valid file!") from e
+        except (exception := PermissionError) as e:
             message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
             self.err_logger.warning(message)
+            self.PathException = exception
             raise e
         if verbose:
             self.err_logger.info(f"Deleted: {file}")
@@ -186,41 +226,54 @@ class ProperPath:
                     # traceback message. I.e., which file or directory exactly
 
     @contextmanager
-    def open(self, mode="r", encoding: Union[str, None] = None) -> None:
+    def open(
+        self,
+        mode="r",
+        encoding: Union[str, None] = None,
+        **kwargs,
+    ) -> Generator[TextIO, None, None]:
         path = self.expanded.resolve()
         file: Union[TextIO, None] = None
         try:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
-            file: TextIO = path.open(mode=mode, encoding=encoding)
-        except FileNotFoundError as e:
+            file: TextIO = path.open(mode=mode, encoding=encoding, **kwargs)
+        except (exception := FileNotFoundError) as e:
             message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)
+            self.PathException = exception
             raise e
 
-        except PermissionError as e:
+        except (exception := PermissionError) as e:
             message = (
                 f"Permission denied while trying to open file with mode '{mode}' for "
                 f"{self._error_helper_compare_path_source(self.name, path)}."
             )
             self.err_logger.error(message)
+            self.PathException = exception
 
             try:
                 yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
                 # I.e., contextmanager always expects a yield?
-            except AttributeError as attribute_err:
+            except (exception := AttributeError) as attribute_err:
                 # However, yielding None leads to attribute calls to None
                 # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
                 attribute_in_error = str(attribute_err).split()[-1]
                 message = (
-                    f"An attempt to access attribute {attribute_in_error} "
-                    f"of the file object was made, "
+                    f"An attempt to access attribute {attribute_in_error} was made,"
                     f"but there was a problem opening the file {path}."
                 )
                 self.err_logger.warning(message)
+                self.PathException = exception
                 raise attribute_err
             else:
                 raise e
+        except (exception := OSError) as os_err:
+            # When an attempt to create a file or directory inside root (e.g., '/foo')
+            # is made, OS can throw OSError with error no. 30 instead of PermissionError.
+            self.err_logger.error(os_err)
+            self.PathException = exception
+            raise os_err
 
         else:
             try:
@@ -236,14 +289,15 @@ class ProperPath:
                 )
                 self.err_logger.warning(message)
                 raise e
-            except MemoryError as e:
+            except (exception := MemoryError) as e:
                 message = (
                     f"Out of memory while trying to use mode '{mode}' with "
                     f"{self._error_helper_compare_path_source(self.name, path)}."
                 )
                 self.err_logger.critical(message)
+                self.PathException = exception
                 raise e
-            except IOError as io_err:
+            except (exception := IOError) as io_err:
                 # We catch "No disk space left" error which will likely be triggered during a write attempt on the file
                 if io_err.errno == errno.ENOSPC:
                     message = (
@@ -251,7 +305,12 @@ class ProperPath:
                         f"{self._error_helper_compare_path_source(self.name, path)}."
                     )
                     self.err_logger.critical(message)
+                    self.PathException = exception
                 raise io_err
+            except (exception := OSError) as os_err:
+                self.err_logger.error(os_err)
+                self.PathException = exception
+                raise os_err
         finally:
             if file:
                 try:
@@ -262,7 +321,7 @@ class ProperPath:
                 # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again.
                 # The above will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
                 # Because of *, we again need to catch the error during close().
-                except IOError as io_err:
+                except (exception := IOError) as io_err:
                     if io_err.errno == errno.ENOSPC:
                         message = (
                             f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
@@ -270,4 +329,5 @@ class ProperPath:
                             f"{self._error_helper_compare_path_source(self.name, path)}."
                         )
                         self.err_logger.critical(message)
+                    self.PathException = exception
                     raise io_err

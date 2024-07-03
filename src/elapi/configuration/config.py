@@ -1,18 +1,26 @@
+import logging
 import os
 from pathlib import Path
 
 from dynaconf import Dynaconf
 
-from ._config_history import ConfigHistory, InspectConfigHistory
-from .log_file import LOG_FILE_PATH, XDG_DATA_HOME
+from ._config_history import (
+    ConfigHistory,
+    InspectConfigHistory,
+    AppliedConfigIdentity,
+    MinimalActiveConfiguration,
+)
+from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
     APP_NAME,
+    APP_BRAND_NAME,  # noqa: F401
+    CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
-    FALLBACK_EXPORT_DIR,
-    CONFIG_FILE_NAME,
+    FALLBACK_EXPORT_DIR,  # noqa: F401
+    CONFIG_FILE_NAME,  # noqa: F401
     TMP_DIR,
     SYSTEM_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
@@ -22,15 +30,21 @@ from .._names import (
     KEY_API_TOKEN,
     KEY_EXPORT_DIR,
     KEY_UNSAFE_TOKEN_WARNING,
+    KEY_ENABLE_HTTP2,
+    KEY_VERIFY_SSL,
+    KEY_TIMEOUT,
+    KEY_DEVELOPMENT_MODE,
 )
-from ..loggers import Logger
-from ..path import ProperPath
-from ..validators import (
+from ..core_validators import (
     Validate,
     ValidationError,
     CriticalValidationError,
     PathValidator,
 )
+from ..loggers import Logger
+from ..path import ProperPath
+from ..styles import Missing
+from ..utils import add_message
 
 logger = Logger()
 
@@ -39,7 +53,25 @@ LOCAL_CONFIG_LOC: Path = LOCAL_CONFIG_LOC
 PROJECT_CONFIG_LOC: Path = PROJECT_CONFIG_LOC
 
 env_var_app_name = APP_NAME.upper().replace("-", "_")
+FALLBACK_SOURCE_NAME: str = "DEFAULT"
 
+CANON_YAML_EXTENSION: str = "yaml"
+_CANON_CONFIG_FILE_NAME: str = f"{APP_NAME}.{CANON_YAML_EXTENSION}"
+for path in [
+    SYSTEM_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    LOCAL_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+    PROJECT_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
+]:
+    if path.exists():
+        message = (
+            f"File '{_CANON_CONFIG_FILE_NAME}' detected in location {path}. "
+            f"If it is meant to be {APP_NAME} configuration file, "
+            f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
+            f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+            f"as file extension for configuration files."
+        )
+        add_message(message, logging.INFO)
+        break
 settings = Dynaconf(
     envar_prefix=env_var_app_name,
     env_switcher=f"{env_var_app_name}_ENV",
@@ -52,16 +84,10 @@ settings = Dynaconf(
 )
 
 history = ConfigHistory(settings)
+minimal_active_configuration: MinimalActiveConfiguration = MinimalActiveConfiguration()
 
 # Host URL
-HOST: str = settings.get(
-    KEY_HOST
-)  # case-insensitive: settings.get("HOST") == settings.get("host")
-if not HOST:
-    logger.critical(
-        f"'host' is empty or missing from {CONFIG_FILE_NAME} file. "
-        f"Please make sure host (URL pointing to root API endpoint) is included."
-    )
+HOST = settings.get(KEY_HOST, None)
 
 
 # API token (api_key)
@@ -107,67 +133,25 @@ class APIToken:
         return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[:-expose-1:-1][::-1]}"
 
 
-API_TOKEN: str = settings.get(KEY_API_TOKEN)
-if not API_TOKEN:
-    logger.critical(
-        f"'api_token' is empty or missing from {CONFIG_FILE_NAME} file. "
-        f"Please make sure api token with at least read access is included."
-    )
-    # Note elabftw-python uses the term "api_key" for "API_TOKEN"
-else:
-    history.patch(KEY_API_TOKEN, APIToken(API_TOKEN))
+# Note elabftw-python uses the term "api_key" for "API_TOKEN"
+API_TOKEN: str = settings.get(KEY_API_TOKEN, None)
 
 # Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
+_XDG_DOWNLOAD_DIR = os.getenv(ENV_XDG_DOWNLOAD_DIR, None)
+
 # Export location
-CONFIG_EXPORT_DIR = ProperPath(
-    (_CONFIG_EXPORT_DIR_ORIGINAL := settings.get(KEY_EXPORT_DIR)) or os.devnull,
-    err_logger=logger,
-)  # the default "os.devnull" saves ProperPath from TypeError, ValueError
-# for when settings.get(KEY_EXPORT_DIR) is None/"".
-if _CONFIG_EXPORT_DIR_ORIGINAL and CONFIG_EXPORT_DIR.kind != "dir":
-    logger.warning(
-        f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} is not a directory!"
-    )
-    logger.debug("If you want to export to a file use '--export <path-to-file>'.")
-    CONFIG_EXPORT_DIR = None
-try:
-    EXPORT_DIR = Validate(PathValidator(CONFIG_EXPORT_DIR)).get()
-except ValidationError:
-    if _CONFIG_EXPORT_DIR_ORIGINAL:
-        logger.warning(
-            f"{KEY_EXPORT_DIR}: {_CONFIG_EXPORT_DIR_ORIGINAL} from configuration file couldn't be validated! "
-        )
-    try:
-        history.delete(KEY_EXPORT_DIR)
-    except KeyError:
-        ...
-    try:
-        EXPORT_DIR = Validate(
-            PathValidator(
-                [
-                    os.getenv(ENV_XDG_DOWNLOAD_DIR, None),
-                    FALLBACK_EXPORT_DIR,
-                ]
-            )
-        ).get()
-    except ValidationError:
-        logger.critical(
-            f"{APP_NAME} couldn't validate {FALLBACK_EXPORT_DIR} to store exported data. "
-            f"This is a fatal error. To quickly fix this error define an export directory "
-            f"with 'export_dir' in configuration file. {APP_NAME} will not run!"
-        )
-        raise CriticalValidationError
-# Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
+EXPORT_DIR = settings.get(KEY_EXPORT_DIR, None)
+# # Falls back to ~/Downloads if $XDG_DOWNLOAD_DIR isn't found
 
 # App internal data location
 if LOG_FILE_PATH.parent != LOG_DIR_ROOT:
     APP_DATA_DIR = LOG_FILE_PATH.parent
 else:
     validate_app_dir = Validate(
-        PathValidator([XDG_DATA_HOME / APP_NAME, FALLBACK_DIR / APP_NAME])
+        PathValidator([_XDG_DATA_HOME / APP_NAME, FALLBACK_DIR / APP_NAME])
     )
     try:
         APP_DATA_DIR = validate_app_dir.get()
@@ -182,24 +166,81 @@ else:
 inspect = InspectConfigHistory(history)
 
 # UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
-try:
-    settings[KEY_UNSAFE_TOKEN_WARNING]
-except KeyError:
-    UNSAFE_TOKEN_WARNING: bool = True
-else:
-    UNSAFE_TOKEN_WARNING: bool = settings.as_bool(KEY_UNSAFE_TOKEN_WARNING)
-    # equivalent to settings.get(<key>, cast='@bool')
-try:
-    if UNSAFE_TOKEN_WARNING and inspect.applied_config[KEY_API_TOKEN].source == str(
-        PROJECT_CONFIG_LOC
-    ):
-        logger.warning(
-            f"'{KEY_API_TOKEN}' field in project-based configuration file {PROJECT_CONFIG_LOC} found. "
-            f"This is highly discouraged. The token is at risk of being leaked into public repositories. "
-            f"If you still insist, please make sure {CONFIG_FILE_NAME} is included in .gitignore."
-        )
-except KeyError:
-    ...
+UNSAFE_TOKEN_WARNING_DEFAULT_VAL: bool = True
+UNSAFE_TOKEN_WARNING = settings.get(KEY_UNSAFE_TOKEN_WARNING, None)
+
+# ENABLE_HTTP2 falls back to False if not defined in configuration
+ENABLE_HTTP2_DEFAULT_VAL: bool = False
+ENABLE_HTTP2 = settings.get(KEY_ENABLE_HTTP2, None)
+
+# VERIFY_SSL falls back to True if not defined in configuration
+VERIFY_SSL_DEFAULT_VAL: bool = True
+VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
+
+# TIMEOUT falls back to 90.0 seconds if not defined in configuration
+TIMEOUT_DEFAULT_VAL: float = 90.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
+TIMEOUT = settings.get(KEY_TIMEOUT, None)
+
+# DEVELOPMENT_MODE falls back to false if not defined in configuration
+DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
+DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
+
+
+for key_name, key_val in [
+    (KEY_HOST, HOST),
+    (KEY_API_TOKEN, API_TOKEN),
+    (KEY_EXPORT_DIR, EXPORT_DIR),
+    (KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING),
+    (KEY_ENABLE_HTTP2, ENABLE_HTTP2),
+    (KEY_VERIFY_SSL, VERIFY_SSL),
+    (KEY_TIMEOUT, TIMEOUT),
+    (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
+]:
+    try:
+        history.patch(key_name, key_val)
+    except KeyError:
+        minimal_active_configuration[key_name] = AppliedConfigIdentity(Missing(), None)
+    else:
+        if key_name == KEY_API_TOKEN:
+            try:
+                history.patch(key_name, APIToken(key_val))
+            except ValueError:
+                ...
+        minimal_active_configuration[key_name] = InspectConfigHistory(
+            history
+        ).applied_config[key_name]
+
 # Temporary data storage location
 # elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
 TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
+
+# Plugin file definitions and locations
+ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
+INTERNAL_PLUGIN_DIRECTORY_NAME: str = "plugins"
+INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = "cli"
+INTERNAL_PLUGIN_TYPER_APP_FILE_NAME: str = (
+    f"{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}.py"
+)
+INTERNAL_PLUGIN_TYPER_APP_VAR_NAME: str = "app"
+# Local external/3rd-party plugin definitions
+EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME: str = INTERNAL_PLUGIN_DIRECTORY_NAME
+EXTERNAL_LOCAL_PLUGIN_DIR: Path = APP_DATA_DIR / EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = (
+    INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX
+)
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME: str = INTERNAL_PLUGIN_TYPER_APP_FILE_NAME
+EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME: str = INTERNAL_PLUGIN_TYPER_APP_VAR_NAME
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX: str = f"{APP_NAME}_plugin_metadata"
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_EXT: str = CONFIG_FILE_EXTENSION
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME: str = (
+    f"{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX}."
+    f"{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_EXT}"
+)
+
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS = (
+    f"{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX}_exists"
+)
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME: str = "plugin_name"
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH: str = "cli_script"
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH: str = "venv_dir"
+EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR: str = "plugin_root_dir"

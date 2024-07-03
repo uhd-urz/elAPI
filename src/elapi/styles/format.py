@@ -12,13 +12,13 @@ class BaseFormat(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._registry[cls.pattern()] = cls
-        cls._names.append(cls.name)
+        if cls.name not in cls._names:
+            cls._names.append(cls.name)
         cls._conventions.append(cls.convention)
 
     @property
     @abstractmethod
-    def name(self):
-        ...
+    def name(self): ...
 
     @property
     @abstractmethod
@@ -26,8 +26,7 @@ class BaseFormat(ABC):
         return self.name
 
     @convention.setter
-    def convention(self, value):
-        ...
+    def convention(self, value): ...
 
     @classmethod
     def supported_formatters(cls) -> dict[str:"BaseFormat", ...]:
@@ -39,12 +38,13 @@ class BaseFormat(ABC):
 
     @classmethod
     @abstractmethod
-    def pattern(cls):
-        ...
+    def pattern(cls): ...
 
     @abstractmethod
-    def __call__(self, data: Any):
-        ...
+    def __call__(self, data: Any): ...
+
+
+class FormatError(Exception): ...
 
 
 class JSONFormat(BaseFormat):
@@ -58,7 +58,9 @@ class JSONFormat(BaseFormat):
     def __call__(self, data: Any) -> str:
         import json
 
-        return json.dumps(data, indent=2, ensure_ascii=True)
+        return json.dumps(
+            data, indent=2, ensure_ascii=False
+        )  # ensure_ascii==False allows unicode
 
 
 class YAMLFormat(BaseFormat):
@@ -72,7 +74,7 @@ class YAMLFormat(BaseFormat):
     def __call__(self, data: Any) -> str:
         import yaml
 
-        return yaml.dump(data, indent=2, allow_unicode=True)
+        return yaml.dump(data, indent=2, allow_unicode=True, sort_keys=False)
 
 
 class TXTFormat(BaseFormat):
@@ -87,6 +89,43 @@ class TXTFormat(BaseFormat):
         from pprint import pformat
 
         return pformat(data)
+
+
+class CSVFormat(BaseFormat):
+    name: str = "csv"
+    convention: str = name
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^csv$"
+
+    def __call__(self, data: Any) -> str:
+        from csv import DictWriter
+        from io import StringIO
+
+        with StringIO() as csv_buffer:
+            writer = DictWriter(csv_buffer, fieldnames=[])
+            if isinstance(data, dict):
+                writer.fieldnames = data.keys()
+                writer.writeheader()
+                writer.writerow(data)
+                csv_as_string = csv_buffer.getvalue()
+            elif isinstance(data, Iterable):
+                for item in data:
+                    if not isinstance(item, dict):
+                        raise FormatError(
+                            "Only dictionaries or iterables of dictionaries can be formatted to CSV."
+                        )
+                    if not writer.fieldnames:
+                        writer.fieldnames = item.keys()
+                        writer.writeheader()
+                    if len(item.items()) > len(writer.fieldnames):
+                        raise FormatError(
+                            "Iterable of dictionary contains insistent length of key items."
+                        )
+                    writer.writerow(item)
+                csv_as_string = csv_buffer.getvalue()
+        return csv_as_string
 
 
 class ValidateLanguage:
@@ -107,7 +146,7 @@ class ValidateLanguage:
                 self.convention: Union[str, Iterable[str, ...]] = formatter.convention
                 self.formatter: type(BaseFormat) = formatter
                 return
-        raise ValueError(
+        raise FormatError(
             f"'{value}' isn't a supported language format! "
             f"Supported formats are: {BaseFormat.supported_formatter_names()}."
         )

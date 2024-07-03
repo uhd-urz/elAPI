@@ -1,17 +1,16 @@
 [tool.poetry]
 name = "elapi"
-version = "1.0.7"
-description = """elAPI is a powerful, extensible API interface to eLabFTW built for \
-the University Computing Centre (URZ, FIRE division) at Universität Heidelberg."""
+version = "2.0.0"
+description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [
-    "Alexander Haller <alexander.haller@urz.uni-heidelberg.de>",
-    "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
+    "Alexander Haller, Mahadi Xion <elabftw@uni-heidelberg.de>",
 ]
 maintainers = [
     "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
 ]
 readme = "README.md"
 homepage = "https://www.urz.uni-heidelberg.de/en/service-catalogue/software-and-applications/elabftw"
+repository = "https://github.com/uhd-urz/elAPI/"
 license = "AGPL-3.0-only"
 keywords = ["elabftw", "api"]
 classifiers = [
@@ -28,6 +27,9 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
+[project.urls]
+Changelog = "https://github.com/uhd-urz/elAPI/blob/main/CHANGELOG.md"
+
 [tool.poetry.scripts]
 elapi = "elapi.cli.elapi:app"
 
@@ -38,8 +40,13 @@ httpx = "^0.24.1"
 httpx-auth = "^0.17.0"
 typer = { extras = ["all"], version = "^0.9.0" }
 pyyaml = "^6.0.1"
-python-dateutil = "^2.8.2"
-tenacity = "^8.2.3"
+mistune = "^3.0.2"
+h2 = "^4.1.0"
+python-dateutil = { version = "^2.8.2", optional = true }
+tenacity = { version = "^8.2.3", optional = true }
+
+[tool.poetry.extras]
+uhd-urz = ["python-dateutil", "tenacity"]
 
 [tool.poetry.group.dev.dependencies]
 ptpython = "^3.0.23"

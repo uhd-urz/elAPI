@@ -5,8 +5,10 @@ from pathlib import Path
 # In which case, import their counterparts from src/config.py
 # name definitions
 APP_NAME: str = "elapi"
+APP_BRAND_NAME: str = "elAPI"
 LOG_FILE_NAME: str = f"{APP_NAME}.log"
-CONFIG_FILE_NAME: str = f"{APP_NAME}.yml"
+CONFIG_FILE_EXTENSION: str = "yml"
+CONFIG_FILE_NAME: str = f"{APP_NAME}.{CONFIG_FILE_EXTENSION}"
 DEFAULT_EXPORT_DATA_FORMAT: str = "json"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
@@ -38,6 +40,10 @@ KEY_HOST: str = "HOST"
 KEY_API_TOKEN: str = "API_TOKEN"
 KEY_EXPORT_DIR: str = "EXPORT_DIR"
 KEY_UNSAFE_TOKEN_WARNING: str = "UNSAFE_API_TOKEN_WARNING"
+KEY_ENABLE_HTTP2: str = "ENABLE_HTTP2"
+KEY_VERIFY_SSL: str = "VERIFY_SSL"
+KEY_TIMEOUT: str = "TIMEOUT"
+KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")
