@@ -2,7 +2,7 @@ import importlib.util
 import sys
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Tuple, Generator, Union
+from typing import List, Tuple, Generator, Union, Optional
 
 import typer
 
@@ -225,23 +225,26 @@ class ExternalPluginLocationValidator(Validator):
 
 class ExternalPluginHandler:
     @staticmethod
-    def get_plugin_metadata() -> Generator[dict, None, None]:
+    def get_plugin_metadata() -> Generator[Optional[dict], None, None]:
         from ..utils import add_message
         from ..configuration import EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR
 
-        for path in sorted(
-            EXTERNAL_LOCAL_PLUGIN_DIR.iterdir(), key=lambda x: str(x).lower()
-        ):
-            try:
-                metadata = Validate(ExternalPluginLocationValidator(path)).get()
-            except ValidationError as e:
-                add_message(f"{e}")
-                continue
-            except ValueError:
-                continue
-            else:
-                metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR] = path
-                yield metadata
+        try:
+            for path in sorted(
+                EXTERNAL_LOCAL_PLUGIN_DIR.iterdir(), key=lambda x: str(x).lower()
+            ):
+                try:
+                    metadata = Validate(ExternalPluginLocationValidator(path)).get()
+                except ValidationError as e:
+                    add_message(f"{e}")
+                    continue
+                except ValueError:
+                    continue
+                else:
+                    metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR] = path
+                    yield metadata
+        except FileNotFoundError:
+            yield None
 
     @staticmethod
     def load_plugin(plugin_name: str, cli_script: Path):
@@ -268,6 +271,8 @@ class ExternalPluginHandler:
         from ._venv_state_manager import switch_venv_state
 
         for metadata in self.get_plugin_metadata():
+            if metadata is None:
+                break
             plugin_name: str = metadata[
                 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
             ]
