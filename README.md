@@ -3,7 +3,8 @@
 <a href="https://pypi.org/project/elapi/">
     <img src="https://badge.fury.io/py/elapi.svg" alt="Package version">
 </a>
-
+<br />
+<br />
 elAPI is a powerful, extensible API client for eLabFTW developed at
 the [University Computing Centre](https://www.urz.uni-heidelberg.de/en) (
 URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
