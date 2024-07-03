@@ -188,7 +188,8 @@ def cli_cleanup_for_third_party_plugins(*args, override_config=None):
 
 for _app in internal_plugin_typer_apps:
     if _app is not None:
-        INTERNAL_PLUGIN_NAME_REGISTRY[app_name := _app.info.name] = _app
+        app_name = _app.info.name
+        INTERNAL_PLUGIN_NAME_REGISTRY[app_name] = _app
         COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
         app.add_typer(
             _app,
