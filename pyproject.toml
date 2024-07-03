@@ -10,6 +10,8 @@ maintainers = [
 ]
 readme = "README.md"
 homepage = "https://www.urz.uni-heidelberg.de/en/service-catalogue/software-and-applications/elabftw"
+repository = "https://github.com/uhd-urz/elAPI/"
+changelog = "https://github.com/uhd-urz/elAPI/blob/main/CHANGELOG.md"
 license = "AGPL-3.0-only"
 keywords = ["elabftw", "api"]
 classifiers = [
