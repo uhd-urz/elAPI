@@ -19,7 +19,7 @@ From [the documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
 With elAPI you can do the following:
 
 ```sh
-$ elapi get experiments -f csv --export ~/Downloads/
+$ elapi get experiments --format csv --export ~/Downloads/
 ```
 
 Once the command is run, in the background, elAPI will read host (eLab server) address, API key and various other
