@@ -1,16 +1,13 @@
 # elAPI
 
-<a href="https://pypi.org/project/elapi/">
-    <img src="https://badge.fury.io/py/elapi.svg" alt="Package version">
-</a>
-<br />
-<br />
+[![Package version](https://badge.fury.io/py/elapi.svg/?branch=main)](https://pypi.org/project/elapi)
 
 elAPI is a powerful, extensible API client for eLabFTW developed at
-the [University Computing Centre](https://www.urz.uni-heidelberg.de/en) (
-URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
+the [University Computing Centre](https://www.urz.uni-heidelberg.de/en)
+(URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
 [University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented on
-[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease.
+[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI provides a simple interface via its CLI
+executable, and an advanced set of numerous APIs when it is used directly through its Python package.
 
 **Example:**
 
@@ -20,8 +17,13 @@ From [the documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
 With elAPI you can do the following:
 
 ```sh
-$ elapi get users --id <id>
+$ elapi get experiments -f csv --export ~/Downloads/
 ```
+
+Once the command is run, in the background, elAPI will read host (eLab server) address, API key and various other
+settings (see [configuration](#configuration)) from the configuration file `elapi.yml`, perform validation (e.g.,
+whether the server address is valid), fetch all _experiments_ list, convert them to `CSV`, and export them to your
+local `~/Downloads/` folder.
 
 ## Installation
 
@@ -88,7 +90,7 @@ host: <host API url>
 # Example: https://demo.elabftw.net/api/v2/
 # Note the host URL ends with the API endpoint
 api_token: <token with at least read-access>
-# You can generate an API token from eLabFTW user panel -> API keys tab.
+# "A.k.a API key". You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
 unsafe_api_token_warning: true
 enable_http2: false
@@ -239,8 +241,8 @@ $ elapi experiments upload-attachment --id <experiment ID> --path <path to attac
 elAPI has seamless support with tight-integration for third-party plugins. A simple third-party plugin can be created in
 a few easy steps:
 
-1. Create a new subfolder under `~/.local/share/elapi/plugins` with the name for your new plugin (e.g, a folder named "
-   test")
+1. Create a new subfolder under `~/.local/share/elapi/plugins` with the name for your new plugin (e.g, a folder named
+   "test")
 2. Create a `cli.py` in the subfolder with the following snippet:
 
 ```python
