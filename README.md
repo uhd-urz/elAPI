@@ -7,7 +7,7 @@ the [University Computing Centre](https://www.urz.uni-heidelberg.de/en)
 (URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
 [University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented on
 [eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI provides a simple interface via its CLI
-executable, and an advanced set of numerous APIs when it is used directly through its Python package.
+executable, and numerous advanced APIs when it is used directly as a Python package.
 
 ![elAPI features in a nutshell](./.assets/elapi_features.svg)
 
