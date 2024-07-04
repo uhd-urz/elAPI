@@ -82,15 +82,21 @@ class ExternalPluginLocationValidator(Validator):
         import os
         import yaml
         from ..configuration import (
+            APP_BRAND_NAME,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME,
             EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX,
             CANON_YAML_EXTENSION,
+            CONFIG_FILE_EXTENSION,
         )
 
+        _CANON_PLUGIN_METADATA_FILE_NAME: str = (
+            f"{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX}.{CANON_YAML_EXTENSION}"
+        )
         parsed_metadata: dict = {
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS: None,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH: None,
@@ -100,6 +106,23 @@ class ExternalPluginLocationValidator(Validator):
         if self.location.is_dir():
             actual_cwd = Path.cwd()
             os.chdir(self.location)
+            if (
+                _canon_plugin_metadata_file := (
+                    self.location / _CANON_PLUGIN_METADATA_FILE_NAME
+                )
+            ).exists():
+                import logging
+
+                message = (
+                    f"File '{_canon_plugin_metadata_file.name}' detected in location {_canon_plugin_metadata_file}. "
+                    f"If it is meant to be an {APP_BRAND_NAME} plugin metadata file, "
+                    f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
+                    f"to '{CONFIG_FILE_EXTENSION}'. "
+                    f"{APP_BRAND_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+                    f"as file extension for plugin metadata files."
+                )
+                add_message(message, logging.INFO)
+
             if (
                 plugin_metadata_file := (
                     self.location / EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME
