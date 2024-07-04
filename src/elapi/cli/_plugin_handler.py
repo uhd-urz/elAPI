@@ -94,7 +94,6 @@ class ExternalPluginLocationValidator(Validator):
         parsed_metadata: dict = {
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS: None,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH: None,
-            # EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH: None,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME: None,
         }
 
@@ -136,7 +135,7 @@ class ExternalPluginLocationValidator(Validator):
                         else:
                             try:
                                 CLI_SCRIPT_PATH = ProperPath(CLI_SCRIPT_PATH)
-                            except ValueError:
+                            except (TypeError, ValueError):
                                 raise ValidationError(
                                     f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH}' "
                                     f"exists in {plugin_metadata_file}, but its assigned "
@@ -164,7 +163,7 @@ class ExternalPluginLocationValidator(Validator):
                         else:
                             try:
                                 VENV_PATH = ProperPath(VENV_PATH)
-                            except ValueError:
+                            except (TypeError, ValueError):
                                 raise ValidationError(
                                     f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH}' "
                                     f"exists in {plugin_metadata_file}, but its assigned "
