@@ -6,7 +6,7 @@ from ..path import ProperPath
 VENV_INDICATOR_DIR_NAME: str = "site-packages"
 
 
-def switch_venv_state(status: bool, /, venv_dir: Union[Path, ProperPath]):
+def switch_venv_state(state: bool, /, venv_dir: Union[Path, ProperPath]):
     import sys
 
     site_packages = sorted(
@@ -20,7 +20,7 @@ def switch_venv_state(status: bool, /, venv_dir: Union[Path, ProperPath]):
         )
     for unique_dir in site_packages:
         unique_dir = str(unique_dir)
-        if status is True:
+        if state is True:
             sys.path.insert(1, unique_dir)
             return
         else:
