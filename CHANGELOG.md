@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2024-07-04
+
+Mainly a few hotfixes found during [FDM Münster](https://fdm-nrw.coscine.de/#/IG%20ELB%20Technische%20Aspekte) workshop.
+
+### Added
+
+- `INFO` message for when a plugin metadata file ending in `.yaml` extension is found (#120)
+
+### Fixed
+
+- Fix elAPI plugin metadata file related issues (#118, #119)
+- Fix `README.md` PyPI version badge not displaying new version
+
 ## [2.0.0] - 2024-07-03
 
 The first-iteration of our long-awaited 2.0.
