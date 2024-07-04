@@ -135,6 +135,21 @@ def cli_startup(
                     reinitiate_config(ignore_essential_validation=True)
 
 
+def cli_switch_venv_state(state: bool, /) -> None:
+    import click
+    from ._venv_state_manager import switch_venv_state
+
+    try:
+        venv_dir = EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
+            click.get_current_context().command.name
+        ].venv
+    except KeyError:
+        ...
+    else:
+        if venv_dir is not None:
+            switch_venv_state(state, venv_dir)
+
+
 def cli_startup_for_plugins(
     override_config: Annotated[
         Optional[str],
@@ -147,21 +162,10 @@ def cli_startup_for_plugins(
         ),
     ] = None,
 ):
-    import click
     from ..styles import print_typer_error
     from ..validators import Exit
-    from ._venv_state_manager import switch_venv_state
 
-    try:
-        switch_venv_state(
-            True,
-            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
-                click.get_current_context().command.name
-            ].venv,
-        )
-    except KeyError:
-        ...
-
+    cli_switch_venv_state(True)
     if override_config is not None:
         print_typer_error(
             f"--override-config/--OC can only be passed after "
@@ -172,18 +176,7 @@ def cli_startup_for_plugins(
 
 
 def cli_cleanup_for_third_party_plugins(*args, override_config=None):
-    import click
-    from ._venv_state_manager import switch_venv_state
-
-    try:
-        switch_venv_state(
-            False,
-            EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
-                click.get_current_context().command.name
-            ].venv,
-        )
-    except KeyError:
-        ...
+    cli_switch_venv_state(False)
 
 
 for _app in internal_plugin_typer_apps:
