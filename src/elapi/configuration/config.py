@@ -65,7 +65,7 @@ for path in [
     if path.exists():
         message = (
             f"File '{_CANON_CONFIG_FILE_NAME}' detected in location {path}. "
-            f"If it is meant to be {APP_NAME} configuration file, "
+            f"If it is meant to be an {APP_NAME} configuration file, "
             f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
             f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
             f"as file extension for configuration files."
