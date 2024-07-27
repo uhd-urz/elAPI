@@ -58,7 +58,7 @@ class RecursiveInformation:
 
     @staticmethod
     async def close_event_loop(event_loop: asyncio.AbstractEventLoop, endpoint) -> None:
-        await endpoint.close()
+        await endpoint.aclose()
         # Must be closed before cancelling asyncio tasks or stopping the event loop
         event_loop.set_exception_handler(lambda loop, context: ...)
         # "lambda loop, context: ..." suppresses asyncio error emission:
@@ -113,5 +113,5 @@ class RecursiveInformation:
             await self.close_event_loop(event_loop, endpoint)
             raise Exit(1) from e
         else:
-            await endpoint.close()
+            await endpoint.aclose()
             return recursive_information
