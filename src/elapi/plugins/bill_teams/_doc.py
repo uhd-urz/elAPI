@@ -21,7 +21,7 @@ __PARAMETERS__doc__ = {
     "Both _--teams-info-only_ and _--owners-info-only_ cannot be passed.",
     "data_format": f"Format style for the output. Supported values are: {supported_format_values}. "
                    f"CSV is **not** a supported format for this command as the "
-                   f"output data structure is too complex for naive CSV. "
+                   f"output data structure is too complex for CSV. "
                    f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
                    "If an unsupported format value is provided then the output "
                    f"format falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
