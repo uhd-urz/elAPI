@@ -1,7 +1,7 @@
 from ... import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
-_UNIQUE_SUPPORTED_FORMATS = ["json", "yaml", "txt"]
+_UNIQUE_SUPPORTED_FORMATS = ["json", "yaml"]
 supported_format_values = ", ".join(
     f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
 )
@@ -23,9 +23,6 @@ __PARAMETERS__doc__ = {
                    f"CSV is **not** a supported format for this command as the "
                    f"output data structure is too complex for naive CSV. "
                    f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
-                   "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
-                   "without syntax highlighting. This can be utilized if one wishes to pipe the output "
-                   " to some external formatting program like `less`. "
                    "If an unsupported format value is provided then the output "
                    f"format falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "
