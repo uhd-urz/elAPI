@@ -191,7 +191,7 @@ else:
             OwnersInformation,
             OwnersList,
         )
-        from .validator import OwnersInformationValidator
+        from .validators import OwnersInformationValidator
 
         teams_info, owners_info = (
             TeamsInformation(),
