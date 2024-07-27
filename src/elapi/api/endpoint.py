@@ -82,11 +82,11 @@ class FixedAsyncEndpoint:
             query,
         )
 
-    async def close(self):
-        await self._get_session.close()
-        await self._post_session.close()
-        await self._patch_session.close()
-        await self._delete_session.close()
+    async def aclose(self):
+        await self._get_session.aclose()
+        await self._post_session.aclose()
+        await self._patch_session.aclose()
+        await self._delete_session.aclose()
 
 
 class FixedEndpoint:
