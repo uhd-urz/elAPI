@@ -22,6 +22,14 @@ class APIRequest(ABC):
     def __init__(self, keep_session_open: bool = False, **kwargs):
         from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
+        from ..utils import missing_warning
+        from ..configuration import (
+            KEY_HOST,
+            KEY_API_TOKEN,
+            KEY_ENABLE_HTTP2,
+            KEY_VERIFY_SSL,
+            KEY_TIMEOUT,
+        )
 
         self.host: str = get_active_host()
         self.api_token: str = get_active_api_token().token
@@ -30,6 +38,15 @@ class APIRequest(ABC):
         enable_http2 = get_active_enable_http2()
         verify_ssl = get_active_verify_ssl()
         timeout = get_active_timeout()
+
+        for field in (
+            (KEY_HOST, self.host),
+            (KEY_API_TOKEN, self.api_token),
+            (KEY_ENABLE_HTTP2, enable_http2),
+            (KEY_VERIFY_SSL, verify_ssl),
+            (KEY_TIMEOUT, timeout),
+        ):
+            missing_warning(field)
         _client = Client if not self.is_async_client else AsyncClient
         try:
             self._client: Union[Client, AsyncClient] = _client(

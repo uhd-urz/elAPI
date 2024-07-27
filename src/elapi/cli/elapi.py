@@ -84,7 +84,6 @@ def cli_startup(
         minimal_active_configuration,
     )
     from ..configuration.config import APIToken
-    from ..configuration.validators import MainConfigurationValidator
     from ..core_validators import Exit
     from ..configuration import reinitiate_config
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
@@ -121,8 +120,7 @@ def cli_startup(
             and ctx.command.name != calling_sub_command_name
         ):
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
-                if override_config or not MainConfigurationValidator.ALREADY_VALIDATED:
-                    reinitiate_config()
+                reinitiate_config()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
