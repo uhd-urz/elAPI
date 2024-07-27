@@ -12,6 +12,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
         $ elapi get users --id <id>
 """
 
+import sys
 from functools import partial
 from typing import Optional
 
@@ -429,6 +430,15 @@ def get(
         Optional[str],
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = None,
+    highlight_syntax: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--highlight",
+            "-H",
+            help=docs["highlight_syntax"],
+            show_default=True,
+        ),
+    ] = False,
     export: Annotated[
         Optional[bool],
         typer.Option(
@@ -579,11 +589,17 @@ def get(
                 f"{export.destination} in {export.format_name} format."
             )
     else:
-        highlight = Highlight(format.name)
-        if not raw_response.is_success:
-            stderr_console.print(highlight(formatted_data))
-            raise Exit(1)
-        stdin_console.print(highlight(formatted_data))
+        if highlight_syntax is True:
+            highlight = Highlight(format.name)
+            if not raw_response.is_success:
+                stderr_console.print(highlight(formatted_data))
+                raise Exit(1)
+            stdin_console.print(highlight(formatted_data))
+        else:
+            if not raw_response.is_success:
+                typer.echo(formatted_data, file=sys.stderr)
+                raise Exit(1)
+            typer.echo(formatted_data)
     return response_data
 
 
@@ -629,6 +645,15 @@ def post(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    highlight_syntax: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--highlight",
+            "-H",
+            help=docs["highlight_syntax"],
+            show_default=True,
+        ),
+    ] = False,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -789,11 +814,17 @@ def post(
             )
             raise typer.Exit(1)
     else:
-        highlight = Highlight(format.name)
-        if not raw_response.is_success:
-            stderr_console.print(highlight(formatted_data))
-            raise typer.Exit(1)
-        stdin_console.print(highlight(formatted_data))
+        if highlight_syntax is True:
+            highlight = Highlight(format.name)
+            if not raw_response.is_success:
+                stderr_console.print(highlight(formatted_data))
+                raise Exit(1)
+            stdin_console.print(highlight(formatted_data))
+        else:
+            if not raw_response.is_success:
+                typer.echo(formatted_data, file=sys.stderr)
+                raise Exit(1)
+            typer.echo(formatted_data)
         return formatted_data
 
 
@@ -831,6 +862,15 @@ def patch(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    highlight_syntax: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--highlight",
+            "-H",
+            help=docs["highlight_syntax"],
+            show_default=True,
+        ),
+    ] = False,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -934,11 +974,17 @@ def patch(
             )
             raise typer.Exit(1)
     else:
-        highlight = Highlight(format.name)
-        if not raw_response.is_success:
-            stderr_console.print(highlight(formatted_data))
-            raise typer.Exit(1)
-        stdin_console.print(highlight(formatted_data))
+        if highlight_syntax is True:
+            highlight = Highlight(format.name)
+            if not raw_response.is_success:
+                stderr_console.print(highlight(formatted_data))
+                raise Exit(1)
+            stdin_console.print(highlight(formatted_data))
+        else:
+            if not raw_response.is_success:
+                typer.echo(formatted_data, file=sys.stderr)
+                raise Exit(1)
+            typer.echo(formatted_data)
         return formatted_data
 
 
@@ -972,6 +1018,15 @@ def delete(
         str,
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = "json",
+    highlight_syntax: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--highlight",
+            "-H",
+            help=docs["highlight_syntax"],
+            show_default=True,
+        ),
+    ] = False,
     headers: Annotated[
         Optional[str],
         typer.Option("--headers", help=docs["headers"], show_default=False),
@@ -1074,11 +1129,17 @@ def delete(
             )
             raise typer.Exit(1)
     else:
-        highlight = Highlight(format.name)
-        if not raw_response.is_success:
-            stderr_console.print(highlight(formatted_data))
-            raise typer.Exit(1)
-        stdin_console.print(highlight(formatted_data))
+        if highlight_syntax is True:
+            highlight = Highlight(format.name)
+            if not raw_response.is_success:
+                stderr_console.print(highlight(formatted_data))
+                raise Exit(1)
+            stdin_console.print(highlight(formatted_data))
+        else:
+            if not raw_response.is_success:
+                typer.echo(formatted_data, file=sys.stderr)
+                raise Exit(1)
+            typer.echo(formatted_data)
         return formatted_data
 
 
