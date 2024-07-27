@@ -25,7 +25,13 @@ class Highlight(BaseHighlight):
         self.theme = theme
 
     def __call__(self, data: str) -> Syntax:
-        return Syntax(data, self.name, background_color="default", theme=self.theme)
+        return Syntax(
+            data,
+            self.name,
+            background_color="default",
+            theme=self.theme,
+            word_wrap=True,
+        )
 
 
 class NoteText:
