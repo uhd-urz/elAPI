@@ -364,7 +364,22 @@ class DecimalWithFallbackConfigurationValidator(Validator):
 
 
 class MainConfigurationValidator(Validator):
-    ALREADY_VALIDATED: bool = False
+    ALL_VALIDATORS: list = [
+        HostConfigurationValidator,
+        APITokenConfigurationValidator,
+        ExportDirConfigurationValidator,
+        BooleanWithFallbackConfigurationValidator,
+        DecimalWithFallbackConfigurationValidator,
+    ]
+    ESSENTIAL_VALIDATORS: list = [
+        HostConfigurationValidator,
+        APITokenConfigurationValidator,
+    ]
+    NON_ESSENTIAL_VALIDATORS: list = [
+        ExportDirConfigurationValidator,
+        BooleanWithFallbackConfigurationValidator,
+        DecimalWithFallbackConfigurationValidator,
+    ]
     __slots__ = ()
 
     def __init__(
@@ -384,13 +399,7 @@ class MainConfigurationValidator(Validator):
     @limited_to.setter
     def limited_to(self, value):
         if value is None:
-            self._limited_to = [
-                HostConfigurationValidator,
-                APITokenConfigurationValidator,
-                ExportDirConfigurationValidator,
-                BooleanWithFallbackConfigurationValidator,
-                DecimalWithFallbackConfigurationValidator,
-            ]
+            self._limited_to = MainConfigurationValidator.ALL_VALIDATORS
         else:
             if not isinstance(value, Iterable) and isinstance(value, str):
                 raise ValueError(
