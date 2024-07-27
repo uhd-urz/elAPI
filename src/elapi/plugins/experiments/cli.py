@@ -30,6 +30,15 @@ def get(
         Optional[str],
         typer.Option("--format", "-F", help=docs["data_format"], show_default=False),
     ] = None,
+    highlight_syntax: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--highlight",
+            "-H",
+            help=elapi_docs["highlight_syntax"],
+            show_default=True,
+        ),
+    ] = False,
     export: Annotated[
         Optional[bool],
         typer.Option(
@@ -52,6 +61,7 @@ def get(
     """
     Read or download an experiment.
     """
+    import sys
     from ...core_validators import Validate
     from ...api.validators import HostIdentityValidator
     from ..commons import Export
@@ -59,6 +69,7 @@ def get(
     from . import (
         formats,
     )  # must be imported for all formats to be registered by BaseFormat
+    from ...core_validators import Exit
 
     validate_config = Validate(HostIdentityValidator())
     validate_config()
@@ -103,11 +114,17 @@ def get(
             )
             export(data=formatted_data, verbose=True)
         else:
-            highlight = Highlight(format.name)
-            if not response.is_success:
-                stderr_console.print(highlight(formatted_data))
-                raise typer.Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            if highlight_syntax is True:
+                highlight = Highlight(format.name)
+                if not response.is_success:
+                    stderr_console.print(highlight(formatted_data))
+                    raise Exit(1)
+                stdin_console.print(highlight(formatted_data))
+            else:
+                if not response.is_success:
+                    typer.echo(formatted_data, file=sys.stderr)
+                    raise Exit(1)
+                typer.echo(formatted_data)
         response.close()
         return response_data
 
