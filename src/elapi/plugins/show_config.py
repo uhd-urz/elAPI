@@ -24,6 +24,14 @@ from ..configuration import (
     FALLBACK_SOURCE_NAME,
     minimal_active_configuration,
 )
+
+# noinspection PyProtectedMember
+from ..configuration.config import (
+    _CANON_CONFIG_FILE_NAME,
+    CONFIG_MIS_PATH,
+    CANON_YAML_EXTENSION,
+    CONFIG_FILE_EXTENSION,
+)
 from ..styles import Missing, ColorText
 from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN, LIGHTCYAN
 
@@ -98,6 +106,14 @@ except KeyError:
 
 detected_config_files_formatted = "\n- " + "\n- ".join(
     f"`{v}`: {k}" for k, v in detected_config_files.items()
+)
+
+wrong_ext_warning = (
+    f"File '{_CANON_CONFIG_FILE_NAME}' detected in location '{CONFIG_MIS_PATH}'. "
+    f"If it is meant to be an {APP_NAME} configuration file, "
+    f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
+    f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+    f"as file extension for configuration files."
 )
 
 
@@ -217,6 +233,16 @@ The following information includes configuration values and their sources as det
 - `{ENV_XDG_DOWNLOAD_DIR}`: Environment variable.
 """
             if ENV_XDG_DOWNLOAD_DIR in (export_dir_source,)
+            else ""
+        )
+        + (
+            f"""
+
+
+**{ColorText("Attention:").colorize(RED)}**
+    {wrong_ext_warning}
+    """
+            if CONFIG_MIS_PATH is not None
             else ""
         )
     )
