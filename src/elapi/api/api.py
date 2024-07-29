@@ -22,6 +22,14 @@ class APIRequest(ABC):
     def __init__(self, keep_session_open: bool = False, **kwargs):
         from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
+        from ..utils import missing_warning
+        from ..configuration import (
+            KEY_HOST,
+            KEY_API_TOKEN,
+            KEY_ENABLE_HTTP2,
+            KEY_VERIFY_SSL,
+            KEY_TIMEOUT,
+        )
 
         self.host: str = get_active_host()
         self.api_token: str = get_active_api_token().token
@@ -30,6 +38,15 @@ class APIRequest(ABC):
         enable_http2 = get_active_enable_http2()
         verify_ssl = get_active_verify_ssl()
         timeout = get_active_timeout()
+
+        for field in (
+            (KEY_HOST, self.host),
+            (KEY_API_TOKEN, self.api_token),
+            (KEY_ENABLE_HTTP2, enable_http2),
+            (KEY_VERIFY_SSL, verify_ssl),
+            (KEY_TIMEOUT, timeout),
+        ):
+            missing_warning(field)
         _client = Client if not self.is_async_client else AsyncClient
         try:
             self._client: Union[Client, AsyncClient] = _client(
@@ -71,10 +88,25 @@ class APIRequest(ABC):
             self.client.close()
 
     @abstractmethod
+    async def aclose(self):
+        if not self.client.is_closed:
+            await self.client.aclose()
+
+    @abstractmethod
     def __call__(self, *args, **kwargs):
         response = self._make(*args, **kwargs)
         if not self.keep_session_open:
             self.close()
+        return response
+
+    @abstractmethod
+    async def __acall__(self, *args, **kwargs):
+        response = await self._make(
+            *args,
+            **kwargs,
+        )
+        if not self.keep_session_open:
+            await self.aclose()
         return response
 
 
@@ -266,6 +298,11 @@ class GETRequest(APIRequest):
     def close(self):
         super().close()
 
+    def aclose(self):
+        raise NotImplementedError(
+            f"{GETRequest.__name__} is not async and only supports 'close' method."
+        )
+
     def __call__(
         self,
         endpoint_name: str,
@@ -282,6 +319,12 @@ class GETRequest(APIRequest):
             sub_endpoint_id,
             query,
             **kwargs,
+        )
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
         )
 
 
@@ -320,6 +363,11 @@ class POSTRequest(APIRequest):
     def close(self):
         super().close()
 
+    def aclose(self):
+        raise NotImplementedError(
+            f"{POSTRequest.__name__} is not async and only supports 'close' method."
+        )
+
     def __call__(
         self,
         endpoint_name: str,
@@ -336,6 +384,12 @@ class POSTRequest(APIRequest):
             sub_endpoint_id,
             query,
             **kwargs,
+        )
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
         )
 
 
@@ -372,9 +426,13 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def close(self):
-        if not self.client.is_closed:
-            await self.client.aclose()
+    async def aclose(self):
+        await super().aclose()
+
+    def close(self):
+        raise NotImplementedError(
+            f"{AsyncPOSTRequest.__name__} is async and only supports 'aclose' method."
+        )
 
     async def __call__(
         self,
@@ -385,7 +443,7 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
-        response = await self._make(
+        return await super().__acall__(
             endpoint_name,
             endpoint_id,
             sub_endpoint_name,
@@ -393,9 +451,12 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             query,
             **kwargs,
         )
-        if not self.keep_session_open:
-            await self.close()
-        return response
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
+        )
 
 
 class AsyncGETRequest(APIRequest, is_async_client=True):
@@ -422,9 +483,14 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    async def close(self):
+    async def aclose(self):
         if not self.client.is_closed:
             await self.client.aclose()
+
+    def close(self):
+        raise NotImplementedError(
+            f"{AsyncGETRequest.__name__} is async and only supports 'aclose' method."
+        )
 
     async def __call__(
         self,
@@ -435,7 +501,7 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
-        response = await self._make(
+        return await super().__acall__(
             endpoint_name,
             endpoint_id,
             sub_endpoint_name,
@@ -443,9 +509,12 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             query,
             **kwargs,
         )
-        if not self.keep_session_open:
-            await self.close()
-        return response
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
+        )
 
 
 class PATCHRequest(APIRequest):
@@ -476,6 +545,11 @@ class PATCHRequest(APIRequest):
     def close(self):
         super().close()
 
+    def aclose(self):
+        raise NotImplementedError(
+            f"{PATCHRequest.__name__} is not async and only supports 'close' method."
+        )
+
     def __call__(
         self,
         endpoint_name: str,
@@ -492,6 +566,12 @@ class PATCHRequest(APIRequest):
             sub_endpoint_id,
             query,
             **kwargs,
+        )
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
         )
 
 
@@ -526,9 +606,14 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def close(self):
+    async def aclose(self):
         if not self.client.is_closed:
             await self.client.aclose()
+
+    def close(self):
+        raise NotImplementedError(
+            f"{AsyncPATCHRequest.__name__} is async and only supports 'aclose' method."
+        )
 
     async def __call__(
         self,
@@ -539,7 +624,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
-        response = await self._make(
+        return await super().__acall__(
             endpoint_name,
             endpoint_id,
             sub_endpoint_name,
@@ -547,9 +632,12 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             query,
             **kwargs,
         )
-        if not self.keep_session_open:
-            await self.close()
-        return response
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
+        )
 
 
 class DELETERequest(APIRequest):
@@ -572,6 +660,11 @@ class DELETERequest(APIRequest):
     def close(self):
         super().close()
 
+    def aclose(self):
+        raise NotImplementedError(
+            f"{DELETERequest.__name__} is not async and only supports 'close' method."
+        )
+
     def __call__(
         self,
         endpoint_name: str,
@@ -588,6 +681,12 @@ class DELETERequest(APIRequest):
             sub_endpoint_id,
             query,
             **kwargs,
+        )
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
         )
 
 
@@ -617,9 +716,14 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def close(self):
+    async def aclose(self):
         if not self.client.is_closed:
             await self.client.aclose()
+
+    def close(self):
+        raise NotImplementedError(
+            f"{AsyncDELETERequest.__name__} is async and only supports 'aclose' method."
+        )
 
     async def __call__(
         self,
@@ -630,7 +734,7 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
         query: Optional[dict] = None,
         **kwargs,
     ) -> Response:
-        response = await self._make(
+        return await super().__acall__(
             endpoint_name,
             endpoint_id,
             sub_endpoint_name,
@@ -638,6 +742,9 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             query,
             **kwargs,
         )
-        if not self.keep_session_open:
-            await self.close()
-        return response
+
+    def __acall__(self, *args, **kwargs):
+        raise NotImplementedError(
+            "__acall__ cannot be called directly. It's mainly an async"
+            " placeholder for __call__. Please use __call__ instead."
+        )

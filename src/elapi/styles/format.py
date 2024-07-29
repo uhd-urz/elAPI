@@ -77,20 +77,6 @@ class YAMLFormat(BaseFormat):
         return yaml.dump(data, indent=2, allow_unicode=True, sort_keys=False)
 
 
-class TXTFormat(BaseFormat):
-    name: str = "txt"
-    convention: str = name
-
-    @classmethod
-    def pattern(cls) -> str:
-        return r"^(plain)?te?xt$"
-
-    def __call__(self, data: Any) -> str:
-        from pprint import pformat
-
-        return pformat(data)
-
-
 class CSVFormat(BaseFormat):
     name: str = "csv"
     convention: str = name

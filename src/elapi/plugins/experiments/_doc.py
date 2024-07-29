@@ -5,7 +5,6 @@ from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 _UNIQUE_SUPPORTED_FORMATS = [
     "json",
     "yaml",
-    "txt",
     "pdf",
     "pdfa",
     "zip",
@@ -40,13 +39,10 @@ __PARAMETERS__doc__ = {
                                          "hash can also be passed as an attachment ID.",
     "data_format": f"Experiment output format. Supported values are: {supported_format_values}. "
                    f"The supported formats follow the _'Export'_ options available "
-                   f"for an experiment on the browser GUI. As such, **only** JSON, YAML and TXT formats can be printed "
+                   f"for an experiment on the browser GUI. As such, **only** JSON and YAML formats can be printed "
                    f"on the terminal. All other supported formats are exported to "
                    f"local storage by default (see _--export_ for more export options). "
                    f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
-                   "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
-                   "without syntax highlighting. This can be utilized if one wishes to pipe the output "
-                   "to some external formatting program like `less`. "
                    "If an unsupported format value is provided then the output format "
                    f"falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
     "export_details": f"- If _'--export'_ is passed without any following value, then it acts as a flag, and "

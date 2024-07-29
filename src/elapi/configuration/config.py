@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 from dynaconf import Dynaconf
 
@@ -57,18 +58,17 @@ FALLBACK_SOURCE_NAME: str = "DEFAULT"
 
 CANON_YAML_EXTENSION: str = "yaml"
 _CANON_CONFIG_FILE_NAME: str = f"{APP_NAME}.{CANON_YAML_EXTENSION}"
+CONFIG_MIS_PATH: Optional[Path] = None
 for path in [
     SYSTEM_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
     LOCAL_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
     PROJECT_CONFIG_LOC.parent / _CANON_CONFIG_FILE_NAME,
 ]:
     if path.exists():
+        CONFIG_MIS_PATH = path
         message = (
-            f"File '{_CANON_CONFIG_FILE_NAME}' detected in location {path}. "
-            f"If it is meant to be an {APP_NAME} configuration file, "
-            f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
-            f"to '{CONFIG_FILE_EXTENSION}'. {APP_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
-            f"as file extension for configuration files."
+            f"You have a message marked as 'Attention' waiting for you. "
+            f"Please run '{APP_NAME} show-config' to see it."
         )
         add_message(message, logging.INFO)
         break

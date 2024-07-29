@@ -59,3 +59,6 @@ from .overridable_vars import (
     get_active_timeout,
     get_development_mode,
 )
+
+if get_development_mode() is False:
+    reinitiate_config(ignore_essential_validation=True)

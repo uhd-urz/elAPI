@@ -82,11 +82,11 @@ __PARAMETERS__doc__ = {
                         f"an existing file when exporting.",
     "data_format": f"Format style for the output. Supported values are: {supported_highlighting_formats}. "
               f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
-              "When 'txt' is used, the response will be sent in *original*, un-formatted (almost), "
-              "without syntax highlighting. This can be utilized if one wishes to pipe the output "
-              " to some external formatting program like `less`. "
               "If an unsupported format value is provided then the output format "
               f"falls back to `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`.",
+    "highlight_syntax": "Enable syntax highlighting for shown output if possible. Default is **False**. "
+                        "Tools like `jq` or `less` might behave erratically when syntax highlighted output "
+                        "is piped to them.",
     "verify": "SSL certificates are verified for HTTPS requests by default. Passing _'--verify False'_ will "
               "disable the verification. This can be useful during local development. You can also pass a "
               "path to SSL certificate (a.k.a CA bundle) file to --verify.",

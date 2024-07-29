@@ -41,6 +41,15 @@ else:
                 "--format", "-F", help=docs["data_format"], show_default=False
             ),
         ] = None,
+        highlight_syntax: Annotated[
+            Optional[bool],
+            typer.Option(
+                "--highlight",
+                "-H",
+                help=elapi_docs["highlight_syntax"],
+                show_default=True,
+            ),
+        ] = False,
         sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
         export: Annotated[
             Optional[bool],
@@ -114,8 +123,11 @@ else:
             )
             export_teams(data=formatted_teams, verbose=True)
         else:
-            highlight = Highlight(format.name)
-            stdin_console.print(highlight(formatted_teams))
+            if highlight_syntax is True:
+                highlight = Highlight(format.name)
+                stdin_console.print(highlight(formatted_teams))
+            else:
+                typer.echo(formatted_teams)
         return teams
 
     # noinspection PyUnresolvedReferences
@@ -135,6 +147,15 @@ else:
                 "--format", "-F", help=elapi_docs["data_format"], show_default=False
             ),
         ] = None,
+        highlight_syntax: Annotated[
+            Optional[bool],
+            typer.Option(
+                "--highlight",
+                "-H",
+                help=elapi_docs["highlight_syntax"],
+                show_default=True,
+            ),
+        ] = False,
         export: Annotated[
             Optional[bool],
             typer.Option(
@@ -191,7 +212,7 @@ else:
             OwnersInformation,
             OwnersList,
         )
-        from .validator import OwnersInformationValidator
+        from .validators import OwnersInformationValidator
 
         teams_info, owners_info = (
             TeamsInformation(),
@@ -222,8 +243,11 @@ else:
             )
             export_teams(data=formatted_owners, verbose=True)
         else:
-            highlight = Highlight(format.name)
-            stdin_console.print(highlight(formatted_owners))
+            if highlight_syntax is True:
+                highlight = Highlight(format.name)
+                stdin_console.print(highlight(formatted_owners))
+            else:
+                typer.echo(formatted_owners)
         return owners
 
     @app.command("generate-invoice", deprecated=True, hidden=True)
