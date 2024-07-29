@@ -9,7 +9,7 @@ the [University Computing Centre](https://www.urz.uni-heidelberg.de/en)
 [eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI provides a simple interface via its CLI
 executable, and numerous advanced APIs when it is used directly as a Python package.
 
-<img src="./.assets/elapi_features.svg" alt="elAPI features in a nutshell" />
+<img src="https://heibox.uni-heidelberg.de/f/7714c7eeb0f54a3ba318/?dl=1" alt="elAPI features in a nutshell" />
 
 **Example:**
 
