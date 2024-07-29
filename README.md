@@ -105,9 +105,10 @@ When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're s
 working directory, as it typically happens that developers accidentally commit and push configuration files with
 secrets. `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
 of [known issues](https://github.com/encode/httpx/discussions/2112) with
-HTTP/2 if you are making async requests with heavy load. `verify_ssl` can be turned off with `False` if you are trying
+HTTP/2 if you are making async requests with a heavy load. `verify_ssl` can be turned off with value `False` if you are
+trying
 out a development server that doesn't provide a valid SSL certificate. `timeout` can be modified to your needs. E.g., a
-poor internet connection might benefit from a higher timeout number. THe default timeout is `90` seconds.
+poor internet connection might benefit from a higher timeout number. The default timeout is `90` seconds.
 
 ### `show-config`
 
@@ -172,6 +173,13 @@ You can request a list o all active experiments and export it to a `JSON` file.
 
 ```shell
 $ elapi get experiments --export ~/Downoads/experiments.json
+```
+
+Enable built-in syntax highlighting with `--highlight` or `-H`. Here, `elapi get teams` will fetch the list of all
+teams.
+
+```shell
+$ elapi get -H teams --id <experiment ID>
 ```
 
 ### `POST` requests
