@@ -175,11 +175,11 @@ You can request a list o all active experiments and export it to a `JSON` file.
 $ elapi get experiments --export ~/Downoads/experiments.json
 ```
 
-Enable built-in syntax highlighting with `--highlight` or `-H`. Here, `elapi get teams` will fetch the list of all
-teams.
+Enable built-in syntax highlighting with `--highlight` or `-H`. Here, the following command will fetch team information
+of team with team ID 1.
 
 ```shell
-$ elapi get -H teams --id <experiment ID>
+$ elapi get -H teams --id 1
 ```
 
 ### `POST` requests
