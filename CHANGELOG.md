@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2024-07-29
+
+This release brings some general bugfix and improvements.
+
+### Added
+
+- Add optional CLI argument `--highlight`/`-H` (GH #129, 9986f8a)
+
+### Fixed
+
+- Fix optional validation causing `TypeError` for when elAPI is used inside a script (GH #126)
+- Fix long JSON text not being shown (GH #128)
+- Fix highlighted output breaking `jq` (GH #127)
+- Fix minor bugs (GH #125)
+
+### Changed
+
+- Use `__aclose__` and `__acall__` for async HTTP APIs via abstract class `APIRequest` instead of `__call__`
+  and `__close__` (1a88b00)
+- Always validate configuration, and validate only once (GH #129, 8996143)
+
+### Removed
+
+- Remove CLI `--format` type option `text` (da6f511)
+
+In collaboration with @alexander-haller.
+
 ## [2.0.2] - 2024-07-04
 
 Hot-fix for `README.md`.
