@@ -156,7 +156,7 @@ class ElabFTWURL:
         ),
         "todolist": (),
         "unfinished_steps": (),
-        "users": ("notifications",),
+        "users": ("notifications", "uploads"),
         "idps": (),
         "import": (),
         "exports": (),
