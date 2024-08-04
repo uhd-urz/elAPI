@@ -139,7 +139,7 @@ class ProperPath:
             else f"PATH={target}"
         )
 
-    def create(self, verbose: bool = True) -> Union[Path, None]:
+    def create(self, verbose: bool = True) -> None:
         path = self.expanded.resolve(strict=False)
         try:
             if self.kind == "file":
@@ -176,8 +176,6 @@ class ProperPath:
             self.err_logger.error(os_err)
             self.PathException = exception
             raise os_err
-        else:
-            return path
 
     def _remove_file(self, _file: Path = None, verbose: bool = False) -> None:
         file = _file if _file else self.expanded
