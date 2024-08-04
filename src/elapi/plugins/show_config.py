@@ -166,7 +166,8 @@ The following information includes configuration values and their sources as det
         + f"""
 - {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
 - {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {EXTERNAL_LOCAL_PLUGIN_DIR}
-- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR}
+- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR if not isinstance(TMP_DIR, Missing) else 
+    f'_{ColorText(TMP_DIR).colorize(RED)}_'}
 """
         + "\n"
         + f"- {ColorText('Unsafe API token use warning').colorize(LIGHTGREEN)}"
