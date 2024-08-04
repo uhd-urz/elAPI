@@ -5,8 +5,8 @@ from typing import Awaitable
 import httpx
 from httpx import Response
 
-from ...loggers import Logger
 from ...core_validators import Exit
+from ...loggers import Logger
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -92,7 +92,17 @@ class RecursiveInformation:
                 transient=True,
                 disable=not self.show_progress,
             ):
-                recursive_information.append((await task).json())
+                response = await task
+                try:
+                    recursive_information.append(response.json())
+                except JSONDecodeError as e:
+                    logger.warning(
+                        f"Request for '{self.endpoint_name}' data was received by the server but "
+                        f"request was not successful. Exception details: '{e!r}'. "
+                        f"Response: '{response.text}'"
+                    )
+                    await self.close_event_loop(event_loop, endpoint)
+                    raise InterruptedError from e
         except _RETRY_TRIGGER_ERRORS as error:
             logger.warning(
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
@@ -102,13 +112,6 @@ class RecursiveInformation:
             raise InterruptedError from error  # This will likely never be reached,
             # since this entire exception block will only trigger while event loop is still running
             # but event loop is already closed in finally block which raises RuntimeError.
-        except JSONDecodeError as e:
-            logger.warning(
-                f"Request for '{self.endpoint_name}' data was received by the server but "
-                f"request was not successful."
-            )
-            await self.close_event_loop(event_loop, endpoint)
-            raise InterruptedError from e
         except (KeyboardInterrupt, asyncio.CancelledError) as e:
             await self.close_event_loop(event_loop, endpoint)
             raise Exit(1) from e
