@@ -100,15 +100,15 @@ def cli_startup(
         for key, value in override_config.items():
             if key.lower() == KEY_API_TOKEN.lower():
                 try:
-                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
                         APIToken(value), OVERRIDABLE_FIELDS_SOURCE
                     )
                 except ValueError:
-                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
                     )
             else:
-                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                minimal_active_configuration[key] = AppliedConfigIdentity(
                     value, OVERRIDABLE_FIELDS_SOURCE
                 )
         if (
