@@ -52,6 +52,7 @@ class ApplyConfigHistory:
             KEY_VERIFY_SSL,
             KEY_TIMEOUT,
             KEY_DEVELOPMENT_MODE,
+            KEY_PLUGIN_KEY_NAME,
             _XDG_DOWNLOAD_DIR,
             PROJECT_CONFIG_LOC,
             ENV_XDG_DOWNLOAD_DIR,
@@ -101,6 +102,7 @@ class ApplyConfigHistory:
                 KEY_VERIFY_SSL,
                 KEY_TIMEOUT,
                 KEY_DEVELOPMENT_MODE,
+                KEY_PLUGIN_KEY_NAME
             ]:
                 self._modify_history(key_name, value)
 

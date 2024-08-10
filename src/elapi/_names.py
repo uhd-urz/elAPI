@@ -50,6 +50,7 @@ KEY_ENABLE_HTTP2: str = "ENABLE_HTTP2"
 KEY_VERIFY_SSL: str = "VERIFY_SSL"
 KEY_TIMEOUT: str = "TIMEOUT"
 KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
+KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")

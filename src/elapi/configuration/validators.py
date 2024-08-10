@@ -363,6 +363,59 @@ class DecimalWithFallbackConfigurationValidator(Validator):
         return float(value)
 
 
+class DictionaryWithFallbackConfigurationValidator(Validator):
+    ALREADY_VALIDATED: bool = False
+    __slots__ = ()
+
+    def __init__(
+        self,
+        minimal_active_config_obj: MinimalActiveConfiguration,
+        /,
+        key_name: str,
+        fallback_value: dict,
+    ):
+        self.active_configuration = minimal_active_config_obj
+        self.key_name = key_name
+        self.fallback_value = fallback_value
+
+    @property
+    def active_configuration(self) -> MinimalActiveConfiguration:
+        return self._active_configuration
+
+    @active_configuration.setter
+    def active_configuration(self, value: MinimalActiveConfiguration):
+        if not isinstance(value, MinimalActiveConfiguration):
+            raise TypeError(
+                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
+            )
+        self._active_configuration = value
+
+    def validate(self) -> dict:
+        from dynaconf.utils.boxing import DynaBox
+        from ..loggers import Logger
+        from ..configuration.config import CANON_YAML_EXTENSION
+
+        logger = Logger()
+        value: DynaBox = self.active_configuration.get_value(self.key_name)
+        if isinstance(
+            value, Missing
+        ):
+            return self.fallback_value
+        if value is None:
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's null."
+            )
+            return self.fallback_value
+        if not isinstance(value, dict):
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
+            )
+            return self.fallback_value
+        return value.to_dict()
+
+
 class MainConfigurationValidator(Validator):
     ALL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -370,6 +423,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
+        DictionaryWithFallbackConfigurationValidator
     ]
     ESSENTIAL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -379,6 +433,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
+        DictionaryWithFallbackConfigurationValidator
     ]
     __slots__ = ()
 
@@ -432,6 +487,7 @@ class MainConfigurationValidator(Validator):
         from .config import KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING_DEFAULT_VAL
         from .config import KEY_TIMEOUT, TIMEOUT_DEFAULT_VAL
         from .config import KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL
+        from .config import KEY_PLUGIN_KEY_NAME, PLUGIN_DEFAULT_VALUE
 
         validated_fields: list[FieldValueWithKey] = []
 
@@ -496,4 +552,14 @@ class MainConfigurationValidator(Validator):
             ).get()
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
+        if DictionaryWithFallbackConfigurationValidator in self.limited_to:
+            plugin = Validate(
+                DictionaryWithFallbackConfigurationValidator(
+                    self.active_configuration,
+                    KEY_PLUGIN_KEY_NAME,
+                    PLUGIN_DEFAULT_VALUE,
+                )
+            ).get()
+            # Update validated_fields after validation
+            validated_fields.append(FieldValueWithKey(KEY_PLUGIN_KEY_NAME, plugin))
         return validated_fields

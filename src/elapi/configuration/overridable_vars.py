@@ -56,3 +56,9 @@ def get_development_mode() -> bool:
 
     return MinimalActiveConfiguration().get_value(KEY_DEVELOPMENT_MODE)
 
+
+def get_active_plugin_configs() -> dict:
+    from .config import KEY_PLUGIN_KEY_NAME, MinimalActiveConfiguration
+
+    return MinimalActiveConfiguration().get_value(KEY_PLUGIN_KEY_NAME)
+

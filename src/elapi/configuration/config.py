@@ -39,6 +39,7 @@ from .._names import (
     KEY_VERIFY_SSL,
     KEY_TIMEOUT,
     KEY_DEVELOPMENT_MODE,
+    KEY_PLUGIN_KEY_NAME,
 )
 from ..core_validators import (
     Validate,
@@ -189,6 +190,10 @@ TIMEOUT = settings.get(KEY_TIMEOUT, None)
 DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
 DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
 
+# Plugins
+PLUGIN = settings.get(KEY_PLUGIN_KEY_NAME, None)
+PLUGIN_DEFAULT_VALUE: dict = {}
+
 
 for key_name, key_val in [
     (KEY_HOST, HOST),
@@ -199,6 +204,7 @@ for key_name, key_val in [
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
+    (KEY_PLUGIN_KEY_NAME, PLUGIN)
 ]:
     try:
         history.patch(key_name, key_val)
@@ -226,7 +232,7 @@ else:
 
 # Plugin file definitions and locations
 ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
-INTERNAL_PLUGIN_DIRECTORY_NAME: str = "plugins"
+INTERNAL_PLUGIN_DIRECTORY_NAME: str = KEY_PLUGIN_KEY_NAME.lower()
 INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = "cli"
 INTERNAL_PLUGIN_TYPER_APP_FILE_NAME: str = (
     f"{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}.py"
