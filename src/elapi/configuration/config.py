@@ -18,6 +18,10 @@ from .._names import (
     APP_BRAND_NAME,  # noqa: F401
     CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
+    ELAB_NAME,  # noqa: F401
+    ELAB_BRAND_NAME,  # noqa: F401
+    ELAB_API_EXPECTED_VERSION,  # noqa: F401
+    ELAB_HOST_URL_API_SUFFIX,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
     FALLBACK_EXPORT_DIR,  # noqa: F401
