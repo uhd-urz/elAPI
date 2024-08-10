@@ -13,6 +13,12 @@ DEFAULT_EXPORT_DATA_FORMAT: str = "json"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
 
+# eLabFTW specific definitions
+ELAB_NAME: str = "elabftw"
+ELAB_BRAND_NAME: str = "eLabFTW"
+ELAB_API_EXPECTED_VERSION: int = 2
+ELAB_HOST_URL_API_SUFFIX: str = f"/api/v{ELAB_API_EXPECTED_VERSION}"
+
 # reference for the following directory conventions:
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
