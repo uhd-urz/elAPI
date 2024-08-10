@@ -60,6 +60,7 @@ from .overridable_vars import (
     get_development_mode,
     get_active_plugin_configs,
 )
+from ..styles import Missing as _Missing
 
-if get_development_mode() is False:
+if get_development_mode() is False or get_development_mode() == _Missing():
     reinitiate_config(ignore_essential_validation=True)
