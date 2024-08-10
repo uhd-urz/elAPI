@@ -17,6 +17,14 @@ AppliedConfigIdentity = namedtuple("AppliedConfigIdentity", ["value", "source"])
 FieldValueWithKey = namedtuple("FieldValueWithKey", ["key_name", "value"])
 
 
+class _ConfigRules:
+    @classmethod
+    def get_valid_key(cls, key_name: str, /) -> str:
+        if not isinstance(key_name, str):
+            raise ValueError("key must be a string!")
+        return key_name.upper()
+
+
 class ConfigHistory:
     def __init__(self, setting: Dynaconf, /):
         self.setting = setting
@@ -35,12 +43,13 @@ class ConfigHistory:
     def get(self, key: str, /, default: Any = None) -> Any:
         for config in self._history[::-1]:
             try:
-                return config["value"][key]
+                return config["value"][_ConfigRules.get_valid_key(key)]
             except KeyError:
                 continue
         return default
 
     def patch(self, key: str, /, value: Any) -> None:
+        key = _ConfigRules.get_valid_key(key)
         for config in self._history[::-1]:
             try:
                 config["value"][key]
@@ -52,6 +61,7 @@ class ConfigHistory:
         raise KeyError(f"Key '{key}' couldn't be found.")
 
     def delete(self, key: str, /) -> None:
+        key = _ConfigRules.get_valid_key(key)
         _item = None
         for config in self._history:
             try:
@@ -135,12 +145,12 @@ class MinimalActiveConfiguration:
         return cls._instance
 
     @classmethod
-    def __getitem__(cls, item) -> AppliedConfigIdentity:
-        return cls._container[item]
+    def __getitem__(cls, item: str) -> AppliedConfigIdentity:
+        return cls._container[_ConfigRules.get_valid_key(item)]
 
     @classmethod
-    def __setitem__(cls, key, value):
-        cls._container[key] = value
+    def __setitem__(cls, key: str, value):
+        cls._container[_ConfigRules.get_valid_key(key)] = value
 
     @classmethod
     def update(cls, value: dict):
