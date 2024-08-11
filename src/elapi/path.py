@@ -213,8 +213,9 @@ class ProperPath:
             for ref in ls_ref:
                 try:
                     self._remove_file(_file=ref, verbose=verbose)
-                except ValueError:
-                    # ValueError occurring means most likely the file is a directory
+                except (ValueError, PermissionError):
+                    # Both ValueError and PermissionError occurring means that
+                    # most likely the file is a directory
                     rmtree(ref)
                     self.err_logger.info(
                         f"Deleted directory (recursively): {ref}"
