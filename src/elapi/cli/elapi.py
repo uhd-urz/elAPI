@@ -142,11 +142,14 @@ def cli_switch_venv_state(state: bool, /) -> None:
         venv_dir = EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
             click.get_current_context().command.name
         ].venv
+        project_dir = EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
+            click.get_current_context().command.name
+        ].project_dir
     except KeyError:
         ...
     else:
         if venv_dir is not None:
-            switch_venv_state(state, venv_dir)
+            switch_venv_state(state, venv_dir, project_dir)
 
 
 def cli_startup_for_plugins(
@@ -1192,7 +1195,7 @@ def cleanup() -> None:
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, _path, _venv = plugin_info
+        _app, _path, _venv, _proj_dir = plugin_info
     else:
         continue
     if _app is not None:
@@ -1251,7 +1254,7 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         else:
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
-                _app, _path, _venv
+                _app, _path, _venv, _proj_dir
             )
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(

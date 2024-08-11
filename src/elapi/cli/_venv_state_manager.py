@@ -6,9 +6,15 @@ from ..path import ProperPath
 VENV_INDICATOR_DIR_NAME: str = "site-packages"
 
 
-def switch_venv_state(state: bool, /, venv_dir: Union[Path, ProperPath]):
+def switch_venv_state(
+    state: bool,
+    /,
+    venv_dir: Union[Path, ProperPath],
+    project_dir: Union[Path, ProperPath],
+):
     import sys
 
+    project_dir = str(project_dir)
     site_packages = sorted(
         venv_dir.rglob(VENV_INDICATOR_DIR_NAME), key=lambda x: str(x).lower()
     )
@@ -22,9 +28,11 @@ def switch_venv_state(state: bool, /, venv_dir: Union[Path, ProperPath]):
         unique_dir = str(unique_dir)
         if state is True:
             sys.path.insert(1, unique_dir)
+            sys.path.insert(1, project_dir)
             return
         else:
-            if sys.path[1] == unique_dir:
+            if sys.path[1:3] == [project_dir, unique_dir]:
+                sys.path.pop(1)
                 sys.path.pop(1)
                 return
             else:
@@ -36,4 +44,11 @@ def switch_venv_state(state: bool, /, venv_dir: Union[Path, ProperPath]):
                         f"{unique_dir} couldn't be removed from sys.path!"
                     ) from e
                 else:
+                    try:
+                        sys.path.remove(project_dir)
+                    except ValueError as e:
+                        raise RuntimeError(
+                            f"Project directory {project_dir} "
+                            f"couldn't be removed from sys.path!"
+                        ) from e
                     return
