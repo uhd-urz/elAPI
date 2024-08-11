@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Optional, Tuple
 
 from httpx import Response, Client, AsyncClient, Limits
+from httpx._client import BaseClient
 from httpx_auth import HeaderApiKey
 
 from .. import APP_NAME
@@ -16,10 +17,10 @@ from ..configuration import (
 )
 
 
-class APIRequest(ABC):
-    __slots__ = "keep_session_open", "_client", "host", "api_token", "header_name"
-
-    def __init__(self, keep_session_open: bool = False, **kwargs):
+class CustomClient(BaseClient):
+    def __new__(
+        cls, *, is_async_client: bool = False, include_auth: bool = True, **kwargs
+    ) -> Union[Client, AsyncClient]:
         from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
         from ..utils import missing_warning
@@ -31,26 +32,30 @@ class APIRequest(ABC):
             KEY_TIMEOUT,
         )
 
-        self.host: str = get_active_host()
-        self.api_token: str = get_active_api_token().token
-        self.header_name: str = TOKEN_BEARER
-        self.keep_session_open = keep_session_open
+        host: str = get_active_host()
+        api_token: str = get_active_api_token().token
+        header_name: str = TOKEN_BEARER
         enable_http2 = get_active_enable_http2()
         verify_ssl = get_active_verify_ssl()
         timeout = get_active_timeout()
 
         for field in (
-            (KEY_HOST, self.host),
-            (KEY_API_TOKEN, self.api_token),
+            (KEY_HOST, host),
+            (KEY_API_TOKEN, api_token),
             (KEY_ENABLE_HTTP2, enable_http2),
             (KEY_VERIFY_SSL, verify_ssl),
             (KEY_TIMEOUT, timeout),
         ):
             missing_warning(field)
-        _client = Client if not self.is_async_client else AsyncClient
+        client = Client if not is_async_client else AsyncClient
+        auth = (
+            HeaderApiKey(api_key=api_token, header_name=header_name)
+            if include_auth
+            else None
+        )
         try:
-            self._client: Union[Client, AsyncClient] = _client(
-                auth=HeaderApiKey(api_key=self.api_token, header_name=self.header_name),
+            return client(
+                auth=auth,
                 http2=enable_http2,
                 verify=verify_ssl,
                 timeout=timeout,
@@ -60,11 +65,21 @@ class APIRequest(ABC):
             check_reserved_keyword(
                 e,
                 what=f"{APP_NAME}",
-                against=f"abstract class {APIRequest.__name__}, "
+                against=f"class {CustomClient.__name__}, "
                 f"so the parameter remains user-configurable "
                 f"through {CONFIG_FILE_NAME} configuration file",
             )
             raise e
+
+
+class APIRequest(ABC):
+    __slots__ = "keep_session_open", "_client", "host", "api_token", "header_name"
+
+    def __init__(self, keep_session_open: bool = False, **kwargs):
+        self.keep_session_open = keep_session_open
+        self._client: Union[Client, AsyncClient] = CustomClient(
+            is_async_client=self.is_async_client
+        )
 
     # noinspection PyMethodOverriding
     def __init_subclass__(cls, /, is_async_client: bool = False, **kwargs):
