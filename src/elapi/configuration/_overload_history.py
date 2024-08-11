@@ -95,14 +95,15 @@ class ApplyConfigHistory:
                         f"{PROJECT_CONFIG_LOC} found. This is highly discouraged. "
                         f"The token is at risk of being leaked into public repositories. "
                         f"If you still insist, please make sure {CONFIG_FILE_NAME} "
-                        f"is included in .gitignore."
+                        f"is included in .gitignore. You can disable this message by setting "
+                        f"'{KEY_UNSAFE_TOKEN_WARNING.lower()}: False' in {CONFIG_FILE_NAME}."
                     )
             elif key_name in [
                 KEY_ENABLE_HTTP2,
                 KEY_VERIFY_SSL,
                 KEY_TIMEOUT,
                 KEY_DEVELOPMENT_MODE,
-                KEY_PLUGIN_KEY_NAME
+                KEY_PLUGIN_KEY_NAME,
             ]:
                 self._modify_history(key_name, value)
 
