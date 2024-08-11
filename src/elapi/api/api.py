@@ -4,6 +4,7 @@ from typing import Union, Optional, Tuple
 
 from httpx import Response, Client, AsyncClient, Limits
 from httpx._client import BaseClient
+from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
 
 from .. import APP_NAME
@@ -18,8 +19,20 @@ from ..configuration import (
 
 
 class CustomClient(BaseClient):
+    _host: str = get_active_host()
+    _api_token: str = get_active_api_token().token
+    _enable_http2 = get_active_enable_http2()
+    _verify_ssl = get_active_verify_ssl()
+    _timeout = get_active_timeout()
+
     def __new__(
-        cls, *, is_async_client: bool = False, include_auth: bool = True, **kwargs
+        cls,
+        *,
+        is_async_client: bool = False,
+        auth: Optional[AuthTypes] = HeaderApiKey(
+            api_key=_api_token, header_name=TOKEN_BEARER
+        ),
+        **kwargs,
     ) -> Union[Client, AsyncClient]:
         from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
@@ -32,33 +45,21 @@ class CustomClient(BaseClient):
             KEY_TIMEOUT,
         )
 
-        host: str = get_active_host()
-        api_token: str = get_active_api_token().token
-        header_name: str = TOKEN_BEARER
-        enable_http2 = get_active_enable_http2()
-        verify_ssl = get_active_verify_ssl()
-        timeout = get_active_timeout()
-
         for field in (
-            (KEY_HOST, host),
-            (KEY_API_TOKEN, api_token),
-            (KEY_ENABLE_HTTP2, enable_http2),
-            (KEY_VERIFY_SSL, verify_ssl),
-            (KEY_TIMEOUT, timeout),
+            (KEY_HOST, cls._host),
+            (KEY_API_TOKEN, cls._api_token),
+            (KEY_ENABLE_HTTP2, cls._enable_http2),
+            (KEY_VERIFY_SSL, cls._verify_ssl),
+            (KEY_TIMEOUT, cls._timeout),
         ):
             missing_warning(field)
         client = Client if not is_async_client else AsyncClient
-        auth = (
-            HeaderApiKey(api_key=api_token, header_name=header_name)
-            if include_auth
-            else None
-        )
         try:
             return client(
                 auth=auth,
-                http2=enable_http2,
-                verify=verify_ssl,
-                timeout=timeout,
+                http2=cls._enable_http2,
+                verify=cls._verify_ssl,
+                timeout=cls._timeout,
                 **kwargs,
             )
         except TypeError as e:
@@ -73,12 +74,12 @@ class CustomClient(BaseClient):
 
 
 class APIRequest(ABC):
-    __slots__ = "keep_session_open", "_client", "host", "api_token", "header_name"
+    __slots__ = "keep_session_open", "_client"
 
     def __init__(self, keep_session_open: bool = False, **kwargs):
         self.keep_session_open = keep_session_open
         self._client: Union[Client, AsyncClient] = CustomClient(
-            is_async_client=self.is_async_client
+            is_async_client=self.is_async_client, **kwargs
         )
 
     # noinspection PyMethodOverriding

@@ -1,5 +1,6 @@
 # ruff: noqa: F401
 from .api import (
+    CustomClient,
     APIRequest,
     ElabFTWURLError,
     ElabFTWURL,
