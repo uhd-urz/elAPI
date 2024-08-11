@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Type
 
 from .base import LogMessageTuple  # noqa: F401
 from .base import MainLogger, SimpleLogger, FileLogger  # noqa: F401
@@ -18,17 +18,21 @@ class Logger:
             return SimpleLogger()
 
 
-def change_logger_state(
-    logger_obj: Union[Logger, MainLogger, FileLogger, SimpleLogger],
+def update_logger_state(
+    logger_obj: Type[Union[Logger, MainLogger, FileLogger, SimpleLogger]],
     /,
     *,
-    suppress: bool,
+    suppress: bool = False,
 ):
-    if not issubclass(type(logger_obj), (Logger, MainLogger, FileLogger, SimpleLogger)):
+    if not issubclass(logger_obj, (Logger, MainLogger, FileLogger, SimpleLogger)):
         raise TypeError(
-            f"{change_logger_state.__name__} only supports"
+            f"{update_logger_state.__name__} only supports "
             f"{Logger.__name__}, {MainLogger.__name__}, "
             f"{FileLogger.__name__}, and {SimpleLogger.__name__}."
         )
-    logger_obj.logger = None
-    logger_obj.suppress = suppress
+    if issubclass(logger_obj, Logger):
+        MainLogger.logger = None
+        Logger.suppress = MainLogger.suppress = suppress
+    else:
+        logger_obj.logger = None
+        logger_obj.suppress = suppress
