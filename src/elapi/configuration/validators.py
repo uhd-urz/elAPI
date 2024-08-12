@@ -397,9 +397,7 @@ class DictionaryWithFallbackConfigurationValidator(Validator):
 
         logger = Logger()
         value: DynaBox = self.active_configuration.get_value(self.key_name)
-        if isinstance(
-            value, Missing
-        ):
+        if isinstance(value, Missing):
             return self.fallback_value
         if value is None:
             logger.warning(
@@ -413,6 +411,7 @@ class DictionaryWithFallbackConfigurationValidator(Validator):
                 f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
             )
             return self.fallback_value
+        # Dynaconf uses Box: https://github.com/cdgriffith/Box/wiki/Converters#dictionary
         return value.to_dict()
 
 
@@ -423,7 +422,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
-        DictionaryWithFallbackConfigurationValidator
+        DictionaryWithFallbackConfigurationValidator,
     ]
     ESSENTIAL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -433,7 +432,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
-        DictionaryWithFallbackConfigurationValidator
+        DictionaryWithFallbackConfigurationValidator,
     ]
     __slots__ = ()
 
