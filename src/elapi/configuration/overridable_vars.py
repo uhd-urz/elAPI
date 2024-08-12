@@ -9,7 +9,7 @@ def get_active_host() -> str:
     return MinimalActiveConfiguration().get_value(KEY_HOST)
 
 
-def get_active_host_url_without_api_suffix() -> str:
+def get_active_host_url_without_api_subdir() -> str:
     import re
     from .config import ELAB_HOST_URL_API_SUFFIX
     return re.sub(ELAB_HOST_URL_API_SUFFIX, r"", get_active_host(), count=1, flags=re.IGNORECASE)
