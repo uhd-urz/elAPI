@@ -54,6 +54,7 @@ from .config import (
 from .log_file import LOG_FILE_PATH
 from .overridable_vars import (
     get_active_host,
+    get_active_host_url_without_api_subdir,
     get_active_api_token,
     get_active_export_dir,
     get_active_unsafe_token_warning,
