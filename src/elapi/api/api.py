@@ -16,21 +16,19 @@ from ..configuration import (
     get_active_verify_ssl,
     get_active_timeout,
 )
+from ..styles import Missing
+
+
+class _CustomHeaderApiKey(HeaderApiKey): ...
 
 
 class CustomClient(BaseClient):
-    _host: str = get_active_host()
-    _api_token: str = get_active_api_token().token
-    _enable_http2 = get_active_enable_http2()
-    _verify_ssl = get_active_verify_ssl()
-    _timeout = get_active_timeout()
-
     def __new__(
         cls,
         *,
         is_async_client: bool = False,
-        auth: Optional[AuthTypes] = HeaderApiKey(
-            api_key=_api_token, header_name=TOKEN_BEARER
+        auth: Optional[AuthTypes] = _CustomHeaderApiKey(
+            api_key=str(Missing()), header_name=TOKEN_BEARER
         ),
         **kwargs,
     ) -> Union[Client, AsyncClient]:
@@ -45,21 +43,29 @@ class CustomClient(BaseClient):
             KEY_TIMEOUT,
         )
 
+        host: str = get_active_host()
+        api_token: str = get_active_api_token().token
+        enable_http2 = get_active_enable_http2()
+        verify_ssl = get_active_verify_ssl()
+        timeout = get_active_timeout()
+
+        if isinstance(auth, _CustomHeaderApiKey):
+            auth.api_key = api_token
         for field in (
-            (KEY_HOST, cls._host),
-            (KEY_API_TOKEN, cls._api_token),
-            (KEY_ENABLE_HTTP2, cls._enable_http2),
-            (KEY_VERIFY_SSL, cls._verify_ssl),
-            (KEY_TIMEOUT, cls._timeout),
+            (KEY_HOST, host),
+            (KEY_API_TOKEN, api_token),
+            (KEY_ENABLE_HTTP2, enable_http2),
+            (KEY_VERIFY_SSL, verify_ssl),
+            (KEY_TIMEOUT, timeout),
         ):
             missing_warning(field)
         client = Client if not is_async_client else AsyncClient
         try:
             return client(
                 auth=auth,
-                http2=cls._enable_http2,
-                verify=cls._verify_ssl,
-                timeout=cls._timeout,
+                http2=enable_http2,
+                verify=verify_ssl,
+                timeout=timeout,
                 **kwargs,
             )
         except TypeError as e:
