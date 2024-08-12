@@ -62,14 +62,20 @@ EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY: dict = {}
 INTERNAL_PLUGIN_PANEL_NAME: str = "Built-in plugins"
 THIRD_PARTY_PLUGIN_PANEL_NAME: str = "Third-party plugins"
 
+OVERRIDE_CONFIG_OPTION_NAME_LONG: str = "--override-config"
+OVERRIDE_CONFIG_OPTION_NAME_SHORT: str = "--OC"
+OVERRIDE_CONFIG_OPTION_NAME: str = (
+    f"{OVERRIDE_CONFIG_OPTION_NAME_LONG}/{OVERRIDE_CONFIG_OPTION_NAME_SHORT}"
+)
+
 
 @app.callback()
 def cli_startup(
     override_config: Annotated[
         Optional[str],
         typer.Option(
-            "--override-config",
-            "--OC",
+            OVERRIDE_CONFIG_OPTION_NAME_LONG,
+            OVERRIDE_CONFIG_OPTION_NAME_SHORT,
             help=docs["cli_startup"],
             show_default=False,
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
@@ -80,7 +86,9 @@ def cli_startup(
     from sys import argv
     from ..styles import print_typer_error
     from ..configuration import (
+        CONFIG_FILE_NAME,
         KEY_API_TOKEN,
+        KEY_PLUGIN_KEY_NAME,
         AppliedConfigIdentity,
         minimal_active_configuration,
     )
@@ -91,7 +99,7 @@ def cli_startup(
 
     try:
         override_config: dict = get_structured_data(
-            override_config, option_name="--override-config/--OC"
+            override_config, option_name=OVERRIDE_CONFIG_OPTION_NAME
         )
     except ValueError:
         raise Exit(1)
@@ -106,6 +114,33 @@ def cli_startup(
                 except ValueError:
                     minimal_active_configuration[key] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
+                    )
+            elif key.lower() == KEY_PLUGIN_KEY_NAME.lower():
+                plugins = minimal_active_configuration[key].value
+                if not isinstance(value, dict):
+                    # I.e., invalid type for plugin value. --override-config will simply comply.
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
+                        value, OVERRIDABLE_FIELDS_SOURCE
+                    )
+                else:
+                    for plugin_name, plugin_config in value.items():
+                        if not isinstance(plugin_config, dict):
+                            # I.e., invalid type for plugin value. --override-config will simply comply.
+                            continue
+                        try:
+                            plugins[plugin_name].update(plugin_config)
+                        except KeyError:
+                            logger.warning(
+                                f"Plugin configuration in {CONFIG_FILE_NAME} for '{plugin_name}' plugin "
+                                f"was ignored due to type violation, but '{OVERRIDE_CONFIG_OPTION_NAME}' was "
+                                f"passed configuration value for the same plugin, which will be considered. "
+                                f"This might still lead to unexpected errors. It is strongly recommended to "
+                                f"fix the type error first in {CONFIG_FILE_NAME}."
+                            )
+                            plugins[plugin_name] = {}
+                            plugins[plugin_name].update(plugin_config)
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
+                        plugins, OVERRIDABLE_FIELDS_SOURCE
                     )
             else:
                 minimal_active_configuration[key] = AppliedConfigIdentity(
@@ -127,7 +162,7 @@ def cli_startup(
                 if override_config:
                     print_typer_error(
                         f"{APP_NAME} command '{calling_sub_command_name}' does not support "
-                        f"the override argument --override-config/--OC."
+                        f"the override argument {OVERRIDE_CONFIG_OPTION_NAME}."
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
