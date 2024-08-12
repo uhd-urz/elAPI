@@ -363,7 +363,7 @@ class DecimalWithFallbackConfigurationValidator(Validator):
         return float(value)
 
 
-class DictionaryWithFallbackConfigurationValidator(Validator):
+class PluginConfigurationValidator(Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
@@ -393,7 +393,7 @@ class DictionaryWithFallbackConfigurationValidator(Validator):
     def validate(self) -> dict:
         from dynaconf.utils.boxing import DynaBox
         from ..loggers import Logger
-        from ..configuration.config import CANON_YAML_EXTENSION
+        from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
 
         logger = Logger()
         value: DynaBox = self.active_configuration.get_value(self.key_name)
@@ -411,8 +411,19 @@ class DictionaryWithFallbackConfigurationValidator(Validator):
                 f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
             )
             return self.fallback_value
-        # Dynaconf uses Box: https://github.com/cdgriffith/Box/wiki/Converters#dictionary
-        return value.to_dict()
+        else:
+            value: dict = value.to_dict()  # Dynaconf uses Box:
+            # https://github.com/cdgriffith/Box/wiki/Converters#dictionary
+            for plugin_name, plugin_config in value.copy().items():
+                if not isinstance(plugin_config, dict):
+                    logger.warning(
+                        f"Configuration value for plugin '{plugin_name}' "
+                        f"exists in '{CONFIG_FILE_NAME}' under '{self.key_name.lower()}', "
+                        f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary. "
+                        f"Plugin configuration for '{plugin_name}' will be ignored."
+                    )
+                    value.pop(plugin_name)
+        return value
 
 
 class MainConfigurationValidator(Validator):
@@ -422,7 +433,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
-        DictionaryWithFallbackConfigurationValidator,
+        PluginConfigurationValidator,
     ]
     ESSENTIAL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -432,7 +443,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
-        DictionaryWithFallbackConfigurationValidator,
+        PluginConfigurationValidator,
     ]
     __slots__ = ()
 
@@ -551,9 +562,9 @@ class MainConfigurationValidator(Validator):
             ).get()
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
-        if DictionaryWithFallbackConfigurationValidator in self.limited_to:
+        if PluginConfigurationValidator in self.limited_to:
             plugin = Validate(
-                DictionaryWithFallbackConfigurationValidator(
+                PluginConfigurationValidator(
                     self.active_configuration,
                     KEY_PLUGIN_KEY_NAME,
                     PLUGIN_DEFAULT_VALUE,
