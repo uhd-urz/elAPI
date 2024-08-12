@@ -85,7 +85,8 @@ def cli_startup(
     import click
     from sys import argv
     from ..styles import print_typer_error
-    from ..configuration import (
+    from ..configuration.config import (
+        settings,
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
         KEY_PLUGIN_KEY_NAME,
@@ -130,13 +131,17 @@ def cli_startup(
                         try:
                             plugins[plugin_name].update(plugin_config)
                         except KeyError:
-                            logger.warning(
-                                f"Plugin configuration in {CONFIG_FILE_NAME} for '{plugin_name}' plugin "
-                                f"was ignored due to type violation, but '{OVERRIDE_CONFIG_OPTION_NAME}' was "
-                                f"passed configuration value for the same plugin, which will be considered. "
-                                f"This might still lead to unexpected errors. It is strongly recommended to "
-                                f"fix the type error first in {CONFIG_FILE_NAME}."
-                            )
+                            if getattr(
+                                settings.get(KEY_PLUGIN_KEY_NAME), "get", dict().get
+                            )(plugin_name):
+                                logger.warning(
+                                    f"Plugin configuration in {CONFIG_FILE_NAME} for '{plugin_name}' plugin "
+                                    f"was ignored due to type violation, but '{OVERRIDE_CONFIG_OPTION_NAME}' was "
+                                    f"passed configuration value for the same plugin, which will be considered. "
+                                    f"This might still lead to unexpected errors for the '{plugin_name}' plugin. "
+                                    f"It is strongly recommended to fix the type error first "
+                                    f"in {CONFIG_FILE_NAME}."
+                                )
                             plugins[plugin_name] = {}
                             plugins[plugin_name].update(plugin_config)
                     minimal_active_configuration[key] = AppliedConfigIdentity(
