@@ -90,13 +90,25 @@ def cli_startup(
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
         KEY_PLUGIN_KEY_NAME,
+        KEY_DEVELOPMENT_MODE,
         AppliedConfigIdentity,
         minimal_active_configuration,
     )
     from ..configuration.config import APIToken
     from ..core_validators import Exit
     from ..configuration import reinitiate_config
+    from ..utils import MessagesList
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
+
+    def show_aggressive_log_message():
+        messages = MessagesList()
+
+        for log_tuple in messages:
+            message, level, logger_, is_aggressive = log_tuple.items()
+            if is_aggressive is True:
+                logger.log(level, message) if logger_ is None else logger_.log(
+                    level, message
+                )
 
     try:
         override_config: dict = get_structured_data(
@@ -107,6 +119,12 @@ def cli_startup(
     else:
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
         for key, value in override_config.items():
+            if key.lower() == KEY_DEVELOPMENT_MODE.lower():
+                print_typer_error(
+                    f"Special configuration key '{KEY_DEVELOPMENT_MODE.lower()}' cannot be "
+                    f"overridden with {OVERRIDE_CONFIG_OPTION_NAME}."
+                )
+                raise Exit(1)
             if key.lower() == KEY_API_TOKEN.lower():
                 try:
                     minimal_active_configuration[key] = AppliedConfigIdentity(
@@ -162,6 +180,7 @@ def cli_startup(
         ):
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
+                show_aggressive_log_message()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
@@ -171,7 +190,7 @@ def cli_startup(
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
-                    reinitiate_config(ignore_essential_validation=True)
+                    ...
 
 
 def cli_switch_venv_state(state: bool, /) -> None:
@@ -221,13 +240,13 @@ def cli_cleanup_for_third_party_plugins(*args, override_config=None):
     cli_switch_venv_state(False)
 
 
-for _app in internal_plugin_typer_apps:
-    if _app is not None:
-        app_name = _app.info.name
-        INTERNAL_PLUGIN_NAME_REGISTRY[app_name] = _app
-        COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
+for inter_app_obj in internal_plugin_typer_apps:
+    if inter_app_obj is not None:
+        app_name = inter_app_obj.info.name
+        INTERNAL_PLUGIN_NAME_REGISTRY[app_name] = inter_app_obj
+        COMMANDS_TO_SKIP_CLI_STARTUP.append(inter_app_obj.info.name)
         app.add_typer(
-            _app,
+            inter_app_obj,
             rich_help_panel=INTERNAL_PLUGIN_PANEL_NAME,
             callback=cli_startup_for_plugins,
         )
@@ -261,7 +280,6 @@ def messages_panel():
     import logging
     from ..styles import NoteText
     from ..configuration import CONFIG_FILE_NAME
-    from ..loggers import FileLogger
     from rich.panel import Panel
     from rich.table import Table
     from rich.logging import RichHandler
@@ -284,8 +302,8 @@ def messages_panel():
         grid.add_column(style="bold")
         grid.add_column()
         for i, log_tuple in enumerate(messages, start=1):
-            message, level, logger_ = log_tuple.__dict__.values()
-            FileLogger().log(level, message) if logger_ is None else logger_.log(
+            message, level, logger_, is_aggressive = log_tuple.items()
+            file_logger.log(level, message) if logger_ is None else logger_.log(
                 level, message
             )
             log_record.levelno = log_tuple.level
@@ -1235,11 +1253,11 @@ def cleanup() -> None:
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, _path, _venv, _proj_dir = plugin_info
+        ext_app_obj, _path, _venv, _proj_dir = plugin_info
     else:
         continue
-    if _app is not None:
-        original_name: str = _app.info.name
+    if ext_app_obj is not None:
+        original_name: str = ext_app_obj.info.name
         app_name: str = original_name.lower()
         if app_name in EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY:
             error_message = (
@@ -1294,11 +1312,11 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         else:
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
-                _app, _path, _venv, _proj_dir
+                ext_app_obj, _path, _venv, _proj_dir
             )
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(
-                _app,
+                ext_app_obj,
                 rich_help_panel=THIRD_PARTY_PLUGIN_PANEL_NAME,
                 callback=cli_startup_for_plugins,
                 result_callback=cli_cleanup_for_third_party_plugins,
