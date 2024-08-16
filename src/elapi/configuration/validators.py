@@ -394,34 +394,37 @@ class PluginConfigurationValidator(Validator):
         from dynaconf.utils.boxing import DynaBox
         from ..loggers import Logger
         from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
+        from ..utils import add_message
 
-        logger = Logger()
         value: DynaBox = self.active_configuration.get_value(self.key_name)
         if isinstance(value, Missing):
             return self.fallback_value
         if value is None:
-            logger.warning(
+            message = (
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
+            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
             return self.fallback_value
         if not isinstance(value, dict):
-            logger.warning(
+            message = (
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
             )
+            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
             return self.fallback_value
         else:
             value: dict = value.to_dict()  # Dynaconf uses Box:
             # https://github.com/cdgriffith/Box/wiki/Converters#dictionary
             for plugin_name, plugin_config in value.copy().items():
                 if not isinstance(plugin_config, dict):
-                    logger.warning(
+                    message = (
                         f"Configuration value for plugin '{plugin_name}' "
                         f"exists in '{CONFIG_FILE_NAME}' under '{self.key_name.lower()}', "
                         f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary. "
                         f"Plugin configuration for '{plugin_name}' will be ignored."
                     )
+                    add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
                     value.pop(plugin_name)
         return value
 
