@@ -2,6 +2,8 @@ from typing import Iterable, Optional
 
 from ._config_history import FieldValueWithKey, AppliedConfigIdentity
 from .config import history, FALLBACK_SOURCE_NAME
+from .validators import MainConfigurationValidator
+from ..core_validators import Validate, ValidationError, Exit
 
 
 class ApplyConfigHistory:
@@ -108,12 +110,24 @@ class ApplyConfigHistory:
                 self._modify_history(key_name, value)
 
 
+def validate_configuration(limited_to: Optional[list]) -> None:
+    try:
+        validated_fields: list = Validate(
+            MainConfigurationValidator(limited_to=limited_to)
+        ).get()
+    except ValidationError:
+        raise Exit(1)
+    else:
+        for validator in limited_to:
+            validator.ALREADY_VALIDATED = True
+        if validated_fields:
+            apply_settings = ApplyConfigHistory(validated_fields)
+            apply_settings.apply()
+
+
 def reinitiate_config(
     ignore_essential_validation: bool = False, ignore_already_validated: bool = False
 ) -> None:
-    from ..core_validators import Validate, ValidationError, Exit
-    from .validators import MainConfigurationValidator
-
     limited_to: Optional[list] = []
     if not ignore_essential_validation:
         if not ignore_already_validated:
@@ -122,17 +136,7 @@ def reinitiate_config(
                     limited_to.append(validator)
         else:
             limited_to = None
-        try:
-            validated_fields = Validate(
-                MainConfigurationValidator(limited_to=limited_to)
-            ).get()
-        except ValidationError:
-            raise Exit(1)
-        else:
-            for validator in limited_to:
-                validator.ALREADY_VALIDATED = True
-            apply_settings = ApplyConfigHistory(validated_fields)
-            apply_settings.apply()
+        validate_configuration(limited_to)
     else:
         if not ignore_already_validated:
             for validator in MainConfigurationValidator.NON_ESSENTIAL_VALIDATORS:
@@ -140,14 +144,4 @@ def reinitiate_config(
                     limited_to.append(validator)
         else:
             limited_to = MainConfigurationValidator.NON_ESSENTIAL_VALIDATORS
-        try:
-            validated_fields = Validate(
-                MainConfigurationValidator(limited_to=limited_to)
-            ).get()
-        except ValidationError:
-            raise Exit(1)
-        else:
-            for validator in limited_to:
-                validator.ALREADY_VALIDATED = True
-            apply_settings = ApplyConfigHistory(validated_fields)
-            apply_settings.apply()
+        validate_configuration(limited_to)
