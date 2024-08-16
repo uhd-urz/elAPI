@@ -1,84 +1,82 @@
-import logging
 from collections import UserList
 
-from ..loggers import LogMessageTuple
+from ..loggers import LogMessageTuple, Logger
 
 
 class TupleList(UserList):
     def __init__(self, *tuples: list[tuple]) -> None:
         super().__init__(tuple_ for tuple_ in tuples)
 
-    def __setitem__(self, index: int, tuple_: tuple) -> None:
-        if not isinstance(tuple_, tuple):
+    @property
+    def _last_item(self) -> tuple:
+        return self.__value
+
+    @_last_item.setter
+    def _last_item(self, value: tuple) -> None:
+        if not isinstance(value, tuple):
             try:
-                tuple_ = tuple(tuple_)
+                value = tuple(value)
             except ValueError as e:
-                raise ValueError(
-                    f"{self.__class__.__name__} only accepts tuples as values."
+                raise TypeError(
+                    f"{self.__class__.__name__} only accepts tuples or "
+                    f"tuple-convertible iterables as values."
                 ) from e
-        self.data[index] = tuple_
+        self.__value = value
+
+    def __setitem__(self, index: int, tuple_: tuple) -> None:
+        self.data[index] = self._last_item = tuple_
 
     def append(self, tuple_: tuple) -> None:
-        if not isinstance(tuple_, tuple):
-            try:
-                tuple_ = tuple(tuple_)
-            except ValueError as e:
-                raise ValueError(
-                    f"{self.__class__.__name__} only accepts tuples as values."
-                ) from e
-        self.data.append(tuple_)
+        self._last_item = tuple_
+        self.data.append(self._last_item)
 
     def insert(self, index, tuple_: tuple) -> None:
-        if not isinstance(tuple_, tuple):
-            try:
-                tuple_ = tuple(tuple_)
-            except ValueError as e:
-                raise ValueError(
-                    f"{self.__class__.__name__} only accepts tuples as values."
-                ) from e
-        self.data.insert(index, tuple_)
-
-
-class _MessagesList(TupleList):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __setitem__(self, index: int, tuple_: LogMessageTuple) -> None:
-        if not isinstance(tuple_, LogMessageTuple):
-            raise ValueError(
-                f"{self.__class__.__name__} only accepts "
-                f"'{LogMessageTuple.__name__}' as values."
-            )
-        self.data[index] = tuple_
-
-    def append(self, tuple_: LogMessageTuple) -> None:
-        if not isinstance(tuple_, LogMessageTuple):
-            raise ValueError(
-                f"{self.__class__.__name__} only accepts "
-                f"'{LogMessageTuple.__name__}' as values."
-            )
-        self.data.append(tuple_)
-
-    def insert(self, index, tuple_: LogMessageTuple) -> None:
-        if not isinstance(tuple_, LogMessageTuple):
-            raise ValueError(
-                f"{self.__class__.__name__} only accepts "
-                f"'{LogMessageTuple.__name__}' as values."
-            )
-        self.data.insert(index, tuple_)
+        self._last_item = tuple_
+        self.data.insert(index, self._last_item)
 
 
 class MessagesList(TupleList):
     _instance = None
 
+    class _MessagesList(TupleList):
+        def __init__(self) -> None:
+            super().__init__()
+
+        @property
+        def _last_item(self) -> LogMessageTuple:
+            return self.__value
+
+        @_last_item.setter
+        def _last_item(self, value: tuple) -> None:
+            if not isinstance(value, LogMessageTuple):
+                raise ValueError(
+                    f"{self.__class__.__name__} only accepts "
+                    f"'{LogMessageTuple.__name__}' as values."
+                )
+            self.__value = value
+
+        def __setitem__(self, index: int, tuple_: LogMessageTuple) -> None:
+            self.data[index] = self._last_item = tuple_
+
+        def append(self, tuple_: LogMessageTuple) -> None:
+            self._last_item = tuple_
+            self.data.append(self._last_item)
+
+        def insert(self, index, tuple_: LogMessageTuple) -> None:
+            self._last_item = tuple_
+            self.data.insert(index, self._last_item)
+
     def __new__(cls) -> _MessagesList:
         if cls._instance is None:
-            cls._instance = _MessagesList()
+            cls._instance = cls._MessagesList()
         return cls._instance
 
 
 def add_message(
-    message: str, level: int = logging.NOTSET, logger: type(None) = None
+    message: str,
+    level: int = Logger.CONSTANTS.INFO,
+    logger: type(None) = None,
+    is_aggressive: bool = False,
 ) -> None:
     important_messages = MessagesList()
-    important_messages.append(LogMessageTuple(message, level, logger))
+    important_messages.append(LogMessageTuple(message, level, logger, is_aggressive))
