@@ -1,12 +1,26 @@
+import logging
+from dataclasses import dataclass
 from typing import Union, Type
 
 from .base import LogMessageTuple  # noqa: F401
 from .base import MainLogger, SimpleLogger, FileLogger  # noqa: F401
 
 
+@dataclass
+class _Constants:
+    CRITICAL = logging.CRITICAL
+    FATAL = logging.FATAL
+    ERROR = logging.ERROR
+    WARNING = logging.WARNING
+    WARN = logging.WARN
+    INFO = logging.INFO
+    DEBUG = logging.DEBUG
+
+
 class Logger:
     suppress: bool = False
     suppress_stderr: bool = False
+    CONSTANTS = _Constants()
 
     def __new__(cls):
         MainLogger.suppress = cls.suppress
