@@ -25,7 +25,7 @@ def check_reserved_keyword(
 
 def missing_warning(fields: Tuple[str, Any], /) -> None:
     from .. import configuration
-    from ..configuration import KEY_DEVELOPMENT_MODE
+    from .._names import KEY_DEVELOPMENT_MODE
     from ..styles import Missing
 
     if not isinstance(fields, Iterable) and not isinstance(fields, str):
