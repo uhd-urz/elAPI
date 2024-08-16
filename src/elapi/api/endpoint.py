@@ -3,6 +3,7 @@ from typing import Union, Iterable, Optional, Generator, Awaitable
 from httpx import Response
 
 from .api import (
+    SimpleClient,
     AsyncGETRequest,
     GETRequest,
     POSTRequest,
@@ -17,10 +18,11 @@ from .api import (
 class FixedAsyncEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
-        self._get_session = AsyncGETRequest(keep_session_open=True)
-        self._post_session = AsyncPOSTRequest(keep_session_open=True)
-        self._patch_session = AsyncPATCHRequest(keep_session_open=True)
-        self._delete_session = AsyncDELETERequest(keep_session_open=True)
+        self._client = SimpleClient(is_async_client=True)
+        self._get_session = AsyncGETRequest(shared_client=self._client)
+        self._post_session = AsyncPOSTRequest(shared_client=self._client)
+        self._patch_session = AsyncPATCHRequest(shared_client=self._client)
+        self._delete_session = AsyncDELETERequest(shared_client=self._client)
 
     async def get(
         self,
@@ -82,20 +84,18 @@ class FixedAsyncEndpoint:
             query,
         )
 
-    async def aclose(self):
-        await self._get_session.aclose()
-        await self._post_session.aclose()
-        await self._patch_session.aclose()
-        await self._delete_session.aclose()
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        return await self._client.aclose()
 
 
 class FixedEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
-        self._get_session = GETRequest(keep_session_open=True)
-        self._post_session = POSTRequest(keep_session_open=True)
-        self._patch_session = PATCHRequest(keep_session_open=True)
-        self._delete_session = DELETERequest(keep_session_open=True)
+        self._client = SimpleClient(is_async_client=False)
+        self._get_session = GETRequest(shared_client=self._client)
+        self._post_session = POSTRequest(shared_client=self._client)
+        self._patch_session = PATCHRequest(shared_client=self._client)
+        self._delete_session = DELETERequest(shared_client=self._client)
 
     def get(
         self,
@@ -157,11 +157,8 @@ class FixedEndpoint:
             query,
         )
 
-    def close(self):
-        self._get_session.close()
-        self._post_session.close()
-        self._patch_session.close()
-        self._delete_session.close()
+    def close(self) -> Optional[type(NotImplemented)]:
+        return self._client.close()
 
 
 class RecursiveGETEndpoint:
