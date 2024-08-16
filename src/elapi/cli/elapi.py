@@ -540,7 +540,7 @@ def get(
     import re
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GETRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..plugins.commons import get_structured_data
     from ..core_validators import Validate, Exit
@@ -549,68 +549,69 @@ def get(
     from ..styles import Highlight, print_typer_error, NoteText
     from ..configuration import get_active_host
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    if export is False:
-        _export_dest = None
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    data_format, export_dest, export_file_ext = CLIExport(
-        data_format, _export_dest, export_overwrite
-    )
-    if not query:
-        format = CLIFormat(data_format, export_file_ext)
-    else:
-        logger.info(
-            "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
+        if export is False:
+            _export_dest = None
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        data_format, export_dest, export_file_ext = CLIExport(
+            data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
-
-    try:
-        session = GETRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        if not query:
+            format = CLIFormat(data_format, export_file_ext)
+        else:
+            logger.info(
+                "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
+            format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
+
+        try:
+            session = GETRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                headers=headers,
+            )
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdin_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
     try:
         formatted_data = format(response_data := raw_response.json())
     except UnicodeDecodeError:
@@ -738,7 +739,7 @@ def post(
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
-    from ..api import POSTRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -749,101 +750,104 @@ def post(
     from ..path import ProperPath
     from ..configuration import get_active_host
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        data: dict = get_structured_data(json_, option_name="--data/-d")
-    except ValueError:
-        raise Exit(1)
-    # else:
-    # TODO: Due to strange compatibility issue between typer.context and python 3.9,
-    #   passing json_ as arguments is temporarily deprecated.
-    # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
-    # data_values: list[str, ...] = data.args[1::2]
-    # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
-    try:
-        file: Optional[dict] = get_structured_data(file, option_name="--file")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = POSTRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    if file:
         try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            data: dict = get_structured_data(json_, option_name="--data/-d")
+        except ValueError:
+            raise Exit(1)
+        # else:
+        # TODO: Due to strange compatibility issue between typer.context and python 3.9,
+        #   passing json_ as arguments is temporarily deprecated.
+        # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
+        # data_values: list[str, ...] = data.args[1::2]
+        # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
+        try:
+            file: Optional[dict] = get_structured_data(file, option_name="--file")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = POSTRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        if file:
             try:
-                _file_name, _file_path = file["file"]
-            except ValueError:
-                _file_name = None
-                _file_path = file["file"]
-            try:
-                _file_comment = file["comment"]
+                try:
+                    _file_name, _file_path = file["file"]
+                except ValueError:
+                    _file_name = None
+                    _file_path = file["file"]
+                try:
+                    _file_comment = file["comment"]
+                except KeyError:
+                    _file_comment = None
             except KeyError:
-                _file_comment = None
-        except KeyError:
-            logger.critical(
-                f"Error: Given value with --file doesn't follow the expected pattern. "
-                f"See '{APP_NAME} post --help' for more on exactly how to use --file."
-            )
-            raise typer.Exit(1)
+                logger.critical(
+                    f"Error: Given value with --file doesn't follow the expected pattern. "
+                    f"See '{APP_NAME} post --help' for more on exactly how to use --file."
+                )
+                raise typer.Exit(1)
+            else:
+                _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(
+                    mode="rb"
+                )
+                file = {
+                    "file": (_file_name or _file_path.expanded.name, _file_obj),
+                    "comment": (None, _file_comment or ""),
+                }
         else:
-            _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(mode="rb")
-            file = {
-                "file": (_file_name or _file_path.expanded.name, _file_obj),
-                "comment": (None, _file_comment or ""),
-            }
-    else:
-        file = None
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            data=data,
-            files=file,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+            file = None
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                data=data,
+                files=file,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
-    try:
-        # noinspection PyUnboundLocalVariable
-        _file_obj.close()
-    except UnboundLocalError:
-        ...
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdin_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
+        try:
+            # noinspection PyUnboundLocalVariable
+            _file_obj.close()
+        except UnboundLocalError:
+            ...
 
     format = Format(data_format)
     try:
@@ -953,7 +957,7 @@ def patch(
     """
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import PATCHRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -962,60 +966,61 @@ def patch(
     from ..configuration import get_active_host
     from ..plugins.commons import get_structured_data
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        data: dict = get_structured_data(json_, option_name="--data/-d")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = PATCHRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            data=data,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            data: dict = get_structured_data(json_, option_name="--data/-d")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = PATCHRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                data=data,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdin_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
@@ -1113,7 +1118,7 @@ def delete(
     """
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import DELETERequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -1122,55 +1127,56 @@ def delete(
     from ..configuration import get_active_host
     from ..plugins.commons import get_structured_data
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = DELETERequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = DELETERequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdin_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
     format = Format(data_format)
     try:
         formatted_data = format(raw_response.json())
