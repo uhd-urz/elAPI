@@ -165,7 +165,7 @@ class PermissionValidator(Validator):
 
         logger = Logger()
         try:
-            session = GETRequest(keep_session_open=True)
+            session = GETRequest()
             caller_data: dict = session(endpoint_name="users", endpoint_id="me").json()
         except (httpx.HTTPError, JSONDecodeError):
             logger.critical(
@@ -214,8 +214,8 @@ class APITokenRWValidator(Validator):
         logger = Logger()
         if self.can_write:
             try:
-                _session = GETRequest()
-                api_token_data: Optional[dict] = _session(
+                session = GETRequest()
+                api_token_data: Optional[dict] = session(
                     endpoint_name="apikeys", endpoint_id="me"
                 ).json()[0]
             except (httpx.HTTPError, JSONDecodeError):
