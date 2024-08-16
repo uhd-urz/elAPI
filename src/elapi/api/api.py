@@ -1,7 +1,10 @@
+import asyncio
 import re
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Tuple
+from functools import cached_property
+from typing import Union, Optional, Tuple, Literal
 
+import nest_asyncio
 from httpx import Response, Client, AsyncClient, Limits
 from httpx._client import BaseClient
 from httpx._types import AuthTypes
@@ -22,11 +25,11 @@ from ..styles import Missing
 class _CustomHeaderApiKey(HeaderApiKey): ...
 
 
-class CustomClient(BaseClient):
+class SimpleClient(BaseClient):
     def __new__(
         cls,
         *,
-        is_async_client: bool = False,
+        is_async_client: bool,
         auth: Optional[AuthTypes] = _CustomHeaderApiKey(
             api_key=str(Missing()), header_name=TOKEN_BEARER
         ),
@@ -59,7 +62,7 @@ class CustomClient(BaseClient):
             (KEY_TIMEOUT, timeout),
         ):
             missing_warning(field)
-        client = Client if not is_async_client else AsyncClient
+        client = Client if is_async_client is False else AsyncClient
         try:
             return client(
                 auth=auth,
@@ -72,19 +75,93 @@ class CustomClient(BaseClient):
             check_reserved_keyword(
                 e,
                 what=f"{APP_NAME}",
-                against=f"class {CustomClient.__name__}, "
+                against=f"class {SimpleClient.__name__}, "
                 f"so the parameter remains user-configurable "
                 f"through {CONFIG_FILE_NAME} configuration file",
             )
             raise e
 
 
-class APIRequest(ABC):
-    __slots__ = "keep_session_open", "_client"
+class GlobalSharedSession:
+    _instance = None
 
-    def __init__(self, keep_session_open: bool = False, **kwargs):
-        self.keep_session_open = keep_session_open
-        self._client: Union[Client, AsyncClient] = CustomClient(
+    class _GlobalSharedSession:
+        __slots__ = "_limited_to", "__dict__"
+        # __dict__ necessary for @cached_property
+
+        def __init__(
+            self,
+            *,
+            limited_to: Literal["sync", "async", "all"] = "all",
+        ):
+            self.limited_to = limited_to.lower()
+
+        @property
+        def limited_to(self) -> str:
+            return self._limited_to
+
+        @limited_to.setter
+        def limited_to(self, value: str):
+            if value not in ("sync", "async", "all"):
+                raise ValueError(
+                    f"Given limited_to is '{value}', "
+                    f"but it can only be 'sync', 'async', or 'all'."
+                )
+            self._limited_to = value
+
+        @cached_property
+        def sync_client(self) -> Optional[Client]:
+            if self.limited_to in ("sync", "all"):
+                return SimpleClient(is_async_client=False)
+            return None
+
+        @cached_property
+        def async_client(self) -> Optional[AsyncClient]:
+            if self.limited_to in ("async", "all"):
+                return SimpleClient(is_async_client=True)
+            return None
+
+        def close(self):
+            if self.sync_client is not None:
+                if self.sync_client.is_closed is False:
+                    self.sync_client.close()
+            if self.async_client is not None:
+                if self.async_client.is_closed is False:
+                    # nest_asyncio is needed or a "RuntimeError: Event loop is closed"
+                    # will be thrown when there are multiple asyncio.run.
+                    # See GlobalSharedSession.__new__ block.
+                    asyncio.run(self.async_client.aclose())
+
+        @classmethod
+        def __enter__(cls):
+            cls._outer_instance = GlobalSharedSession._instance = cls()
+            return cls._outer_instance
+
+        @classmethod
+        def __exit__(cls, exc_type, exc_val, exc_tb):
+            cls._outer_instance.close()
+            cls._outer_instance = GlobalSharedSession._instance = None
+
+    def __new__(cls, *, limited_to: Literal["sync", "async", "all"] = "all"):
+        if cls._instance is None:
+            # Necessary to allow multiple asyncio.run
+            # See: https://github.com/encode/httpx/discussions/2959
+            nest_asyncio.apply()
+            cls._instance = cls._GlobalSharedSession(limited_to=limited_to)
+        return cls._instance
+
+
+class APIRequest(ABC):
+    __slots__ = "_client", "_shared_client", "_is_using_global_shared_session"
+
+    def __init__(
+        self,
+        shared_client: Union[Client, AsyncClient, None] = None,
+        **kwargs,
+    ):
+        self.is_global_shared_session_user = False
+        self.shared_client = shared_client
+        self._client: Union[Client, AsyncClient] = SimpleClient(
             is_async_client=self.is_async_client, **kwargs
         )
 
@@ -95,29 +172,85 @@ class APIRequest(ABC):
 
     @property
     def client(self) -> Union[Client, AsyncClient]:
+        if self.shared_client is not None:
+            return self.shared_client
         return self._client
 
     @client.setter
     def client(self, value):
         raise AttributeError("Client cannot be modified!")
 
+    @property
+    def is_global_shared_session_user(self) -> bool:
+        return self._is_using_global_shared_session
+
+    @is_global_shared_session_user.setter
+    def is_global_shared_session_user(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("is_using_global_shared_session value can only a bool!")
+        self._is_using_global_shared_session = value
+
+    @property
+    def shared_client(self) -> Union[Client, AsyncClient]:
+        return self._shared_client
+
+    @shared_client.setter
+    def shared_client(self, value: Union[Client, AsyncClient, None] = None):
+        if not isinstance(value, (Client, AsyncClient, type(None))):
+            raise TypeError(
+                f"shared_client must be an instance of "
+                f"httpx.{Client.__name__} or httpx.{AsyncClient.__name__} or {None}."
+            )
+        if self.is_async_client is True and isinstance(value, Client):
+            raise ValueError(
+                f"is_async_client is true, but value set to "
+                f"shared_client is not an instance of httpx.{AsyncClient.__name__}!"
+            )
+        elif self.is_async_client is False and isinstance(value, AsyncClient):
+            raise ValueError(
+                f"is_async_client is not true, but value set to "
+                f"shared_client is not an instance of httpx.{Client.__name__}!"
+            )
+        # noinspection PyProtectedMember
+        if GlobalSharedSession._instance is not None:
+            if self.is_async_client is False:
+                if GlobalSharedSession().sync_client is not None:
+                    self._shared_client = GlobalSharedSession().sync_client
+                    self.is_global_shared_session_user = True
+                else:
+                    self._shared_client = None
+                    self.is_global_shared_session_user = False
+            else:
+                if GlobalSharedSession().async_client is not None:
+                    self._shared_client = GlobalSharedSession().async_client
+                    self.is_global_shared_session_user = True
+                else:
+                    self._shared_client = None
+                    self.is_global_shared_session_user = False
+        else:
+            self._shared_client = value
+
     @abstractmethod
     def _make(self, *args, **kwargs): ...
 
     @abstractmethod
-    def close(self):
+    def close(self) -> Optional[type(NotImplemented)]:
+        if self.is_global_shared_session_user is True:
+            return NotImplemented
         if not self.client.is_closed:
             self.client.close()
 
     @abstractmethod
-    async def aclose(self):
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        if self.is_global_shared_session_user is True:
+            return NotImplemented
         if not self.client.is_closed:
             await self.client.aclose()
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
         response = self._make(*args, **kwargs)
-        if not self.keep_session_open:
+        if self.shared_client is None:
             self.close()
         return response
 
@@ -127,7 +260,7 @@ class APIRequest(ABC):
             *args,
             **kwargs,
         )
-        if not self.keep_session_open:
+        if self.shared_client is None:
             await self.aclose()
         return response
 
@@ -219,7 +352,8 @@ class ElabFTWURL:
         if value is not None:
             if value.lower() not in ElabFTWURL.VALID_ENDPOINTS.keys():
                 raise ElabFTWURLError(
-                    f"Endpoint must be one of valid eLabFTW endpoints: {', '.join(ElabFTWURL.VALID_ENDPOINTS.keys())}."
+                    f"Endpoint must be one of valid eLabFTW endpoints: "
+                    f"{', '.join(ElabFTWURL.VALID_ENDPOINTS.keys())}."
                 )
             self._endpoint_name = value
         else:
@@ -244,7 +378,8 @@ class ElabFTWURL:
 
                 raise ElabFTWURLError(
                     f"A Sub-endpoint for endpoint '{self._endpoint_name}' must be "
-                    f"one of valid eLabFTW sub-endpoints: {', '.join(valid_sub_endpoint_name)}."
+                    f"one of valid eLabFTW sub-endpoints: "
+                    f"{', '.join(valid_sub_endpoint_name)}."
                 )
             self._sub_endpoint_name = value
         else:
@@ -258,7 +393,8 @@ class ElabFTWURL:
     def endpoint_id(self, value):
         if value is not None:
             if not re.match(r"^(\d+)$|^(me)$|^(current)$", value := str(value)):
-                # Although, eLabFTW primarily supports integer-only IDs, there are exceptions, like the alias
+                # Although, eLabFTW primarily supports integer-only IDs,
+                # there are exceptions, like the alias
                 # ID "me" for receiving one's own user information.
                 raise ElabFTWURLError("Invalid endpoint ID (or entity ID).")
             self._endpoint_id = value
@@ -317,8 +453,8 @@ class GETRequest(APIRequest):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    def close(self):
-        super().close()
+    def close(self) -> Optional[type(NotImplemented)]:
+        return super().close()
 
     def aclose(self):
         raise NotImplementedError(
@@ -382,8 +518,8 @@ class POSTRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self):
-        super().close()
+    def close(self) -> Optional[type(NotImplemented)]:
+        return super().close()
 
     def aclose(self):
         raise NotImplementedError(
@@ -448,8 +584,8 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self):
-        await super().aclose()
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        return await super().aclose()
 
     def close(self):
         raise NotImplementedError(
@@ -505,9 +641,8 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    async def aclose(self):
-        if not self.client.is_closed:
-            await self.client.aclose()
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        return await self.client.aclose()
 
     def close(self):
         raise NotImplementedError(
@@ -564,8 +699,8 @@ class PATCHRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self):
-        super().close()
+    def close(self) -> Optional[type(NotImplemented)]:
+        return super().close()
 
     def aclose(self):
         raise NotImplementedError(
@@ -628,9 +763,8 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self):
-        if not self.client.is_closed:
-            await self.client.aclose()
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        return await self.client.aclose()
 
     def close(self):
         raise NotImplementedError(
@@ -679,8 +813,8 @@ class DELETERequest(APIRequest):
             **kwargs,
         )
 
-    def close(self):
-        super().close()
+    def close(self) -> Optional[type(NotImplemented)]:
+        return super().close()
 
     def aclose(self):
         raise NotImplementedError(
@@ -738,9 +872,8 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self):
-        if not self.client.is_closed:
-            await self.client.aclose()
+    async def aclose(self) -> Optional[type(NotImplemented)]:
+        return await self.client.aclose()
 
     def close(self):
         raise NotImplementedError(
