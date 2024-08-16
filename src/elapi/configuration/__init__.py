@@ -1,6 +1,10 @@
 # ruff: noqa: F401
 from ._config_history import AppliedConfigIdentity, FieldValueWithKey
-from ._overload_history import ApplyConfigHistory, reinitiate_config
+from ._overload_history import (
+    ApplyConfigHistory,
+    reinitiate_config,
+    validate_configuration,
+)
 
 # noinspection PyUnresolvedReferences
 from .config import (
@@ -64,7 +68,6 @@ from .overridable_vars import (
     get_development_mode,
     get_active_plugin_configs,
 )
-from ..styles import Missing as _Missing
+from .validators import PluginConfigurationValidator as _PluginConfigurationValidator
 
-if get_development_mode() is False or get_development_mode() == _Missing():
-    reinitiate_config(ignore_essential_validation=True)
+validate_configuration(limited_to=[_PluginConfigurationValidator])
