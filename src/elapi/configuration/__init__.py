@@ -4,6 +4,7 @@ from ._overload_history import (
     ApplyConfigHistory,
     reinitiate_config,
     validate_configuration,
+    preventive_missing_warning,
 )
 
 # noinspection PyUnresolvedReferences
