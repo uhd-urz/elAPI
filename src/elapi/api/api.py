@@ -1,6 +1,7 @@
 import asyncio
 import re
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Union, Optional, Tuple, Literal
 
@@ -19,7 +20,25 @@ from ..configuration import (
     get_active_verify_ssl,
     get_active_timeout,
 )
+from ..loggers import Logger
 from ..styles import Missing
+from ..utils import update_kwargs_with_defaults
+
+logger = Logger()
+
+
+@dataclass
+class SessionDefaults:
+    limits: Limits = field(
+        default_factory=lambda: Limits(
+            max_connections=100,
+            max_keepalive_connections=30,
+            keepalive_expiry=60,
+        )
+    )
+
+
+session_defaults = SessionDefaults()
 
 
 class _CustomHeaderApiKey(HeaderApiKey): ...
@@ -37,13 +56,13 @@ class SimpleClient(BaseClient):
     ) -> Union[Client, AsyncClient]:
         from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
-        from ..utils import missing_warning
         from ..configuration import (
             KEY_HOST,
             KEY_API_TOKEN,
             KEY_ENABLE_HTTP2,
             KEY_VERIFY_SSL,
             KEY_TIMEOUT,
+            preventive_missing_warning,
         )
 
         host: str = get_active_host()
@@ -54,14 +73,14 @@ class SimpleClient(BaseClient):
 
         if isinstance(auth, _CustomHeaderApiKey):
             auth.api_key = api_token
-        for field in (
+        for config_field in (
             (KEY_HOST, host),
             (KEY_API_TOKEN, api_token),
             (KEY_ENABLE_HTTP2, enable_http2),
             (KEY_VERIFY_SSL, verify_ssl),
             (KEY_TIMEOUT, timeout),
         ):
-            missing_warning(field)
+            preventive_missing_warning(config_field)
         client = Client if is_async_client is False else AsyncClient
         try:
             return client(
@@ -84,17 +103,18 @@ class SimpleClient(BaseClient):
 
 class GlobalSharedSession:
     _instance = None
+    suppress_override_warning = False
 
     class _GlobalSharedSession:
-        __slots__ = "_limited_to", "__dict__"
+        __slots__ = "_limited_to", "__dict__", "_kwargs"
         # __dict__ necessary for @cached_property
 
         def __init__(
-            self,
-            *,
-            limited_to: Literal["sync", "async", "all"] = "all",
+            self, *, limited_to: Literal["sync", "async", "all"] = "all", **kwargs
         ):
             self.limited_to = limited_to.lower()
+            self._kwargs = kwargs
+            update_kwargs_with_defaults(self._kwargs, session_defaults.__dict__)
 
         @property
         def limited_to(self) -> str:
@@ -112,16 +132,17 @@ class GlobalSharedSession:
         @cached_property
         def sync_client(self) -> Optional[Client]:
             if self.limited_to in ("sync", "all"):
-                return SimpleClient(is_async_client=False)
+                return SimpleClient(is_async_client=False, **self._kwargs)
             return None
 
         @cached_property
         def async_client(self) -> Optional[AsyncClient]:
             if self.limited_to in ("async", "all"):
-                return SimpleClient(is_async_client=True)
+                return SimpleClient(is_async_client=True, **self._kwargs)
             return None
 
         def close(self):
+            GlobalSharedSession._instance = None
             if self.sync_client is not None:
                 if self.sync_client.is_closed is False:
                     self.sync_client.close()
@@ -132,53 +153,77 @@ class GlobalSharedSession:
                     # See GlobalSharedSession.__new__ block.
                     asyncio.run(self.async_client.aclose())
 
-        @classmethod
-        def __enter__(cls):
-            cls._outer_instance = GlobalSharedSession._instance = cls()
-            return cls._outer_instance
+        def __enter__(self):
+            self._outer_instance = GlobalSharedSession._instance = self.__class__(
+                **self._kwargs
+            )
+            return self._outer_instance
 
-        @classmethod
-        def __exit__(cls, exc_type, exc_val, exc_tb):
-            cls._outer_instance.close()
-            cls._outer_instance = GlobalSharedSession._instance = None
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self._outer_instance.close()
+            self._outer_instance = None
 
-    def __new__(cls, *, limited_to: Literal["sync", "async", "all"] = "all"):
+    def __new__(
+        cls,
+        *,
+        limited_to: Literal["sync", "async", "all"] = "all",
+        suppress_override_warning: bool = False,
+        **kwargs,
+    ):
         if cls._instance is None:
             # Necessary to allow multiple asyncio.run
             # See: https://github.com/encode/httpx/discussions/2959
             nest_asyncio.apply()
-            cls._instance = cls._GlobalSharedSession(limited_to=limited_to)
+            cls.suppress_override_warning = suppress_override_warning
+            cls._instance = cls._GlobalSharedSession(limited_to=limited_to, **kwargs)
         return cls._instance
 
 
 class APIRequest(ABC):
-    __slots__ = "_client", "_shared_client", "_is_using_global_shared_session"
+    __slots__ = (
+        "_shared_client",
+        "_is_using_global_shared_session",
+        "_kwargs",
+        "__dict__",
+    )
 
     def __init__(
         self,
         shared_client: Union[Client, AsyncClient, None] = None,
         **kwargs,
     ):
+        update_kwargs_with_defaults(kwargs, session_defaults.__dict__)
+        self._kwargs = kwargs
+        if shared_client is not None:
+            kwargs.update(shared_client=shared_client)
         self.is_global_shared_session_user = False
         self.shared_client = shared_client
-        self._client: Union[Client, AsyncClient] = SimpleClient(
-            is_async_client=self.is_async_client, **kwargs
-        )
+        if (
+            kwargs
+            and kwargs != session_defaults.__dict__
+            and self.is_global_shared_session_user is True
+            and GlobalSharedSession.suppress_override_warning is False
+        ):
+            logger.warning(
+                f"{self.__class__.__name__} received keyword arguments {kwargs} "
+                f"while {GlobalSharedSession.__name__} is in use. "
+                f"But {GlobalSharedSession.__name__} will override any argument "
+                f"passed to {self.__class__.__name__}. You can pass the same arguments to"
+                f"{GlobalSharedSession.__name__} instead. You can suppress this warning "
+                f"by passing keyword argument 'suppress_override_warning = True' "
+                f"to {GlobalSharedSession.__name__}."
+            )
 
     # noinspection PyMethodOverriding
     def __init_subclass__(cls, /, is_async_client: bool = False, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.is_async_client = is_async_client
 
-    @property
+    @cached_property
     def client(self) -> Union[Client, AsyncClient]:
         if self.shared_client is not None:
             return self.shared_client
-        return self._client
-
-    @client.setter
-    def client(self, value):
-        raise AttributeError("Client cannot be modified!")
+        return SimpleClient(is_async_client=self.is_async_client, **self._kwargs)
 
     @property
     def is_global_shared_session_user(self) -> bool:
@@ -554,17 +599,8 @@ class POSTRequest(APIRequest):
 class AsyncPOSTRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(
-        self,
-        limits=Limits(
-            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-        ),
-        **kwargs,
-    ):
-        super().__init__(
-            limits=limits,
-            **kwargs,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
@@ -620,17 +656,8 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
 class AsyncGETRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(
-        self,
-        limits=Limits(
-            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-        ),
-        **kwargs,
-    ):
-        super().__init__(
-            limits=limits,
-            **kwargs,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
@@ -735,17 +762,8 @@ class PATCHRequest(APIRequest):
 class AsyncPATCHRequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(
-        self,
-        limits=Limits(
-            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-        ),
-        **kwargs,
-    ):
-        super().__init__(
-            limits=limits,
-            **kwargs,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args
@@ -849,17 +867,8 @@ class DELETERequest(APIRequest):
 class AsyncDELETERequest(APIRequest, is_async_client=True):
     __slots__ = ()
 
-    def __init__(
-        self,
-        limits=Limits(
-            max_connections=100, max_keepalive_connections=30, keepalive_expiry=60
-        ),
-        **kwargs,
-    ):
-        super().__init__(
-            limits=limits,
-            **kwargs,
-        )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     async def _make(self, *args, headers: Optional[dict] = None, **kwargs) -> Response:
         endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query = args

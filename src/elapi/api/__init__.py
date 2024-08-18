@@ -1,5 +1,6 @@
 # ruff: noqa: F401
 from .api import (
+    SessionDefaults,
     SimpleClient,
     GlobalSharedSession,
     APIRequest,
