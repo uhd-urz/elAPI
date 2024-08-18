@@ -1,14 +1,16 @@
+from functools import cached_property
 from typing import Union, Iterable, Optional, Generator, Awaitable
 
-from httpx import Response
+from httpx import Response, AsyncClient, Client
 
 from .api import (
     SimpleClient,
-    AsyncGETRequest,
+    GlobalSharedSession,
     GETRequest,
     POSTRequest,
     PATCHRequest,
     DELETERequest,
+    AsyncGETRequest,
     AsyncPOSTRequest,
     AsyncPATCHRequest,
     AsyncDELETERequest,
@@ -18,11 +20,34 @@ from .api import (
 class FixedAsyncEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
-        self._client = SimpleClient(is_async_client=True)
-        self._get_session = AsyncGETRequest(shared_client=self._client)
-        self._post_session = AsyncPOSTRequest(shared_client=self._client)
-        self._patch_session = AsyncPATCHRequest(shared_client=self._client)
-        self._delete_session = AsyncDELETERequest(shared_client=self._client)
+
+    @cached_property
+    def _client(self) -> AsyncClient:
+        return SimpleClient(is_async_client=True)
+
+    @cached_property
+    def _get_session(self) -> AsyncGETRequest:
+        if GlobalSharedSession._instance is not None:
+            return AsyncGETRequest()
+        return AsyncGETRequest(shared_client=self._client)
+
+    @cached_property
+    def _post_session(self) -> AsyncPOSTRequest:
+        if GlobalSharedSession._instance is not None:
+            return AsyncPOSTRequest()
+        return AsyncPOSTRequest(shared_client=self._client)
+
+    @cached_property
+    def _patch_session(self) -> AsyncPATCHRequest:
+        if GlobalSharedSession._instance is not None:
+            return AsyncPATCHRequest()
+        return AsyncPATCHRequest(shared_client=self._client)
+
+    @cached_property
+    def _delete_session(self) -> AsyncDELETERequest:
+        if GlobalSharedSession._instance is not None:
+            return AsyncDELETERequest()
+        return AsyncDELETERequest(shared_client=self._client)
 
     async def get(
         self,
@@ -76,7 +101,7 @@ class FixedAsyncEndpoint:
         sub_endpoint_id: Union[int, str, None] = None,
         query: Optional[dict] = None,
     ) -> Response:
-        return await self._patch_session(
+        return await self._delete_session(
             self.endpoint_name,
             endpoint_id,
             sub_endpoint_name,
@@ -85,17 +110,42 @@ class FixedAsyncEndpoint:
         )
 
     async def aclose(self) -> Optional[type(NotImplemented)]:
-        return await self._client.aclose()
+        if GlobalSharedSession._instance is not None:
+            await self._client.aclose()
+        return NotImplemented
 
 
 class FixedEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
-        self._client = SimpleClient(is_async_client=False)
-        self._get_session = GETRequest(shared_client=self._client)
-        self._post_session = POSTRequest(shared_client=self._client)
-        self._patch_session = PATCHRequest(shared_client=self._client)
-        self._delete_session = DELETERequest(shared_client=self._client)
+
+    @cached_property
+    def _client(self) -> Client:
+        return SimpleClient(is_async_client=False)
+
+    @cached_property
+    def _get_session(self) -> GETRequest:
+        if GlobalSharedSession._instance is not None:
+            return GETRequest()
+        return GETRequest(shared_client=self._client)
+
+    @cached_property
+    def _post_session(self) -> POSTRequest:
+        if GlobalSharedSession._instance is not None:
+            return POSTRequest()
+        return POSTRequest(shared_client=self._client)
+
+    @cached_property
+    def _patch_session(self) -> PATCHRequest:
+        if GlobalSharedSession._instance is not None:
+            return PATCHRequest()
+        return PATCHRequest(shared_client=self._client)
+
+    @cached_property
+    def _delete_session(self) -> DELETERequest:
+        if GlobalSharedSession._instance is not None:
+            return DELETERequest()
+        return DELETERequest(shared_client=self._client)
 
     def get(
         self,
@@ -158,7 +208,9 @@ class FixedEndpoint:
         )
 
     def close(self) -> Optional[type(NotImplemented)]:
-        return self._client.close()
+        if GlobalSharedSession._instance is not None:
+            self._client.close()
+        return NotImplemented
 
 
 class RecursiveGETEndpoint:
