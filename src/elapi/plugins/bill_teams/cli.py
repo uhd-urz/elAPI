@@ -81,35 +81,35 @@ else:
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
         remove_csv_formatter_support()
-        with stderr_console.status("Validating...\n", refresh_per_second=15):
-            with GlobalSharedSession(limited_to="sync"):
+        with GlobalSharedSession():
+            with stderr_console.status("Validating...\n", refresh_per_second=15):
                 validate = Validate(
                     HostIdentityValidator(), PermissionValidator("sysadmin")
                 )
                 validate()
-        if export is False:
-            _export_dest = None
-        if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
-        data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
-        )
-        format = CLIFormat(data_format, export_file_ext)
-        import asyncio
-        from .bill_teams import (
-            UsersInformation,
-            TeamsInformation,
-            TeamsList,
-        )
+            if export is False:
+                _export_dest = None
+            if sort_json_format:
+                from .format import JSONSortedFormat  # noqa: F401
+            data_format, export_dest, export_file_ext = CLIExport(
+                data_format, _export_dest, export_overwrite
+            )
+            format = CLIFormat(data_format, export_file_ext)
+            import asyncio
+            from .bill_teams import (
+                UsersInformation,
+                TeamsInformation,
+                TeamsList,
+            )
 
-        users_info, teams_info = UsersInformation(), TeamsInformation()
-        try:
-            tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
-        except (RuntimeError, InterruptedError) as e:
-            # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
-            # InterruptedError is raised when JSONDecodeError is triggered.
-            logger.info(f"{APP_NAME} will try again.")
-            raise InterruptedError from e
+            users_info, teams_info = UsersInformation(), TeamsInformation()
+            try:
+                tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
+            except (RuntimeError, InterruptedError) as e:
+                # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
+                # InterruptedError is raised when JSONDecodeError is triggered.
+                logger.info(f"{APP_NAME} will try again.")
+                raise InterruptedError from e
         formatted_teams = format(teams := tl.items())
         if export:
             export_teams = Export(
