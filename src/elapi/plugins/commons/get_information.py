@@ -5,6 +5,7 @@ from typing import Awaitable
 import httpx
 from httpx import Response
 
+from ...api import GlobalSharedSession
 from ...core_validators import Exit
 from ...loggers import Logger
 
@@ -65,8 +66,10 @@ class RecursiveInformation:
         # https://docs.python.org/3/library/asyncio-dev.html#detect-never-retrieved-exceptions
         for task in asyncio.all_tasks(event_loop):
             task.cancel()
-        if event_loop.is_running():
-            event_loop.stop()  # Will raise RuntimeError
+        if GlobalSharedSession._instance is None:
+            if event_loop.is_running():
+                event_loop.stop()  # Will raise RuntimeError
+                # (most likely because some tasks are still remaining)
 
     async def items(self):
         from ...api.endpoint import FixedAsyncEndpoint, RecursiveGETEndpoint
