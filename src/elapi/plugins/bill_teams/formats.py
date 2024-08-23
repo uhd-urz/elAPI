@@ -1,6 +1,6 @@
 from typing import Any
 
-from ...styles.format import BaseFormat, JSONFormat
+from ...styles.formats import BaseFormat, JSONFormat
 
 
 class JSONSortedFormat(JSONFormat, BaseFormat):
@@ -16,7 +16,7 @@ class JSONSortedFormat(JSONFormat, BaseFormat):
 
 
 def remove_csv_formatter_support():
-    from ...styles.format import BaseFormat, CSVFormat
+    from ...styles.formats import BaseFormat, CSVFormat
 
     try:
         del BaseFormat.supported_formatters()[CSVFormat.pattern()]

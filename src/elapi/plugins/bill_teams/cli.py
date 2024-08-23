@@ -72,7 +72,7 @@ else:
     ) -> dict:
         """Get billable teams data."""
         from ...api import GlobalSharedSession
-        from .format import remove_csv_formatter_support
+        from .formats import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -90,7 +90,7 @@ else:
             if export is False:
                 _export_dest = None
             if sort_json_format:
-                from .format import JSONSortedFormat  # noqa: F401
+                from .formats import JSONSortedFormat  # noqa: F401
             data_format, export_dest, export_file_ext = CLIExport(
                 data_format, _export_dest, export_overwrite
             )
@@ -173,7 +173,7 @@ else:
         ] = False,
     ) -> dict:
         """Get billable team owners data."""
-        from .format import remove_csv_formatter_support
+        from .formats import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -199,7 +199,7 @@ else:
             _export_dest = None
 
         if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
+            from .formats import JSONSortedFormat  # noqa: F401
 
         data_format, export_dest, export_file_ext = CLIExport(
             data_format, _export_dest, export_overwrite
