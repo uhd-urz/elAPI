@@ -147,18 +147,18 @@ def reinitiate_config(
         validate_configuration(limited_to)
 
 
-def preventive_missing_warning(fields: Tuple[str, Any], /) -> None:
+def preventive_missing_warning(field: Tuple[str, Any], /) -> None:
     from .._names import KEY_DEVELOPMENT_MODE
     from ..styles import Missing
     from ..utils import get_sub_package_name, PreventiveWarning
 
     configuration_sub_package_name = get_sub_package_name(__package__)
-    if not isinstance(fields, Iterable) and not isinstance(fields, str):
+    if not isinstance(field, Iterable) and not isinstance(field, str):
         raise TypeError(
             f"{preventive_missing_warning.__name__} only accepts an iterable of key-value pair."
         )
     try:
-        key, value = fields
+        key, value = field
     except ValueError as e:
         raise ValueError(
             "Only a pair of configuration key and its value in an "
