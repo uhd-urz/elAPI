@@ -67,9 +67,7 @@ def get(
     from ...api.validators import HostIdentityValidator
     from ..commons import Export
     from ...styles import Highlight
-    from . import (
-        formats,
-    )  # must be imported for all formats to be registered by BaseFormat
+    from .formats import BinaryFormat
     from ...core_validators import Exit
 
     with GlobalSharedSession(limited_to="sync"):
@@ -87,9 +85,9 @@ def get(
             data_format, export_dest, export_file_ext = CLIExport(
                 data_format, _export_dest, export_overwrite
             )
-            format = CLIFormat(data_format, export_file_ext)
+            format = CLIFormat(data_format, __package__, export_file_ext)
 
-            if isinstance(format, formats.BinaryFormat):
+            if isinstance(format, BinaryFormat):
                 if not export:
                     logger.info(
                         f"Data with format '{data_format}' cannot be shown on the terminal. "
@@ -117,7 +115,7 @@ def get(
                 export(data=formatted_data, verbose=True)
             else:
                 if highlight_syntax is True:
-                    highlight = Highlight(format.name)
+                    highlight = Highlight(format.name, package_identifier=__package__)
                     if not response.is_success:
                         stderr_console.print(highlight(formatted_data))
                         raise Exit(1)

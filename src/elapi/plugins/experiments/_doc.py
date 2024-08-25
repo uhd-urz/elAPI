@@ -1,20 +1,10 @@
+from .formats import BaseFormat, PDFAFormat, ZIPAFormat
 from ... import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
-
-_UNIQUE_SUPPORTED_FORMATS = [
-    "json",
-    "yaml",
-    "pdf",
-    "pdfa",
-    "zip",
-    "zipa",
-    "eln",
-    "csv",
-    "qrpng",
-]
 supported_format_values = ", ".join(
-    f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
+    f"**{_.upper()}**"
+    for _ in BaseFormat.supported_formatter_names(__package__)
 )
 
 __PARAMETERS__doc__ = {
@@ -38,6 +28,7 @@ __PARAMETERS__doc__ = {
                                          "of an attachment. First 6 digits (or more) of the attachment SHA256 "
                                          "hash can also be passed as an attachment ID.",
     "data_format": f"Experiment output format. Supported values are: {supported_format_values}. "
+                   f"{PDFAFormat.reference}, {ZIPAFormat.reference} are 'long-term storage' formats. "
                    f"The supported formats follow the _'Export'_ options available "
                    f"for an experiment on the browser GUI. As such, **only** JSON and YAML formats can be printed "
                    f"on the terminal. All other supported formats are exported to "

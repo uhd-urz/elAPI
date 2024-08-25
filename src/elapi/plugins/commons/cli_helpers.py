@@ -54,19 +54,20 @@ class CLIFormat:
     def __new__(
         cls,
         data_format: str,
+        package_identifier: str,
         export_file_ext: Optional[str] = None,
     ):
         from ...styles import Format, FormatError
 
         try:
-            format = Format(data_format)
+            format = Format(data_format, package_identifier=package_identifier)
         except FormatError as e:
             logger.error(e)
             logger.info(
                 f"{APP_NAME} will fallback to '{cls.FALLBACK_DATA_FORMAT}' format."
             )
             format = Format(
-                cls.FALLBACK_DATA_FORMAT
+                cls.FALLBACK_DATA_FORMAT, package_identifier=package_identifier
             )  # Falls back to DEFAULT_EXPORT_DATA_FORMAT
         if export_file_ext and export_file_ext not in format.convention:
             logger.info(

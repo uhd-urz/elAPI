@@ -6,7 +6,7 @@ from rich.padding import Padding
 from rich.syntax import Syntax
 from rich.text import Text
 
-from .formats import ValidateLanguage
+from .formats import RegisterFormattingLanguage
 
 
 class BaseHighlight(ABC):
@@ -19,8 +19,8 @@ class BaseHighlight(ABC):
 
 
 class Highlight(BaseHighlight):
-    def __init__(self, language: str, /, theme: str = "lightbulb"):
-        validator = ValidateLanguage(language)
+    def __init__(self, language: str, /, theme: str = "lightbulb", *, package_identifier: str):
+        validator = RegisterFormattingLanguage(language, package_identifier=package_identifier)
         self.name = validator.name
         self.theme = theme
 

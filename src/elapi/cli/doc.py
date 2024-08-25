@@ -1,12 +1,14 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
+
 from .._names import CONFIG_FILE_NAME
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT, EXPORT_DIR
-from ..styles import BaseFormat
+from ..styles import BaseFormat, __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
 supported_highlighting_formats = ", ".join(
-    f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names()
+    f"**{_.upper()}**"
+    for _ in BaseFormat.supported_formatter_names(styles_package_identifier)
 )
 
 __PARAMETERS__doc__ = {

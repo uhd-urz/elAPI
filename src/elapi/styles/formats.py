@@ -1,20 +1,53 @@
 import re
 from abc import abstractmethod, ABC
 from collections.abc import Iterable
-from typing import Any, Union
+from typing import Any, Union, Optional
+
+from .base import __PACKAGE_IDENTIFIER__ as styles_package_identifier
+from .. import APP_NAME
 
 
 class BaseFormat(ABC):
-    _registry: dict[str:Any, ...] = {}
-    _names: list[str, ...] = []
-    _conventions: list[str, ...] = []
+    _registry: dict[str:Any, ...] = {styles_package_identifier: {}}
+    _names: dict[str : list[str], ...] = {styles_package_identifier: []}
+    _conventions: dict[str:str, ...] = {styles_package_identifier: []}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls._registry[cls.pattern()] = cls
-        if cls.name not in cls._names:
-            cls._names.append(cls.name)
-        cls._conventions.append(cls.convention)
+        if cls.package_identifier not in cls._registry:
+            cls._registry[cls.package_identifier] = {}
+            cls._registry[cls.package_identifier].update(
+                cls._registry[styles_package_identifier]
+            )
+        if cls.package_identifier not in cls._names:
+            cls._names[cls.package_identifier] = []
+            cls._names[cls.package_identifier] += cls._names[styles_package_identifier]
+        if cls.package_identifier not in cls._conventions:
+            cls._conventions[cls.package_identifier] = []
+            cls._conventions[cls.package_identifier] += cls._conventions[
+                styles_package_identifier
+            ]
+        if cls.name is None:
+            if cls.package_identifier == styles_package_identifier:
+                raise ValueError(
+                    f"Attribute 'name' cannot be None for when package_identifier "
+                    f"is {styles_package_identifier} as it will remove {APP_NAME} built-in formats."
+                )
+            existing_cls = cls._registry[cls.package_identifier].pop(cls.pattern())
+            try:
+                cls._names[cls.package_identifier].remove(existing_cls.name)
+                cls._conventions[cls.package_identifier].remove(existing_cls.convention)
+            except ValueError as e:
+                raise KeyError(
+                    f"Attribute 'name' is None, which will remove {cls!r} as a formatter, "
+                    f"but class {cls!r} was never registered before!"
+                ) from e
+        else:
+            cls._registry[cls.package_identifier][cls.pattern()] = cls
+            if cls.name not in cls._names[cls.package_identifier]:
+                cls._names[cls.package_identifier].append(cls.name)
+            if cls.convention not in cls._conventions[cls.package_identifier]:
+                cls._conventions[cls.package_identifier].append(cls.convention)
 
     @property
     @abstractmethod
@@ -28,13 +61,25 @@ class BaseFormat(ABC):
     @convention.setter
     def convention(self, value): ...
 
-    @classmethod
-    def supported_formatters(cls) -> dict[str:"BaseFormat", ...]:
-        return cls._registry
+    @property
+    @abstractmethod
+    def package_identifier(self) -> Optional[str]: ...
 
     @classmethod
-    def supported_formatter_names(cls) -> list[str, ...]:
-        return cls._names
+    def supported_formatters(
+        cls, package_identifier: Optional[str] = None
+    ) -> dict[str:"BaseFormat", ...]:
+        if package_identifier is None:
+            return cls._registry
+        return cls._registry[package_identifier]
+
+    @classmethod
+    def supported_formatter_names(
+        cls, package_identifier: Optional[str] = None
+    ) -> dict[str : list[str], ...]:
+        if package_identifier is None:
+            return cls._names
+        return cls._names[package_identifier]
 
     @classmethod
     @abstractmethod
@@ -50,6 +95,7 @@ class FormatError(Exception): ...
 class JSONFormat(BaseFormat):
     name: str = "json"
     convention: str = name
+    package_identifier: str = styles_package_identifier
 
     @classmethod
     def pattern(cls) -> str:
@@ -66,6 +112,7 @@ class JSONFormat(BaseFormat):
 class YAMLFormat(BaseFormat):
     name: str = "yaml"
     convention: list[str, ...] = ["yml", "yaml"]
+    package_identifier: str = styles_package_identifier
 
     @classmethod
     def pattern(cls) -> str:
@@ -80,6 +127,7 @@ class YAMLFormat(BaseFormat):
 class CSVFormat(BaseFormat):
     name: str = "csv"
     convention: str = name
+    package_identifier: str = styles_package_identifier
 
     @classmethod
     def pattern(cls) -> str:
@@ -114,19 +162,40 @@ class CSVFormat(BaseFormat):
         return csv_as_string
 
 
-class ValidateLanguage:
-    def __init__(self, language: str):
-        self._validated = language
+class RegisterFormattingLanguage:
+    def __init__(self, language: str, *, package_identifier: str):
+        self.package_identifier = package_identifier
+        self._register = language
 
     @property
-    def _validated(self):
+    def package_identifier(self) -> str:
+        return self._package_identifier
+
+    @package_identifier.setter
+    def package_identifier(self, value):
+        if not isinstance(value, str):
+            raise ValueError(f"{value} must be an instance of str.")
+        self._package_identifier = value
+
+    @property
+    def _register(self):
         raise AttributeError(
-            "'_validated' isn't meant to be called directly! Use attributes 'name' and 'formatter'."
+            "'_register' isn't meant to be called directly! "
+            "Use attributes 'name' and 'formatter'."
         )
 
-    @_validated.setter
-    def _validated(self, value):
-        for pattern, formatter in BaseFormat.supported_formatters().items():
+    @_register.setter
+    def _register(self, value):
+        try:
+            supported_formatters = BaseFormat.supported_formatters()[
+                self.package_identifier
+            ]
+        except KeyError as e:
+            raise KeyError(
+                f"Package identifier '{self.package_identifier}' not found "
+                f"in registered supported_formatters dictionary!"
+            ) from e
+        for pattern, formatter in supported_formatters.items():
             if re.match(rf"{pattern}", value, flags=re.IGNORECASE):
                 self.name: str = formatter.name
                 self.convention: Union[str, Iterable[str, ...]] = formatter.convention
@@ -139,9 +208,11 @@ class ValidateLanguage:
 
 
 class Format:
-    def __new__(cls, language: str, /) -> BaseFormat:
-        validator = ValidateLanguage(language)
-        return validator.formatter()
+    def __new__(cls, language: str, /, *, package_identifier: str) -> BaseFormat:
+        lang = RegisterFormattingLanguage(
+            language, package_identifier=package_identifier
+        )
+        return lang.formatter()
 
 
 BaseFormat.register(Format)

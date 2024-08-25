@@ -1,9 +1,11 @@
 from typing import Any
 
-from ...styles.formats import BaseFormat, JSONFormat
+from ...styles.formats import BaseFormat, JSONFormat, CSVFormat as _CSVFormat
 
 
 class JSONSortedFormat(JSONFormat, BaseFormat):
+    package_identifier = __package__
+
     def __call__(self, data: Any) -> str:
         import json
 
@@ -15,16 +17,9 @@ class JSONSortedFormat(JSONFormat, BaseFormat):
         )
 
 
-def remove_csv_formatter_support():
-    from ...styles.formats import BaseFormat, CSVFormat
+class DisabledCSVFormat(_CSVFormat, BaseFormat):
+    name = None
+    package_identifier = __package__
 
-    try:
-        del BaseFormat.supported_formatters()[CSVFormat.pattern()]
-        del BaseFormat.supported_formatter_names()[
-            BaseFormat.supported_formatter_names().index(CSVFormat.name)
-        ]
-        # noinspection PyProtectedMember
-        del BaseFormat._conventions[BaseFormat._conventions.index(CSVFormat.convention)]
-
-    except KeyError:
-        ...
+    def __call__(self, data: Any):
+        raise NotImplementedError
