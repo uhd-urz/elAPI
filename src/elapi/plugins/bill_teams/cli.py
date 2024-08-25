@@ -19,6 +19,7 @@ else:
     from ...styles import stdin_console, stderr_console
     from ...core_validators import RuntimeValidationError, Exit, ValidationError
     from ..commons.cli_helpers import Typer
+    from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
     app = Typer(
         name=PLUGIN_NAME,
@@ -87,12 +88,14 @@ else:
                 validate()
             if export is False:
                 _export_dest = None
-            if sort_json_format:
-                from .formats import JSONSortedFormat  # noqa: F401
+            if sort_json_format is True:
+                package_identifier: str = __package__
+            else:
+                package_identifier: str = styles_package_identifier
             data_format, export_dest, export_file_ext = CLIExport(
                 data_format, _export_dest, export_overwrite
             )
-            format = CLIFormat(data_format, __package__, export_file_ext)
+            format = CLIFormat(data_format, package_identifier, export_file_ext)
             import asyncio
             from .bill_teams import (
                 UsersInformation,
@@ -193,13 +196,15 @@ else:
         if export is False:
             _export_dest = None
 
-        if sort_json_format:
-            from .formats import JSONSortedFormat  # noqa: F401
+        if sort_json_format is True:
+            package_identifier: str = __package__
+        else:
+            package_identifier: str = styles_package_identifier
 
         data_format, export_dest, export_file_ext = CLIExport(
             data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat(data_format, __package__, export_file_ext)
+        format = CLIFormat(data_format, package_identifier, export_file_ext)
 
         from .bill_teams import (
             TeamsInformation,
