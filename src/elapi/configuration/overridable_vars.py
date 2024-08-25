@@ -6,7 +6,7 @@ from .config import APIToken
 from ..styles import Missing
 
 
-def _run_validation_once():
+def _run_validation_once() -> None:
     if get_development_mode() is False or get_development_mode() == Missing():
         reinitiate_config()
 

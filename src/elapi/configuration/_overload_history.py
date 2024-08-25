@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple, Any
 
 from ._config_history import FieldValueWithKey, AppliedConfigIdentity
 from .config import history, FALLBACK_SOURCE_NAME
@@ -145,3 +145,36 @@ def reinitiate_config(
         else:
             limited_to = MainConfigurationValidator.NON_ESSENTIAL_VALIDATORS
         validate_configuration(limited_to)
+
+
+def preventive_missing_warning(fields: Tuple[str, Any], /) -> None:
+    from .._names import KEY_DEVELOPMENT_MODE
+    from ..styles import Missing
+    from ..utils import get_sub_package_name, PreventiveWarning
+
+    configuration_sub_package_name = get_sub_package_name(__package__)
+    if not isinstance(fields, Iterable) and not isinstance(fields, str):
+        raise TypeError(
+            f"{preventive_missing_warning.__name__} only accepts an iterable of key-value pair."
+        )
+    try:
+        key, value = fields
+    except ValueError as e:
+        raise ValueError(
+            "Only a pair of configuration key and its value in an "
+            f"iterable can be passed to {preventive_missing_warning.__name__}."
+        ) from e
+    if isinstance(value, Missing):
+        key = key.lower()
+        raise PreventiveWarning(
+            f"Value for '{key}' from configuration file is missing. "
+            f"This is not necessarily a critical error but a future operation might fail. "
+            f"If '{key}' is supposed to fallback to a default value or if you want to "
+            f"get a more precise error message, make sure to run function "
+            f"'{reinitiate_config.__name__}()' (can be imported with "
+            f"'from {configuration_sub_package_name} import {reinitiate_config.__name__}') "
+            f"before running anything else. You could also just define a valid value for '{key}' "
+            f"in configuration file. This warning may also be shown because '{KEY_DEVELOPMENT_MODE.lower()}' "
+            f"is set to '{True}' in configuration file. In most cases, just running "
+            f"'{reinitiate_config.__name__}()' should fix this issue."
+        )

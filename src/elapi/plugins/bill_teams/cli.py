@@ -71,6 +71,7 @@ else:
         ] = False,
     ) -> dict:
         """Get billable teams data."""
+        from ...api import GlobalSharedSession
         from .format import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
@@ -80,40 +81,36 @@ else:
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
         remove_csv_formatter_support()
-
-        with stderr_console.status("Validating...\n", refresh_per_second=15):
-            validate = Validate(
-                HostIdentityValidator(), PermissionValidator("sysadmin")
+        with GlobalSharedSession():
+            with stderr_console.status("Validating...\n", refresh_per_second=15):
+                validate = Validate(
+                    HostIdentityValidator(), PermissionValidator("sysadmin")
+                )
+                validate()
+            if export is False:
+                _export_dest = None
+            if sort_json_format:
+                from .format import JSONSortedFormat  # noqa: F401
+            data_format, export_dest, export_file_ext = CLIExport(
+                data_format, _export_dest, export_overwrite
             )
-            validate()
-        if export is False:
-            _export_dest = None
+            format = CLIFormat(data_format, export_file_ext)
+            import asyncio
+            from .bill_teams import (
+                UsersInformation,
+                TeamsInformation,
+                TeamsList,
+            )
 
-        if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
-
-        data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
-        )
-        format = CLIFormat(data_format, export_file_ext)
-
-        import asyncio
-        from .bill_teams import (
-            UsersInformation,
-            TeamsInformation,
-            TeamsList,
-        )
-
-        users_info, teams_info = UsersInformation(), TeamsInformation()
-        try:
-            tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
-        except (RuntimeError, InterruptedError) as e:
-            # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
-            # InterruptedError is raised when JSONDecodeError is triggered.
-            logger.info(f"{APP_NAME} will try again.")
-            raise InterruptedError from e
+            users_info, teams_info = UsersInformation(), TeamsInformation()
+            try:
+                tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
+            except (RuntimeError, InterruptedError) as e:
+                # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
+                # InterruptedError is raised when JSONDecodeError is triggered.
+                logger.info(f"{APP_NAME} will try again.")
+                raise InterruptedError from e
         formatted_teams = format(teams := tl.items())
-
         if export:
             export_teams = Export(
                 export_dest,
@@ -185,17 +182,19 @@ else:
             Exit,
             ValidationError,
         )
+        from ...api import GlobalSharedSession
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB
 
         remove_csv_formatter_support()
 
         if not skip_essential_validation:
-            with stderr_console.status("Validating...\n", refresh_per_second=15):
-                validate = Validate(
-                    HostIdentityValidator(), PermissionValidator("sysadmin")
-                )
-                validate()
+            with GlobalSharedSession(limited_to="sync"):
+                with stderr_console.status("Validating...\n", refresh_per_second=15):
+                    validate = Validate(
+                        HostIdentityValidator(), PermissionValidator("sysadmin")
+                    )
+                    validate()
         if export is False:
             _export_dest = None
 
