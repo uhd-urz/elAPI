@@ -55,7 +55,7 @@ class BaseFormat(ABC):
 
     @property
     @abstractmethod
-    def convention(self) -> Union[str, Iterable[str, ...]]:
+    def convention(self) -> Union[str, Iterable[str]]:
         return self.name
 
     @convention.setter
@@ -111,7 +111,7 @@ class JSONFormat(BaseFormat):
 
 class YAMLFormat(BaseFormat):
     name: str = "yaml"
-    convention: list[str, ...] = ["yml", "yaml"]
+    convention: list[str] = ["yml", "yaml"]
     package_identifier: str = styles_package_identifier
 
     @classmethod
@@ -198,7 +198,7 @@ class RegisterFormattingLanguage:
         for pattern, formatter in supported_formatters.items():
             if re.match(rf"{pattern}", value, flags=re.IGNORECASE):
                 self.name: str = formatter.name
-                self.convention: Union[str, Iterable[str, ...]] = formatter.convention
+                self.convention: Union[str, Iterable[str]] = formatter.convention
                 self.formatter: type(BaseFormat) = formatter
                 return
         raise FormatError(
