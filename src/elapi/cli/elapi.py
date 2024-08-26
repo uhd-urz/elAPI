@@ -31,7 +31,12 @@ from ..configuration import FALLBACK_EXPORT_DIR
 from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
-from ..styles import stdin_console, stderr_console, rich_format_help_with_callback
+from ..styles import (
+    stdin_console,
+    stderr_console,
+    rich_format_help_with_callback,
+    __PACKAGE_IDENTIFIER__ as styles_package_identifier,
+)
 
 logger = Logger()
 file_logger = FileLogger()
@@ -567,12 +572,14 @@ def get(
             data_format, _export_dest, export_overwrite
         )
         if not query:
-            format = CLIFormat(data_format, export_file_ext)
+            format = CLIFormat(data_format, styles_package_identifier, export_file_ext)
         else:
             logger.info(
                 "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
             )
-            format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
+            format = CLIFormat(
+                "txt", styles_package_identifier, None
+            )  # Use "txt" formatting to show binary
 
         try:
             session = GETRequest()
@@ -652,7 +659,9 @@ def get(
             )
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
@@ -849,7 +858,7 @@ def post(
         except UnboundLocalError:
             ...
 
-    format = Format(data_format)
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
@@ -880,7 +889,9 @@ def post(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
@@ -1021,7 +1032,7 @@ def patch(
                 f"Exception details: {e}"
             )
             raise Exit(1) from e
-    format = Format(data_format)
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
@@ -1041,7 +1052,9 @@ def patch(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
@@ -1177,7 +1190,7 @@ def delete(
                 f"Exception details: {e}"
             )
             raise Exit(1) from e
-    format = Format(data_format)
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
@@ -1197,7 +1210,9 @@ def delete(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)

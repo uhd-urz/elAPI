@@ -19,6 +19,7 @@ else:
     from ...styles import stdin_console, stderr_console
     from ...core_validators import RuntimeValidationError, Exit, ValidationError
     from ..commons.cli_helpers import Typer
+    from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
     app = Typer(
         name=PLUGIN_NAME,
@@ -72,7 +73,6 @@ else:
     ) -> dict:
         """Get billable teams data."""
         from ...api import GlobalSharedSession
-        from .format import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -80,7 +80,6 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
-        remove_csv_formatter_support()
         with GlobalSharedSession():
             with stderr_console.status("Validating...\n", refresh_per_second=15):
                 validate = Validate(
@@ -89,12 +88,14 @@ else:
                 validate()
             if export is False:
                 _export_dest = None
-            if sort_json_format:
-                from .format import JSONSortedFormat  # noqa: F401
+            if sort_json_format is True:
+                package_identifier: str = __package__
+            else:
+                package_identifier: str = styles_package_identifier
             data_format, export_dest, export_file_ext = CLIExport(
                 data_format, _export_dest, export_overwrite
             )
-            format = CLIFormat(data_format, export_file_ext)
+            format = CLIFormat(data_format, package_identifier, export_file_ext)
             import asyncio
             from .bill_teams import (
                 UsersInformation,
@@ -121,7 +122,7 @@ else:
             export_teams(data=formatted_teams, verbose=True)
         else:
             if highlight_syntax is True:
-                highlight = Highlight(format.name)
+                highlight = Highlight(format.name, package_identifier=__package__)
                 stdin_console.print(highlight(formatted_teams))
             else:
                 typer.echo(formatted_teams)
@@ -173,7 +174,6 @@ else:
         ] = False,
     ) -> dict:
         """Get billable team owners data."""
-        from .format import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -186,8 +186,6 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB
 
-        remove_csv_formatter_support()
-
         if not skip_essential_validation:
             with GlobalSharedSession(limited_to="sync"):
                 with stderr_console.status("Validating...\n", refresh_per_second=15):
@@ -198,13 +196,15 @@ else:
         if export is False:
             _export_dest = None
 
-        if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
+        if sort_json_format is True:
+            package_identifier: str = __package__
+        else:
+            package_identifier: str = styles_package_identifier
 
         data_format, export_dest, export_file_ext = CLIExport(
             data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat(data_format, export_file_ext)
+        format = CLIFormat(data_format, package_identifier, export_file_ext)
 
         from .bill_teams import (
             TeamsInformation,
@@ -243,7 +243,7 @@ else:
             export_teams(data=formatted_owners, verbose=True)
         else:
             if highlight_syntax is True:
-                highlight = Highlight(format.name)
+                highlight = Highlight(format.name, package_identifier=__package__)
                 stdin_console.print(highlight(formatted_owners))
             else:
                 typer.echo(formatted_owners)

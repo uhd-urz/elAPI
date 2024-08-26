@@ -114,7 +114,7 @@ class ValidateCLIYAMLFile(Validator):
 def get_structured_data(
     input_: str, /, option_name: str, show_note: bool = True
 ) -> dict:
-    from ...styles.format import JSONFormat, YAMLFormat
+    from ...styles.formats import JSONFormat, YAMLFormat
 
     SUPPORTED_INPUT_FORMAT: str = "JSON"
 

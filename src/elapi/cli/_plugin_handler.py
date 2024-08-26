@@ -10,7 +10,6 @@ from ..configuration import get_development_mode
 from ..configuration.config import (
     ROOT_INSTALLATION_DIR,
     INTERNAL_PLUGIN_DIRECTORY_NAME,
-    INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX,
     INTERNAL_PLUGIN_TYPER_APP_FILE_NAME,
     INTERNAL_PLUGIN_TYPER_APP_VAR_NAME,
     EXTERNAL_LOCAL_PLUGIN_DIR,
@@ -19,6 +18,7 @@ from ..configuration.config import (
 from ..core_validators import Validator, ValidationError, Validate
 from ..loggers import Logger
 from ..path import ProperPath
+from ..plugins import __PACKAGE_IDENTIFIER__ as plugins_sub_package_identifier
 from ..utils import add_message
 
 logger = Logger()
@@ -43,10 +43,7 @@ class InternalPluginHandler:
             )
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module
-            module.__package__ = (
-                f"{__package__.removesuffix(f'.{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}')}"
-                f".{INTERNAL_PLUGIN_DIRECTORY_NAME}.{plugin_name}"
-            )  # Python will find module relative to __package__ path,
+            module.__package__ = f"{plugins_sub_package_identifier}.{plugin_name}"  # Python will find module relative to __package__ path,
             # without this module.__package__ change Python will throw an ImportError.
             spec.loader.exec_module(module)
             try:

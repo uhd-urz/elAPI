@@ -15,30 +15,53 @@ class BinaryFormat:
 class PDFFormat(BaseFormat, BinaryFormat):
     name: str = "pdf"
     convention: str = name
+    package_identifier: str = __package__
 
     @classmethod
     def pattern(cls) -> str:
-        return r"^pdfa?$"
+        return r"^pdf$"
 
     def __call__(self, data: bytes) -> bytes:
         return BinaryFormat().__call__(data)
+
+
+class PDFAFormat(PDFFormat, BaseFormat):
+    name: str = "pdfa"
+    convention: str = PDFFormat.convention
+    reference: str = f"{name.upper()} (a.k.a PDF/A)"
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^pdfa$"
 
 
 class ZIPFormat(BaseFormat, BinaryFormat):
     name: str = "zip"
     convention: str = name
+    package_identifier: str = __package__
 
     @classmethod
     def pattern(cls) -> str:
-        return r"^zipa?$"
+        return r"^zip$"
 
     def __call__(self, data: bytes) -> bytes:
         return BinaryFormat().__call__(data)
 
 
+class ZIPAFormat(ZIPFormat, BinaryFormat):
+    name: str = "zipa"
+    convention: str = ZIPFormat.convention
+    reference: str = f"{name.upper()} (mainly PDFA inside a ZIP)"
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^zipa$"
+
+
 class ELNFormat(BaseFormat, BinaryFormat):
     name: str = "eln"
     convention: str = name
+    package_identifier: str = __package__
 
     @classmethod
     def pattern(cls) -> str:
@@ -51,6 +74,7 @@ class ELNFormat(BaseFormat, BinaryFormat):
 class CSVFormat(BaseFormat, BinaryFormat):
     name: str = "csv"
     convention: str = name
+    package_identifier: str = __package__
 
     @classmethod
     def pattern(cls) -> str:
@@ -68,6 +92,7 @@ class CSVFormat(BaseFormat, BinaryFormat):
 class QRPNGFormat(BaseFormat, BinaryFormat):
     name: str = "qrpng"
     convention: list[str] = ["png", "qrpng"]
+    package_identifier: str = __package__
 
     @classmethod
     def pattern(cls) -> str:
