@@ -38,6 +38,7 @@ python = "^3.9.0"
 dynaconf = "^3.2.0"
 httpx = "^0.24.1"
 httpx-auth = "^0.17.0"
+rich = "^13.8.0" # typer already depends on rich. We define rich here to use the latest version of rich
 typer = { extras = ["all"], version = "^0.9.0" }
 pyyaml = "^6.0.1"
 mistune = "^3.0.2"
