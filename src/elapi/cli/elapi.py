@@ -195,7 +195,7 @@ def cli_startup(
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
-                    ...
+                    reinitiate_config(ignore_essential_validation=True)
 
 
 def cli_switch_venv_state(state: bool, /) -> None:
