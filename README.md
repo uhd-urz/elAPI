@@ -1,11 +1,21 @@
-# elAPI
+<p align="center">
+<img src="https://heibox.uni-heidelberg.de/f/43bdc63b9458478e949f/?dl=1" alt="elAPI logo" width=120 />
+</p>
 
-[![Package version](https://badge.fury.io/py/elapi.svg/?branch=main)](https://pypi.org/project/elapi)
+<p align="center">
+   <a href="https://pypi.org/project/elapi">
+<img alt="Package version" src="https://badge.fury.io/py/elapi.svg/?branch=main" />
+   </a>
+<a href="#compatibility">
+   <img alt="Static Badge" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-%230d7dbe">
+   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-4.5%2B%20%7C%205.0%20%7C%205.1-%2323b3be">
+</a>
+</p>
 
-elAPI is a powerful, extensible API client for eLabFTW developed at
+elAPI is a powerful, extensible API client for [eLabFTW](https://www.elabftw.net/) developed at
 the [University Computing Centre](https://www.urz.uni-heidelberg.de/en)
 (URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
-[University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented on
+[University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented in
 [eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI provides a simple interface via its CLI
 executable, and numerous advanced APIs when it is used directly as a Python package.
 
@@ -34,7 +44,7 @@ off-the-shelf features from the command-line, install elAPI as a CLI tool. If yo
 eLabFTW, you should install elAPI as a library inside a virtual environment. Of course, if you're interested in
 both, you can have elAPI installed in both ways.
 
-### Install elAPI as a CLI tool
+### Installing elAPI as a CLI tool
 
 Support for installing Python packages with `pip install --user` has been deprecated with the adoption
 of [PEP 688](https://peps.python.org/pep-0668/) on many systems
@@ -51,11 +61,18 @@ After installation with Pipx is complete, you would also be able to run elAPI ju
 the
 terminal.
 
-### Install elAPI as a library
+### Installing elAPI as a library
 
-It is recommended to install elAPI inside a Python virtual environment for use of its rich APIs for
+It is recommended to install elAPI inside a Python virtual environment with your preferred package manager (`pip`,
+`poetry`, `pipenv`, `rye`, `uv`, etc.) for use of its rich APIs for
 working with eLabFTW. From inside a virtual environment, elAPI CLI can be invoked with `python -m elapi.cli`.
 At the moment, though, the documentation about using elAPI as a library is severely lacking.
+
+## Compatibility
+
+elAPI is compatible with the following Python versions: `3.9`, `3.10`, `3.11`, `3.12`. elAPI supports
+the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
+versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`.
 
 ## Configuration
 
@@ -116,36 +133,14 @@ You can get an overview of detected configuration with `elapi show-config`. `sho
 which configuration values are actually used by elAPI, if you are working with multiple configuration files.
 
 ```shell
-$ elapi show-config
-
-elapi configuration information
-
-The following debug information includes configuration values and their sources as detected by elapi.
-
-▌ Name [Key]: Value ← Source
-
-• Log file path: /Users/ <username >/.local/share/elapi/elapi.log
-• Host address [host]: https://demo.elabftw.net/api/v2 ← USER LEVEL
-• API Token [api_token]: 00-55******55555 ← USER LEVEL
-• Export directory [export_dir]: /Users/ ← USER LEVEL <username >/Downloads/elapi
-• App data directory: /Users/ <username >/.local/share/elapi
-• Third-party plugins directory: /Users/ <username >/.local/share/elapi/plugins
-• Caching directory: /private/var/tmp/elapi
-• Unsafe API token use warning [unsafe_api_token_warning]: True ← USER LEVEL
-• Enable HTTP/2 [enable_http2]: False ← USER LEVEL
-• Verify SSL certificate [verify_ssl]: True ← USER LEVEL
-• Timeout duration [timeout]: 90.0 seconds ← USER LEVEL
-• Development mode [development_mode]: False ← USER LEVEL
-
-Detected configuration sources that are in use:
-
-• USER LEVEL: /Users/ <username >/.config/elapi.yml
-
+$ elapi show-config  # system username: "culdesac" 
 ```
+
+![elAPI show-config output](https://heibox.uni-heidelberg.de/f/00a8dabbf2124087aae4/?dl=1)
 
 If both `host` and `api_token` are detected, you are good to go!
 
-### Override configuration
+### Overriding configuration
 
 elAPI now supports `--override/--OC` as a global option that can be used to override the configuration parameters
 as detected by `elapi show-cofig`. All plugins will also automatically listen to the overridden configuration. This can
@@ -225,7 +220,7 @@ You can reset the configuration to default values.
 $ elapi delete config
 ```
 
-### `experiments` plugin
+### `experiments` built-in plugin
 
 `experiments` plugin enables experiments-specific actions. You can download an experiment in PDF by its "Unique eLabID"
 to `~/Downloads` directory.
@@ -246,7 +241,7 @@ You can also upload an attachment to an experiment.
 $ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
 ```
 
-### Plugins
+## Creating a plugin
 
 elAPI has seamless support with tight-integration for third-party plugins. A simple third-party plugin can be created in
 a few easy steps:
@@ -273,7 +268,7 @@ you want to create a plugin metadata file `elapi_plugin_metadata.yml` (notice on
 define the virtual environment that your plugin specifically requires.
 
 ```python
-import requests
+import requests  # A third-party dependency
 
 from elapi.api import GETRequest
 from elapi.plugins.commons import Typer
@@ -297,7 +292,13 @@ def wiki_status():
 And the path to virtual environment will be defined in the metadata file:
 
 ```yaml
-plugin_name: test
-cli_script: ./cli.py  # Path to the cli.py script
-venv_dir: ./.venv  # Path to the virtual environment
+# elapi_plugin_metadata.yml
+plugin_name: awesome
+cli_script: ~/awesome/cli.py  # Path to the cli.py script
+venv_dir: ~/awesome/.venv  # Path to the virtual environment
+project_dir: ~/awesome  # Path to the project root directory where the plugin is located
 ```
+
+This metadata file of plugin `awesome` must be placed inside `~/.local/share/elapi/plugins/awesome`. Notice, the plugin
+name must also match the parent directory name of `elapi_plugin_metadata.yml`. This way we ensure a plugin name remains
+unique.
