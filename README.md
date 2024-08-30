@@ -39,16 +39,6 @@ local `~/Downloads/` folder.
 
 ## Installation
 
-elAPI can be used both as a CLI tool and as a Python library. If you are interested in simply using elAPI's
-off-the-shelf features from the command-line, install elAPI as a CLI tool. If you intend to write automation script for
-eLabFTW, you should install elAPI as a library inside a virtual environment. Of course, if you're interested in
-both, you can have elAPI installed in both ways.
-
-### Installing elAPI as a CLI tool
-
-Support for installing Python packages with `pip install --user` has been deprecated with the adoption
-of [PEP 688](https://peps.python.org/pep-0668/) on many systems
-like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
 We recommend [`pipx`](https://pipx.pypa.io/stable/) for installing elAPI for use of its CLI functionalities. Pipx
 installs packages in isolated virtual environments, so Pipx-installed elAPI should not conflict with elAPI installed
 inside other virtual environments.
@@ -58,8 +48,19 @@ $ pipx install elapi
 ```
 
 After installation with Pipx is complete, you would also be able to run elAPI just by entering the `elapi` command on
-the
-terminal.
+the terminal. You can move on to ["Getting started"](#getting-started).
+
+### Advanced installation
+
+elAPI can be used both as a CLI tool and as a Python library. If you are interested in simply using elAPI's
+off-the-shelf features from the command-line, install elAPI as a CLI tool (see ["Installation"](#installation)). If you
+intend to write automation script for eLabFTW, you should install elAPI as a library inside a virtual environment. Of
+course, if you're interested in both, you can have elAPI installed in both ways.
+
+> [!NOTE]
+> Support for installing Python packages with `pip install --user` has been deprecated with the adoption
+of [PEP 688](https://peps.python.org/pep-0668/) on many systems
+like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
 
 ### Installing elAPI as a library
 
@@ -74,15 +75,24 @@ elAPI is compatible with the following Python versions: `3.9`, `3.10`, `3.11`, `
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
 versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`.
 
+## Getting started
+
+Once you have elAPI [installed](#installation), to **quickly** get started, run `elapi init`. You will be prompted with
+questions about your eLabFTW server with examples to help you fill in the answers. Here's a demo: 
+
+```shell
+$ elapi init
+```
+<video src='https://github.com/user-attachments/assets/8d5f69ed-b644-4d75-b816-d06d4e937105'> </video>
+<p align="center">elapi init demo</p>
+
+That's all! Run [`elapi show-config`](#show-config) to view your configuration details.
+
 ## Configuration
 
 elAPI needs to be configured first before you can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
-server's API URL and your API key (or token) for access.
-
-### Quick configuration
-
-You can run `elapi init` to simplify the configuration process. You will be prompted with questions
-about your eLabFTW server with examples to help you fill in the answers.
+server's API URL and your API key (or token) for access. See quick configuration method
+in "[Getting started](#getting-started)" before you dive into the advanced settings.
 
 ### Advanced configuration
 
