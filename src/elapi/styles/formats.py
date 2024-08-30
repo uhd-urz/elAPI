@@ -203,7 +203,8 @@ class RegisterFormattingLanguage:
                 return
         raise FormatError(
             f"'{value}' isn't a supported language format! "
-            f"Supported formats are: {BaseFormat.supported_formatter_names()}."
+            f"Supported formats are: "
+            f"{BaseFormat.supported_formatter_names(self.package_identifier)}."
         )
 
 
