@@ -100,10 +100,10 @@ __PARAMETERS__doc__ = {
                f"`{APP_NAME} get info --headers '{{\"Accept\": \"application/json\", \"User-Agent\": "
                f"\"My custom agent 1.0\"}}'`.",
     "no_keys": "Do not show the names of configuration keywords.",
-    "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
+    "init_host": 'host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
                       'Make sure your API key has proper permission for your future tasks.',
-    "init_export_dir": f"Preferred export directory. If '--export-dir' isn't passed, {EXPORT_DIR} will be "
+    "init_export_dir": f"Preferred export directory. If '--export-dir' is not passed, {EXPORT_DIR} will be "
                         "set as the export directory.",
     "cli_startup": f"⚡️Force override detected configuration from '{CONFIG_FILE_NAME}'. "
                      "The value can be in **JSON** format as a string, or a JSON or YAML **file path**. "

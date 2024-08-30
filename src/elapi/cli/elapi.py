@@ -365,7 +365,7 @@ def init(
             "--host",
             help=docs["init_host"],
             show_default=False,
-            prompt=f'Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
+            prompt=f'1. Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
         ),
     ],
     api_token: Annotated[
@@ -374,7 +374,7 @@ def init(
             "--api-token",
             help=docs["init_api_token"],
             show_default=False,
-            prompt=f'Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
+            prompt=f'2. Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
         ),
     ],
     export_directory: Annotated[
@@ -383,7 +383,7 @@ def init(
             "--export-dir",
             help=docs["init_export_dir"],
             show_default=False,
-            prompt=f'Enter your {docs["init_export_dir"][0]}{docs["init_export_dir"][1:].rstrip(".")}',
+            prompt=f'3. Enter your {docs["init_export_dir"][0].lower()}{docs["init_export_dir"][1:].rstrip(".")}',
         ),
     ] = FALLBACK_EXPORT_DIR,
 ) -> None:
@@ -412,7 +412,7 @@ def init(
     from time import sleep
 
     with stdout_console.status(
-        f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
+        f"Creating configuration file {CONFIG_FILE_NAME}...\n", refresh_per_second=15
     ):
         sleep(0.5)
         typer.echo()  # mainly for a newline!
