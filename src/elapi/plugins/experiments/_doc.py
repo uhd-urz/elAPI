@@ -23,10 +23,11 @@ __PARAMETERS__doc__ = {
     "upload_attachment_rename": "Rename file given with --path before attaching. "
                                 "Rename will the rename the entire file name including its extension part.",
     "upload_attachment_comment": "Add text comment to a file.",
-    "download_attachment_attachment_id": "ID of an existing attachment. Attachment IDs aren't shown on experiment "
-                                         "pages. Attachment SHA can be seen by clicking \"More information\" "
-                                         "of an attachment. First 6 digits (or more) of the attachment SHA256 "
-                                         "hash can also be passed as an attachment ID.",
+    "download_attachment_attachment_id": "ID of an existing attachment. Attachment IDs are not displayed on "
+                                         "experiment pages. First 6 digits (or more) of the attachment SHA256 "
+                                         "hash can also be passed as an attachment ID. "
+                                         "Attachment SHA can be found by clicking the \"More information\" "
+                                         "option of an attachment.",
     "data_format": f"Experiment output format. Supported values are: {supported_format_values}. "
                    f"{PDFAFormat.reference}, {ZIPAFormat.reference} are 'long-term storage' formats. "
                    f"The supported formats follow the _'Export'_ options available "
