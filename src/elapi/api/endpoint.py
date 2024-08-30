@@ -20,6 +20,7 @@ from .api import (
 class FixedAsyncEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
+        self._is_global_shared_instance_none = GlobalSharedSession._instance is None
 
     @cached_property
     def _client(self) -> AsyncClient:
@@ -27,25 +28,25 @@ class FixedAsyncEndpoint:
 
     @cached_property
     def _get_session(self) -> AsyncGETRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return AsyncGETRequest()
         return AsyncGETRequest(shared_client=self._client)
 
     @cached_property
     def _post_session(self) -> AsyncPOSTRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return AsyncPOSTRequest()
         return AsyncPOSTRequest(shared_client=self._client)
 
     @cached_property
     def _patch_session(self) -> AsyncPATCHRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return AsyncPATCHRequest()
         return AsyncPATCHRequest(shared_client=self._client)
 
     @cached_property
     def _delete_session(self) -> AsyncDELETERequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return AsyncDELETERequest()
         return AsyncDELETERequest(shared_client=self._client)
 
@@ -110,7 +111,7 @@ class FixedAsyncEndpoint:
         )
 
     async def aclose(self) -> Optional[type(NotImplemented)]:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             await self._client.aclose()
         return NotImplemented
 
@@ -118,6 +119,7 @@ class FixedAsyncEndpoint:
 class FixedEndpoint:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
+        self._is_global_shared_instance_none = GlobalSharedSession._instance is None
 
     @cached_property
     def _client(self) -> Client:
@@ -125,25 +127,25 @@ class FixedEndpoint:
 
     @cached_property
     def _get_session(self) -> GETRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return GETRequest()
         return GETRequest(shared_client=self._client)
 
     @cached_property
     def _post_session(self) -> POSTRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return POSTRequest()
         return POSTRequest(shared_client=self._client)
 
     @cached_property
     def _patch_session(self) -> PATCHRequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return PATCHRequest()
         return PATCHRequest(shared_client=self._client)
 
     @cached_property
     def _delete_session(self) -> DELETERequest:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             return DELETERequest()
         return DELETERequest(shared_client=self._client)
 
@@ -208,7 +210,7 @@ class FixedEndpoint:
         )
 
     def close(self) -> Optional[type(NotImplemented)]:
-        if GlobalSharedSession._instance is not None:
+        if self._is_global_shared_instance_none is False:
             self._client.close()
         return NotImplemented
 
