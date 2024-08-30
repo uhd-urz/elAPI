@@ -69,12 +69,6 @@ It is recommended to install elAPI inside a Python virtual environment with your
 working with eLabFTW. From inside a virtual environment, elAPI CLI can be invoked with `python -m elapi.cli`.
 At the moment, though, the documentation about using elAPI as a library is severely lacking.
 
-## Compatibility
-
-elAPI is compatible with the following Python versions: `3.9`, `3.10`, `3.11`, `3.12`. elAPI supports
-the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`.
-
 ## Getting started
 
 Once you have elAPI [installed](#installation), to **quickly** get started, run `elapi init`. You will be prompted with
@@ -87,6 +81,12 @@ $ elapi init
 <p align="center">elapi init demo</p>
 
 That's all! Run [`elapi show-config`](#show-config) to view your configuration details.
+
+## Compatibility
+
+elAPI is compatible with the following Python versions: `3.9`, `3.10`, `3.11`, `3.12`. elAPI supports
+the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
+versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`.
 
 ## Configuration
 
