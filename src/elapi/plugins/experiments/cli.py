@@ -87,6 +87,7 @@ def get(
             )
             format = CLIFormat(data_format, __package__, export_file_ext)
 
+            experiment_name: str = f"experiment_{experiment_id}"
             if isinstance(format, BinaryFormat):
                 if not export:
                     logger.info(
@@ -94,18 +95,19 @@ def get(
                         f"Data will be exported."
                     )
                 export = True
-                response = FixedExperimentEndpoint().get(
-                    experiment_id, query={"format": data_format.lower()}
-                )
+                with stdout_console.status(
+                    f"Getting {experiment_name}...", refresh_per_second=15
+                ):
+                    response = FixedExperimentEndpoint().get(
+                        experiment_id, query={"format": data_format.lower()}
+                    )
                 formatted_data = format(response_data := response.content)
             else:
                 response = FixedExperimentEndpoint().get(experiment_id)
                 formatted_data = format(response_data := response.json())
 
             if export:
-                file_name_stub = (
-                    f"experiment_{experiment_id}" if experiment_id else "experiment"
-                )
+                file_name_stub = experiment_name
                 export = Export(
                     export_dest,
                     file_name_stub=file_name_stub,
@@ -248,12 +250,15 @@ def upload_attachment(
             logger.error(e)
             raise typer.Exit(1)
         else:
-            attach_to_experiment(
-                experiment_id,
-                file_path=path,
-                attachment_name=attachment_name,
-                comment=comment,
-            )
+            with stdout_console.status(
+                "Uploading attachment...", refresh_per_second=15
+            ):
+                attach_to_experiment(
+                    experiment_id,
+                    file_path=path,
+                    attachment_name=attachment_name,
+                    comment=comment,
+                )
             stdout_console.print("[green]Successfully attached to experiment.[/green]")
 
 
@@ -313,14 +318,17 @@ def download_attachment(
             raise typer.Exit(1)
         else:
             try:
-                (
-                    attachment,
-                    attachment_real_id,
-                    attachment_name,
-                    attachment_extension,
-                    attachment_hash,
-                    attachment_creation_date,
-                ) = download_attachment(experiment_id, attachment_id)
+                with stdout_console.status(
+                    "Downloading attachment...", refresh_per_second=15
+                ):
+                    (
+                        attachment,
+                        attachment_real_id,
+                        attachment_name,
+                        attachment_extension,
+                        attachment_hash,
+                        attachment_creation_date,
+                    ) = download_attachment(experiment_id, attachment_id)
             except ValueError as e:
                 logger.error(e)
                 raise typer.Exit(1)
