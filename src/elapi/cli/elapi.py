@@ -32,7 +32,7 @@ from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
 from ..styles import (
-    stdin_console,
+    stdout_console,
     stderr_console,
     rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
@@ -411,7 +411,7 @@ def init(
     from ..path import ProperPath
     from time import sleep
 
-    with stdin_console.status(
+    with stdout_console.status(
         f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
     ):
         sleep(0.5)
@@ -460,7 +460,7 @@ timeout: 90
                 logger.error("Configuration initialization has failed!")
                 raise typer.Exit(1)
             else:
-                stdin_console.print(
+                stdout_console.print(
                     "Configuration file has been successfully created! "
                     f"Run '{APP_NAME} show-config' to see the configuration path "
                     "and more configuration details.",
@@ -602,7 +602,7 @@ def get(
             )
             file_logger.error(err_msg)
             print_typer_error(err_msg)
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "See --help for examples of how to pass values in JSON format.",
                     stem="Note",
@@ -665,7 +665,7 @@ def get(
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -835,7 +835,7 @@ def post(
             )
             file_logger.error(err_msg)
             print_typer_error(err_msg)
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "See --help for examples of how to pass values in JSON format.",
                     stem="Note",
@@ -874,13 +874,13 @@ def post(
                 else:
                     typer.echo(f"{_id},{_url}")
                     raise typer.Exit()
-            stdin_console.print("Success: Resource created!", style="green")
+            stdout_console.print("Success: Resource created!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -895,7 +895,7 @@ def post(
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -1015,7 +1015,7 @@ def patch(
             )
             file_logger.error(err_msg)
             print_typer_error(err_msg)
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "See --help for examples of how to pass values in JSON format.",
                     stem="Note",
@@ -1037,13 +1037,13 @@ def patch(
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            stdin_console.print("Success: Resource modified!", style="green")
+            stdout_console.print("Success: Resource modified!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -1058,7 +1058,7 @@ def patch(
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -1173,7 +1173,7 @@ def delete(
             )
             file_logger.error(err_msg)
             print_typer_error(err_msg)
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "See --help for examples of how to pass values in JSON format.",
                     stem="Note",
@@ -1195,13 +1195,13 @@ def delete(
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            stdin_console.print("Success: Resource deleted!", style="green")
+            stdout_console.print("Success: Resource deleted!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -1216,7 +1216,7 @@ def delete(
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -1239,7 +1239,7 @@ def show_config(
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
-    stdin_console.print(md)
+    stdout_console.print(md)
 
 
 @app.command()
@@ -1265,11 +1265,11 @@ def cleanup() -> None:
     from ..path import ProperPath
     from time import sleep
 
-    with stdin_console.status("Cleaning up...", refresh_per_second=15):
+    with stdout_console.status("Cleaning up...", refresh_per_second=15):
         sleep(0.5)
         typer.echo()  # mainly for a newline!
         ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
-    stdin_console.print("Done!", style="green")
+    stdout_console.print("Done!", style="green")
 
 
 for plugin_info in external_local_plugin_typer_apps:

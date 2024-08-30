@@ -3,7 +3,7 @@ from typing import Optional, Iterable
 
 from ._config_history import MinimalActiveConfiguration, FieldValueWithKey
 from ..core_validators import Validator, CriticalValidationError
-from ..styles import stdin_console, Missing
+from ..styles import stdout_console, Missing
 from ..styles.highlight import NoteText
 
 
@@ -35,7 +35,7 @@ class HostConfigurationValidator(Validator):
 
         if isinstance(self.active_configuration.get_value(KEY_HOST), Missing):
             logger.critical(f"'{KEY_HOST.lower()}' is missing from configuration file.")
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host is the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -47,7 +47,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -59,7 +59,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -71,7 +71,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's empty."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -109,7 +109,7 @@ class APITokenConfigurationValidator(Validator):
             logger.critical(
                 f"'{KEY_API_TOKEN.lower()}' is missing from configuration file."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests."
                 )
@@ -120,7 +120,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -133,7 +133,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -144,7 +144,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -155,7 +155,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's empty."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -248,7 +248,7 @@ class ExportDirConfigurationValidator(Validator):
                         f"{KEY_EXPORT_DIR}: {config_export_dir} from configuration file "
                         f"is not a directory!"
                     )
-                    stdin_console.print(
+                    stdout_console.print(
                         NoteText(
                             "If you want to export to a file use '--export <path-to-file>'.\n",
                             stem="Note",

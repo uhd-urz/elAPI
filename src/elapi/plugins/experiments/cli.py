@@ -12,7 +12,7 @@ from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
 from ...core_validators import ValidationError
 from ...loggers import Logger
 from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, Typer
-from ...styles import stdin_console, stderr_console
+from ...styles import stdout_console, stderr_console
 
 logger = Logger()
 
@@ -119,7 +119,7 @@ def get(
                     if not response.is_success:
                         stderr_console.print(highlight(formatted_data))
                         raise Exit(1)
-                    stdin_console.print(highlight(formatted_data))
+                    stdout_console.print(highlight(formatted_data))
                 else:
                     if not response.is_success:
                         typer.echo(formatted_data, file=sys.stderr)
@@ -193,12 +193,12 @@ def append(
             else:
                 content: str = ""
             if not content:
-                stdin_console.print(
+                stdout_console.print(
                     "[yellow]Content is empty. Nothing was appended to experiment.[/yellow]"
                 )
                 raise typer.Exit()
             append_to_experiment(experiment_id, content, markdown_to_html)
-            stdin_console.print(
+            stdout_console.print(
                 "[green]Successfully appended content to experiment.[/green]"
             )
             return content
@@ -254,7 +254,7 @@ def upload_attachment(
                 attachment_name=attachment_name,
                 comment=comment,
             )
-            stdin_console.print("[green]Successfully attached to experiment.[/green]")
+            stdout_console.print("[green]Successfully attached to experiment.[/green]")
 
 
 @app.command(short_help="Download an attachment from an experiment.")
