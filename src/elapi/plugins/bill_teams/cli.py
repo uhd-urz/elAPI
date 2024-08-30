@@ -16,7 +16,7 @@ else:
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
     from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
     from ...loggers import Logger
-    from ...styles import stdin_console, stderr_console
+    from ...styles import stdout_console, stderr_console
     from ...core_validators import RuntimeValidationError, Exit, ValidationError
     from ..commons.cli_helpers import Typer
     from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
@@ -123,7 +123,7 @@ else:
         else:
             if highlight_syntax is True:
                 highlight = Highlight(format.name, package_identifier=__package__)
-                stdin_console.print(highlight(formatted_teams))
+                stdout_console.print(highlight(formatted_teams))
             else:
                 typer.echo(formatted_teams)
         return teams
@@ -244,7 +244,7 @@ else:
         else:
             if highlight_syntax is True:
                 highlight = Highlight(format.name, package_identifier=__package__)
-                stdin_console.print(highlight(formatted_owners))
+                stdout_console.print(highlight(formatted_owners))
             else:
                 typer.echo(formatted_owners)
         return owners

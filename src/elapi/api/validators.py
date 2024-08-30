@@ -4,7 +4,7 @@ from typing import Union, Iterable, Optional
 import httpx
 
 from ..core_validators import Validator, RuntimeValidationError, CriticalValidationError
-from ..styles import stdin_console
+from ..styles import stdout_console
 from ..styles.highlight import NoteText
 
 
@@ -54,7 +54,7 @@ class HostIdentityValidator(Validator):
                     f"'{KEY_HOST.lower()}' could not be validated!"
                 )
                 try:
-                    stdin_console.print(
+                    stdout_console.print(
                         NoteText(
                             f"Detected '{KEY_HOST.lower()}': '{host}'. "
                             f"Host(s) restricted by {HostIdentityValidator.__name__}: '{', '.join(self.restrict_to)}'."
@@ -91,7 +91,7 @@ class HostIdentityValidator(Validator):
                     f"Please contact an administrator."
                 )
                 raise RuntimeValidationError
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "There is likely nothing wrong with the host server. "
                     "Possible reasons for failure:\n"
