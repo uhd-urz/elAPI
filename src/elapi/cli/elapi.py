@@ -412,8 +412,8 @@ def init(
     from time import sleep
 
     with stdout_console.status(
-        f"Creating configuration file {CONFIG_FILE_NAME}...\n", refresh_per_second=15
-    ):
+        f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
+    ) as status:
         sleep(0.5)
         typer.echo()  # mainly for a newline!
         try:
@@ -431,6 +431,7 @@ def init(
             try:
                 with path.open(mode="r") as f:
                     if f.read():
+                        status.stop()
                         logger.error(
                             f"A configuration file '{LOCAL_CONFIG_LOC}' already exists and it's not empty! "
                             f"It's ambiguous what to do in this situation."
@@ -441,6 +442,7 @@ def init(
                 if isinstance(e, FileNotFoundError):
                     path.create()
                 else:
+                    status.stop()
                     logger.error(e)
                     logger.error("Configuration initialization has failed!")
                     raise typer.Exit(1)
