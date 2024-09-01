@@ -59,8 +59,8 @@ course, if you're interested in both, you can have elAPI installed in both ways.
 
 > [!NOTE]
 > Support for installing Python packages with `pip install --user` has been deprecated with the adoption
-of [PEP 688](https://peps.python.org/pep-0668/) on many systems
-like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
+> of [PEP 688](https://peps.python.org/pep-0668/) on many systems
+> like [Debian 12](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1030335#5).
 
 ### Installing elAPI as a library
 
@@ -72,11 +72,12 @@ At the moment, though, the documentation about using elAPI as a library is sever
 ## Getting started
 
 Once you have elAPI [installed](#installation), to **quickly** get started, run `elapi init`. You will be prompted with
-questions about your eLabFTW server with examples to help you fill in the answers. Here's a demo: 
+questions about your eLabFTW server with examples to help you fill in the answers. Here's a demo:
 
 ```shell
 $ elapi init
 ```
+
 <video src='https://github.com/user-attachments/assets/8d5f69ed-b644-4d75-b816-d06d4e937105'> </video>
 <p align="center">elapi init demo</p>
 
@@ -127,15 +128,17 @@ verify_ssl: true
 timeout: 90
 ```
 
-`export_dir` is where elAPI will export response content to if no path is provided to `--export/-E`.
-When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're storing `elapi.yml` in the current
-working directory, as it typically happens that developers accidentally commit and push configuration files with
-secrets. `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
-of [known issues](https://github.com/encode/httpx/discussions/2112) with
-HTTP/2 if you are making async requests with a heavy load. `verify_ssl` can be turned off with value `False` if you are
-trying
-out a development server that doesn't provide a valid SSL certificate. `timeout` can be modified to your needs. E.g., a
-poor internet connection might benefit from a higher timeout number. The default timeout is `90` seconds.
+- `export_dir` is where elAPI will export response content to if no path is explicitly provided to `--export/-E`.
+- When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're storing `elapi.yml` in the current
+  working directory, as it typically happens that developers accidentally commit and push configuration files with
+  secrets.
+- `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
+  of [known issues](https://github.com/encode/httpx/discussions/2112) with HTTP/2 if you are making async requests with
+  a heavy load.
+- `verify_ssl` can be turned off with value `False` if you are
+  trying out a development server that doesn't provide a valid SSL certificate.
+- `timeout` can be modified to your needs. E.g., a poor internet connection might benefit from a higher timeout number.
+  The default timeout is `90` seconds.
 
 ### `show-config`
 
