@@ -1,5 +1,7 @@
 import re
+from pathlib import Path
 
+from .._names import VERSION_FILE_NAME
 from ..styles import Missing
 
 
@@ -41,6 +43,10 @@ def update_kwargs_with_defaults(kwargs: dict, /, defaults: dict) -> None:
     for default_key, default_val in defaults.items():
         if kwargs.get(default_key, key_arg_missing) is key_arg_missing:
             kwargs.update({default_key: default_val})
+
+
+def get_app_version() -> str:
+    return Path(f"{__file__}/../../{VERSION_FILE_NAME}").resolve().read_text().strip()
 
 
 class NoException(Exception): ...

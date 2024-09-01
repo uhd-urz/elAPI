@@ -44,7 +44,11 @@ pretty.install()
 
 
 app = Typer()
-SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
+SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
+    "init",
+    "show-config",
+    "version",
+)  # version is no longer a plugin, but it used to be
 SPECIAL_SENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
 COMMANDS_TO_SKIP_CLI_STARTUP: list = list(SENSITIVE_PLUGIN_NAMES)
 CLI_STARTUP_CALLBACK_PANEL_NAME: str = f"{APP_NAME} global options"
@@ -1249,10 +1253,11 @@ def version() -> str:
     """
     Show version number.
     """
-    from ..plugins.version import elapi_version
+    from .. import APP_NAME
+    from ..utils import get_app_version
 
-    _version = elapi_version()
-    typer.echo(_version)
+    _version = get_app_version()
+    stdout_console.print(f"{APP_NAME} {_version}", highlight=False)
     return _version
 
 
