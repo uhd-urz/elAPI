@@ -81,11 +81,17 @@ else:
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
         with GlobalSharedSession():
-            with stderr_console.status("Validating...\n", refresh_per_second=15):
+            with stderr_console.status(
+                "Validating...\n", refresh_per_second=15
+            ) as validation_status:
                 validate = Validate(
                     HostIdentityValidator(), PermissionValidator("sysadmin")
                 )
-                validate()
+                try:
+                    validate()
+                except RuntimeValidationError as e:
+                    validation_status.stop()
+                    raise e
             if export is False:
                 _export_dest = None
             if sort_json_format is True:
@@ -188,11 +194,17 @@ else:
 
         if not skip_essential_validation:
             with GlobalSharedSession(limited_to="sync"):
-                with stderr_console.status("Validating...\n", refresh_per_second=15):
+                with stderr_console.status(
+                    "Validating...\n", refresh_per_second=15
+                ) as validation_status:
                     validate = Validate(
                         HostIdentityValidator(), PermissionValidator("sysadmin")
                     )
-                    validate()
+                    try:
+                        validate()
+                    except RuntimeValidationError as e:
+                        validation_status.stop()
+                        raise e
         if export is False:
             _export_dest = None
 
