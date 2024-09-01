@@ -8,6 +8,7 @@ from httpx import Response
 from ...api import GlobalSharedSession
 from ...core_validators import Exit
 from ...loggers import Logger
+from ...styles import stdout_console
 
 logger = Logger()
 _RETRY_TRIGGER_ERRORS = (
@@ -99,6 +100,7 @@ class RecursiveInformation:
                 try:
                     recursive_information.append(response.json())
                 except JSONDecodeError as e:
+                    stdout_console.print()  # Print a new line to not overlap with progress bar
                     logger.warning(
                         f"Request for '{self.endpoint_name}' data was received by the server but "
                         f"request was not successful. Exception details: '{e!r}'. "
@@ -107,6 +109,7 @@ class RecursiveInformation:
                     await self.close_event_loop(event_loop, endpoint)
                     raise InterruptedError from e
         except _RETRY_TRIGGER_ERRORS as error:
+            stdout_console.print()
             logger.warning(
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
                 f"Exception details: '{error!r}'"
