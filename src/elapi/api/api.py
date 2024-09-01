@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Union, Optional, Tuple, Literal
 
+import httpx._client as httpx_private_client_module
 import nest_asyncio
 from httpx import Response, Client, AsyncClient, Limits
-from httpx._client import BaseClient
 from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
 
-from .. import APP_NAME
+from .. import APP_NAME, APP_BRAND_NAME
 from ..configuration import (
     TOKEN_BEARER,
     get_active_host,
@@ -22,8 +22,12 @@ from ..configuration import (
 )
 from ..loggers import Logger
 from ..styles import Missing
-from ..utils import update_kwargs_with_defaults
+from ..utils import update_kwargs_with_defaults, get_app_version
 
+USER_AGENT: str = (
+    f"{APP_BRAND_NAME}/{get_app_version()} {httpx_private_client_module.USER_AGENT}"
+)
+httpx_private_client_module.USER_AGENT = USER_AGENT
 logger = Logger()
 
 
@@ -44,7 +48,7 @@ session_defaults = SessionDefaults()
 class _CustomHeaderApiKey(HeaderApiKey): ...
 
 
-class SimpleClient(BaseClient):
+class SimpleClient(httpx_private_client_module.BaseClient):
     def __new__(
         cls,
         *,
