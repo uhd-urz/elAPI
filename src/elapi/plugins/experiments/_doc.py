@@ -41,7 +41,7 @@ __PARAMETERS__doc__ = {
                       f"`export_dir` value from configuration file is used. "
                       f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
                       f"- If a directory path is provided as a value, "
-                      f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+                      f"i.e., _'--export \\<path/to/directory\\>'_, then that path is used instead. "
                       f"When the path is a directory, "
                       f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
                       f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "

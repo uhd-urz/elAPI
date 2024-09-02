@@ -10,10 +10,10 @@ BILLING_INFO_OUTPUT_DATETIME_PARSE_FORMAT: str = (
     "%Y-%m-%d_%H%M%S"  # Supported by dateutil parser.isoparse
 )
 BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN: str = (
-    "^\d+-\d{2}-\d{2}_\d{6}"
+    r"^\d+-\d{2}-\d{2}_\d{6}"
 )
 CLI_DATE_VALID_FORMAT: str = "YYYY-MM"
-CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN: str = "^\d+-\d{2}$"
+CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN: str = r"^\d+-\d{2}$"
 BILLING_PERIOD: int = 5
 BILLING_BASE_DATE: datetime = datetime.today().replace(
     day=1, hour=0, minute=0, second=0, microsecond=0
