@@ -18,6 +18,7 @@ from .._names import (
     APP_BRAND_NAME,  # noqa: F401
     CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
+    VERSION_FILE_NAME,  # noqa: F401
     ELAB_NAME,  # noqa: F401
     ELAB_BRAND_NAME,  # noqa: F401
     ELAB_API_EXPECTED_VERSION,  # noqa: F401
@@ -204,7 +205,7 @@ for key_name, key_val in [
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
-    (KEY_PLUGIN_KEY_NAME, PLUGIN)
+    (KEY_PLUGIN_KEY_NAME, PLUGIN),
 ]:
     try:
         history.patch(key_name, key_val)
