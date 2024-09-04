@@ -6,7 +6,6 @@ from functools import cached_property
 from typing import Union, Optional, Tuple, Literal
 
 import httpx._client as httpx_private_client_module
-import nest_asyncio
 from httpx import Response, Client, AsyncClient, Limits
 from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
@@ -36,7 +35,8 @@ class SessionDefaults:
     limits: Limits = field(
         default_factory=lambda: Limits(
             max_connections=100,
-            max_keepalive_connections=30,
+            max_keepalive_connections=20,
+            # same as HTTPX default. The previous value "30" can be too much for the server when uvloop is used
             keepalive_expiry=60,
         )
     )
@@ -145,22 +145,40 @@ class GlobalSharedSession:
                 return SimpleClient(is_async_client=True, **self._kwargs)
             return None
 
-        def close(self):
+        def close(self) -> None:
             GlobalSharedSession._instance = None
             if self.sync_client is not None:
                 if self.sync_client.is_closed is False:
                     self.sync_client.close()
             if self.async_client is not None:
                 if self.async_client.is_closed is False:
-                    # nest_asyncio is needed or a "RuntimeError: Event loop is closed"
-                    # will be thrown when there are multiple asyncio.run.
-                    # See GlobalSharedSession.__new__ block.
-                    asyncio.run(self.async_client.aclose())
+                    # nest_asyncio is needed if there are multiple asyncio.run.
+                    # ("RuntimeError: Event loop is closed").
+                    try:
+                        event_loop = asyncio.get_running_loop()
+                    except RuntimeError:
+                        asyncio.set_event_loop(event_loop := asyncio.new_event_loop())
+                        try:
+                            event_loop.run_until_complete(self.async_client.aclose())
+                        except RuntimeError as e:
+                            raise RuntimeError(
+                                f"{GlobalSharedSession.__name__} has attempted to close {AsyncClient.__name__} "
+                                f"{self.async_client} connection in a new event loop, because "
+                                f"{GlobalSharedSession.__name__} could not find a running one. "
+                                f"But it seems that failed as well. "
+                                f"This likely means that either the event loop or "
+                                f"{GlobalSharedSession.__name__} is being used incorrectly. "
+                                f"Connection could not be closed. "
+                                f"You can also try calling the 'close' method again."
+                            ) from e
+                        else:
+                            event_loop.close()
+                    else:
+                        event_loop.create_task(self.async_client.aclose())
 
         def __enter__(self):
-            self._outer_instance = GlobalSharedSession._instance = self.__class__(
-                **self._kwargs
-            )
+            self._outer_instance = GlobalSharedSession._instance
+            # The instance is already created with __new__ by the time __enter__ is called
             return self._outer_instance
 
         def __exit__(self, exc_type, exc_val, exc_tb):
@@ -175,9 +193,6 @@ class GlobalSharedSession:
         **kwargs,
     ):
         if cls._instance is None:
-            # Necessary to allow multiple asyncio.run
-            # See: https://github.com/encode/httpx/discussions/2959
-            nest_asyncio.apply()
             cls.suppress_override_warning = suppress_override_warning
             cls._instance = cls._GlobalSharedSession(limited_to=limited_to, **kwargs)
         return cls._instance
@@ -673,7 +688,7 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         )
 
     async def aclose(self) -> Optional[type(NotImplemented)]:
-        return await self.client.aclose()
+        return await super().aclose()
 
     def close(self):
         raise NotImplementedError(
@@ -786,7 +801,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
         )
 
     async def aclose(self) -> Optional[type(NotImplemented)]:
-        return await self.client.aclose()
+        return await super().aclose()
 
     def close(self):
         raise NotImplementedError(
@@ -886,7 +901,7 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
         )
 
     async def aclose(self) -> Optional[type(NotImplemented)]:
-        return await self.client.aclose()
+        return await super().aclose()
 
     def close(self):
         raise NotImplementedError(
