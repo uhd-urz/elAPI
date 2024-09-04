@@ -1,9 +1,11 @@
 import asyncio
 from json import JSONDecodeError
-from typing import Awaitable
+from typing import Awaitable, Optional
 
 import httpx
 from httpx import Response
+from rich.progress import Progress
+from rich.text import Text
 
 from ...api import GlobalSharedSession
 from ...core_validators import Exit
@@ -49,17 +51,16 @@ class Information:
 
 
 class RecursiveInformation:
-    __slots__ = "endpoint_name", "endpoint_id_key_name", "show_progress"
+    __slots__ = "endpoint_name", "endpoint_id_key_name"
 
-    def __init__(
-        self, endpoint_name: str, endpoint_id_key_name: str, show_progress: bool = True
-    ):
+    def __init__(self, endpoint_name: str, endpoint_id_key_name: str):
         self.endpoint_name = endpoint_name
         self.endpoint_id_key_name = endpoint_id_key_name
-        self.show_progress = show_progress
 
     @staticmethod
-    async def close_event_loop(event_loop: asyncio.AbstractEventLoop, endpoint) -> None:
+    async def cleanup_remaining(
+        event_loop: asyncio.AbstractEventLoop, endpoint
+    ) -> None:
         await endpoint.aclose()
         # Must be closed before cancelling asyncio tasks or stopping the event loop
         event_loop.set_exception_handler(lambda loop, context: ...)
@@ -67,18 +68,21 @@ class RecursiveInformation:
         # https://docs.python.org/3/library/asyncio-dev.html#detect-never-retrieved-exceptions
         for task in asyncio.all_tasks(event_loop):
             task.cancel()
-        if GlobalSharedSession._instance is None:
-            if event_loop.is_running():
-                event_loop.stop()  # Will raise RuntimeError
-                # (most likely because some tasks are still remaining)
 
-    async def items(self):
+    async def items(
+        self,
+        description: Optional[str] = None,
+        log_keyboard_interrupt_message: bool = True,
+        *,
+        transient: bool = True,
+        **kwargs,
+    ):
         from ...api.endpoint import FixedAsyncEndpoint, RecursiveGETEndpoint
-        from rich.progress import track
 
         event_loop = asyncio.get_running_loop()
         endpoint = FixedAsyncEndpoint(endpoint_name=self.endpoint_name)
         endpoint_information = Information(self.endpoint_name).items()
+        description = description or f"Getting {self.endpoint_name} data:"
         try:
             recursive_endpoint = RecursiveGETEndpoint(
                 endpoint_information,
@@ -89,37 +93,43 @@ class RecursiveInformation:
                 item for item in recursive_endpoint.endpoints()
             ]
             recursive_information: list = []
-            for task in track(
-                asyncio.as_completed(tasks),
-                total=len(tasks),
-                description=f"Getting {self.endpoint_name} data:",
-                transient=True,
-                disable=not self.show_progress,
-            ):
-                response = await task
-                try:
-                    recursive_information.append(response.json())
-                except JSONDecodeError as e:
-                    stdout_console.print()  # Print a new line to not overlap with progress bar
-                    logger.warning(
-                        f"Request for '{self.endpoint_name}' data was received by the server but "
-                        f"request was not successful. Exception details: '{e!r}'. "
-                        f"Response: '{response.text}'"
-                    )
-                    await self.close_event_loop(event_loop, endpoint)
-                    raise InterruptedError from e
+            with Progress(transient=transient, **kwargs) as progress:
+                for task in progress.track(
+                    asyncio.as_completed(tasks),
+                    total=len(tasks),
+                    description=description,
+                ):
+                    response = await task
+                    try:
+                        recursive_information.append(response.json())
+                    except JSONDecodeError as e:
+                        stdout_console.print()  # Print a new line to not overlap with progress bar
+                        logger.warning(
+                            f"Request for '{self.endpoint_name}' data was received by the server but "
+                            f"request was not successful. Exception details: '{e!r}'. "
+                            f"Response: '{response.text}'"
+                        )
+                        await self.cleanup_remaining(event_loop, endpoint)
+                        raise InterruptedError from e
         except _RETRY_TRIGGER_ERRORS as error:
             stdout_console.print()
             logger.warning(
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
                 f"Exception details: '{error!r}'"
             )
-            await self.close_event_loop(event_loop, endpoint)
-            raise InterruptedError from error  # This will likely never be reached,
-            # since this entire exception block will only trigger while event loop is still running
-            # but event loop is already closed in finally block which raises RuntimeError.
+            await self.cleanup_remaining(event_loop, endpoint)
+            raise InterruptedError from error
         except (KeyboardInterrupt, asyncio.CancelledError) as e:
-            await self.close_event_loop(event_loop, endpoint)
+            if log_keyboard_interrupt_message is True:
+                curr_percentage: Text = progress.columns[2]._renderable_cache[0][1]
+                curr_percentage: str = curr_percentage.plain.strip()
+                logger.error(
+                    f"'{KeyboardInterrupt.__name__}' (or similar) aborted "
+                    f"progress at {curr_percentage}."
+                )
+            await self.cleanup_remaining(event_loop, endpoint)
+            if GlobalSharedSession._instance is not None:
+                GlobalSharedSession().close()
             raise Exit(1) from e
         else:
             await endpoint.aclose()
