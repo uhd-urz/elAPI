@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2024-09-04
+
+This release brings some general bugfixes, improvements, and new library APIs.
+
+### Added
+
+- New sub-endpoint `/users/{id}/uploads` (GH #136)
+- Better support for third-party plugins (GH #136)
+- New `plugins` configuration field for plugin-specific settings (GH #136)
+- Introduce `project_dir` to plugin metadata file `elapi_plugin_metadata.yml` (GH #136, 191a049)
+- Aggressive logging support for `elapi.loggers.add_message`; add `change_logger_state` that controls logger class
+  state (4aea161, 5a68585)
+- New and improved HTTP APIs: shared client support, `SimpleClient`, `GlobalSharedSession` (GH #137)
+- elAPI specific user-agent string `elAPI/<elAPI version> python-httpx/<HTTPX version>` (4bde6cd)
+- Improved `BaseFormat` with `package_identifier` attribute; better plugin formatter class support (GH #138)
+- Add `get_active_host_url_without_api_suffix` that compliments `get_active_host` (6e42a9c)
+- Add new elAPI logo (4ca1f1f)
+
+### Fixed
+
+- Fix configuration not being validated when `developer_mode` is missing (GH #133)
+- Fix third-party plugins breaking if they used relative imports (GH #134)
+
+### Changed
+
+- Disable `--OC/--override-config` support for `development_mode` (GH #136)
+- All public CLI commands now use `GlobalSharedSession` (GH #137)
+- Use `uvloop` instead of built-in `asyncio` event loop for `bill-teams` plugin (8c3750b); add `uvloop` as an optional
+  dependency to `uhd-urz`
+- Bump versions of following dependencies and optional dependencies: `rich` to `13.8.0`, `tenacity` to `9.0`,
+  `python-dateutil` to `2.9.0.post0`
+
+### Removed
+
+- Remove `keep_session_argument` parameter from HTTP APIs, which is replaced with `shared_client` parameter (GH #137)
+
+In collaboration with @alexander-haller.
+
 ## [2.1.0] - 2024-07-29
 
 This release brings some general bugfix and improvements.
@@ -92,7 +130,8 @@ necessary for upcoming 3rd-part plugin support.
 - New global
   option `--override-config/--OC` [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
 - Add support for new configuration
-  fields: `enable_http2`, `verify_ssl`, `timeout` [#55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
+  fields: `enable_http2`, `verify_ssl`,
+  `timeout` [#55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
 - Add startup callback
   function `cli_startup` [!55](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/55)
     - Validate configuration during startup
@@ -175,7 +214,8 @@ Development release. This release adds a tons of new changes and improvements.
 
 - New `PATCH` command ([!24](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/merge_requests/24))
 - New style
-  APIs ([`1da3bb`](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/commit/1da3bb1a2bf6f97aea3106e628bf50ef065cf838))
+  APIs ([
+  `1da3bb`](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/commit/1da3bb1a2bf6f97aea3106e628bf50ef065cf838))
 
 ### Fixed
 

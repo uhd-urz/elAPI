@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elapi"
-version = "2.1.0"
+version = "2.2.0"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [
     "Alexander Haller, Mahadi Xion <elabftw@uni-heidelberg.de>",
