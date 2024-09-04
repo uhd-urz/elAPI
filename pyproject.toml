@@ -21,7 +21,7 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Topic ::    Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Systems Administration",
     "Topic :: Utilities",
