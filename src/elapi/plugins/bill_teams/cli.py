@@ -4,9 +4,10 @@ import typer
 
 PLUGIN_NAME: str = "bill-teams"
 
-if not (find_spec("tenacity") and find_spec("dateutil")):
+if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop")):
     ...
 else:
+    import uvloop
     from typing import Annotated, Optional
 
     import tenacity
@@ -80,44 +81,50 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
-        with GlobalSharedSession():
-            with stderr_console.status(
-                "Validating...\n", refresh_per_second=15
-            ) as validation_status:
-                validate = Validate(
-                    HostIdentityValidator(), PermissionValidator("sysadmin")
-                )
-                try:
-                    validate()
-                except RuntimeValidationError as e:
-                    validation_status.stop()
-                    raise e
-            if export is False:
-                _export_dest = None
-            if sort_json_format is True:
-                package_identifier: str = __package__
-            else:
-                package_identifier: str = styles_package_identifier
-            data_format, export_dest, export_file_ext = CLIExport(
-                data_format, _export_dest, export_overwrite
+        global_session = GlobalSharedSession()
+        with stderr_console.status(
+            "Validating...\n", refresh_per_second=15
+        ) as validation_status:
+            validate = Validate(
+                HostIdentityValidator(), PermissionValidator("sysadmin")
             )
-            format = CLIFormat(data_format, package_identifier, export_file_ext)
-            import asyncio
-            from .bill_teams import (
-                UsersInformation,
-                TeamsInformation,
-                TeamsList,
-            )
-
-            users_info, teams_info = UsersInformation(), TeamsInformation()
             try:
-                tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
-            except (RuntimeError, InterruptedError) as e:
-                # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
-                # InterruptedError is raised when JSONDecodeError is triggered.
+                validate()
+            except RuntimeValidationError as e:
+                validation_status.stop()
+                raise e
+        if export is False:
+            _export_dest = None
+        if sort_json_format is True:
+            package_identifier: str = __package__
+        else:
+            package_identifier: str = styles_package_identifier
+        data_format, export_dest, export_file_ext = CLIExport(
+            data_format, _export_dest, export_overwrite
+        )
+        format = CLIFormat(data_format, package_identifier, export_file_ext)
+
+        from .bill_teams import (
+            UsersInformation,
+            TeamsInformation,
+            TeamsList,
+        )
+
+        users_info, teams_info = UsersInformation(), TeamsInformation()
+
+        async def gather_teams_list() -> TeamsList:
+            try:
+                tl = TeamsList(await users_info.items(), teams_info.items())
+            except (RuntimeError, InterruptedError) as error:
+                global_session.close()
                 logger.info(f"{APP_NAME} will try again.")
-                raise InterruptedError from e
-        formatted_teams = format(teams := tl.items())
+                raise InterruptedError from error
+            else:
+                global_session.close()
+            return tl
+
+        teams_list = uvloop.run(gather_teams_list())
+        formatted_teams = format(teams := teams_list.items())
         if export:
             export_teams = Export(
                 export_dest,
