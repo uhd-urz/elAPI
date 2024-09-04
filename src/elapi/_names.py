@@ -10,8 +10,15 @@ LOG_FILE_NAME: str = f"{APP_NAME}.log"
 CONFIG_FILE_EXTENSION: str = "yml"
 CONFIG_FILE_NAME: str = f"{APP_NAME}.{CONFIG_FILE_EXTENSION}"
 DEFAULT_EXPORT_DATA_FORMAT: str = "json"
+VERSION_FILE_NAME: str = "VERSION"
 user_home: Path = Path.home()
 cur_dir: Path = Path.cwd()
+
+# eLabFTW specific definitions
+ELAB_NAME: str = "elabftw"
+ELAB_BRAND_NAME: str = "eLabFTW"
+ELAB_API_EXPECTED_VERSION: int = 2
+ELAB_HOST_URL_API_SUFFIX: str = f"/api/v{ELAB_API_EXPECTED_VERSION}"
 
 # reference for the following directory conventions:
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
@@ -44,6 +51,7 @@ KEY_ENABLE_HTTP2: str = "ENABLE_HTTP2"
 KEY_VERIFY_SSL: str = "VERIFY_SSL"
 KEY_TIMEOUT: str = "TIMEOUT"
 KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
+KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")

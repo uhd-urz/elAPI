@@ -4,9 +4,10 @@ import typer
 
 PLUGIN_NAME: str = "bill-teams"
 
-if not (find_spec("tenacity") and find_spec("dateutil")):
+if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop")):
     ...
 else:
+    import uvloop
     from typing import Annotated, Optional
 
     import tenacity
@@ -16,9 +17,10 @@ else:
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
     from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
     from ...loggers import Logger
-    from ...styles import stdin_console, stderr_console
+    from ...styles import stdout_console, stderr_console
     from ...core_validators import RuntimeValidationError, Exit, ValidationError
     from ..commons.cli_helpers import Typer
+    from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
     app = Typer(
         name=PLUGIN_NAME,
@@ -71,7 +73,7 @@ else:
         ] = False,
     ) -> dict:
         """Get billable teams data."""
-        from .format import remove_csv_formatter_support
+        from ...api import GlobalSharedSession
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -79,25 +81,29 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB
 
-        remove_csv_formatter_support()
-
-        with stderr_console.status("Validating...\n", refresh_per_second=15):
+        global_session = GlobalSharedSession()
+        with stderr_console.status(
+            "Validating...\n", refresh_per_second=15
+        ) as validation_status:
             validate = Validate(
                 HostIdentityValidator(), PermissionValidator("sysadmin")
             )
-            validate()
+            try:
+                validate()
+            except RuntimeValidationError as e:
+                validation_status.stop()
+                raise e
         if export is False:
             _export_dest = None
-
-        if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
-
+        if sort_json_format is True:
+            package_identifier: str = __package__
+        else:
+            package_identifier: str = styles_package_identifier
         data_format, export_dest, export_file_ext = CLIExport(
             data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat(data_format, export_file_ext)
+        format = CLIFormat(data_format, package_identifier, export_file_ext)
 
-        import asyncio
         from .bill_teams import (
             UsersInformation,
             TeamsInformation,
@@ -105,15 +111,20 @@ else:
         )
 
         users_info, teams_info = UsersInformation(), TeamsInformation()
-        try:
-            tl = TeamsList(asyncio.run(users_info.items()), teams_info.items())
-        except (RuntimeError, InterruptedError) as e:
-            # RuntimeError is raised when users_items() -> event_loop.stop() stops the loop before future is completed.
-            # InterruptedError is raised when JSONDecodeError is triggered.
-            logger.info(f"{APP_NAME} will try again.")
-            raise InterruptedError from e
-        formatted_teams = format(teams := tl.items())
 
+        async def gather_teams_list() -> TeamsList:
+            try:
+                tl = TeamsList(await users_info.items(), teams_info.items())
+            except (RuntimeError, InterruptedError) as error:
+                global_session.close()
+                logger.info(f"{APP_NAME} will try again.")
+                raise InterruptedError from error
+            else:
+                global_session.close()
+            return tl
+
+        teams_list = uvloop.run(gather_teams_list())
+        formatted_teams = format(teams := teams_list.items())
         if export:
             export_teams = Export(
                 export_dest,
@@ -124,8 +135,8 @@ else:
             export_teams(data=formatted_teams, verbose=True)
         else:
             if highlight_syntax is True:
-                highlight = Highlight(format.name)
-                stdin_console.print(highlight(formatted_teams))
+                highlight = Highlight(format.name, package_identifier=__package__)
+                stdout_console.print(highlight(formatted_teams))
             else:
                 typer.echo(formatted_teams)
         return teams
@@ -176,7 +187,6 @@ else:
         ] = False,
     ) -> dict:
         """Get billable team owners data."""
-        from .format import remove_csv_formatter_support
         from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
         from ..commons import Export
         from ...styles import Highlight
@@ -185,27 +195,35 @@ else:
             Exit,
             ValidationError,
         )
+        from ...api import GlobalSharedSession
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from .specification import BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB
 
-        remove_csv_formatter_support()
-
         if not skip_essential_validation:
-            with stderr_console.status("Validating...\n", refresh_per_second=15):
-                validate = Validate(
-                    HostIdentityValidator(), PermissionValidator("sysadmin")
-                )
-                validate()
+            with GlobalSharedSession(limited_to="sync"):
+                with stderr_console.status(
+                    "Validating...\n", refresh_per_second=15
+                ) as validation_status:
+                    validate = Validate(
+                        HostIdentityValidator(), PermissionValidator("sysadmin")
+                    )
+                    try:
+                        validate()
+                    except RuntimeValidationError as e:
+                        validation_status.stop()
+                        raise e
         if export is False:
             _export_dest = None
 
-        if sort_json_format:
-            from .format import JSONSortedFormat  # noqa: F401
+        if sort_json_format is True:
+            package_identifier: str = __package__
+        else:
+            package_identifier: str = styles_package_identifier
 
         data_format, export_dest, export_file_ext = CLIExport(
             data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat(data_format, export_file_ext)
+        format = CLIFormat(data_format, package_identifier, export_file_ext)
 
         from .bill_teams import (
             TeamsInformation,
@@ -244,8 +262,8 @@ else:
             export_teams(data=formatted_owners, verbose=True)
         else:
             if highlight_syntax is True:
-                highlight = Highlight(format.name)
-                stdin_console.print(highlight(formatted_owners))
+                highlight = Highlight(format.name, package_identifier=__package__)
+                stdout_console.print(highlight(formatted_owners))
             else:
                 typer.echo(formatted_owners)
         return owners

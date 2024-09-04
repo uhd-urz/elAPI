@@ -10,21 +10,19 @@ from ..configuration import get_development_mode
 from ..configuration.config import (
     ROOT_INSTALLATION_DIR,
     INTERNAL_PLUGIN_DIRECTORY_NAME,
-    INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX,
     INTERNAL_PLUGIN_TYPER_APP_FILE_NAME,
     INTERNAL_PLUGIN_TYPER_APP_VAR_NAME,
-    EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME,
     EXTERNAL_LOCAL_PLUGIN_DIR,
-    EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX,
     EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME,
 )
 from ..core_validators import Validator, ValidationError, Validate
 from ..loggers import Logger
 from ..path import ProperPath
+from ..plugins import __PACKAGE_IDENTIFIER__ as plugins_sub_package_identifier
 from ..utils import add_message
 
 logger = Logger()
-PluginInfo = namedtuple("PluginInfo", ["plugin_app", "path", "venv"])
+PluginInfo = namedtuple("PluginInfo", ["plugin_app", "path", "venv", "project_dir"])
 
 
 class InternalPluginHandler:
@@ -45,10 +43,7 @@ class InternalPluginHandler:
             )
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module
-            module.__package__ = (
-                f"{__package__.removesuffix(f'.{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}')}"
-                f".{INTERNAL_PLUGIN_DIRECTORY_NAME}.{plugin_name}"
-            )  # Python will find module relative to __package__ path,
+            module.__package__ = f"{plugins_sub_package_identifier}.{plugin_name}"  # Python will find module relative to __package__ path,
             # without this module.__package__ change Python will throw an ImportError.
             spec.loader.exec_module(module)
             try:
@@ -88,6 +83,7 @@ class ExternalPluginLocationValidator(Validator):
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX,
             CANON_YAML_EXTENSION,
@@ -204,6 +200,34 @@ class ExternalPluginLocationValidator(Validator):
                                         f"{VENV_PATH} does not exist."
                                     )
                         try:
+                            PROJECT_PATH = plugin_metadata[
+                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                            ]
+                        except KeyError:
+                            PROJECT_PATH = parsed_metadata[
+                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                            ] = CLI_SCRIPT_PATH.expanded.parent
+                        else:
+                            try:
+                                PROJECT_PATH = ProperPath(PROJECT_PATH)
+                            except (TypeError, ValueError):
+                                raise ValidationError(
+                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
+                                    f"exists in {plugin_metadata_file}, but its assigned "
+                                    f"value '{PROJECT_PATH}' is invalid."
+                                )
+                            else:
+                                if PROJECT_PATH.expanded.exists():
+                                    parsed_metadata[
+                                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                                    ] = PROJECT_PATH.expanded.absolute()
+                                else:
+                                    raise ValidationError(
+                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
+                                        f"exists in {plugin_metadata_file}, but the path "
+                                        f"{PROJECT_PATH} does not exist."
+                                    )
+                        try:
                             PLUGIN_NAME = plugin_metadata[
                                 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
                             ]
@@ -233,6 +257,9 @@ class ExternalPluginLocationValidator(Validator):
                     parsed_metadata[
                         EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
                     ] = external_local_plugin_typer_app_file
+                    parsed_metadata[
+                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                    ] = self.location
                     PLUGIN_NAME = self.location.name
                     parsed_metadata[
                         EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
@@ -269,14 +296,14 @@ class ExternalPluginHandler:
             yield None
 
     @staticmethod
-    def load_plugin(plugin_name: str, cli_script: Path):
-        spec = importlib.util.spec_from_file_location(plugin_name, cli_script)
+    def load_plugin(plugin_name: str, cli_script: Path, project_dir: Path):
+        spec = importlib.util.spec_from_file_location(
+            plugin_name, cli_script, submodule_search_locations=[str(project_dir)]
+        )
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
-        module.__package__ = (
-            f"{__package__.removesuffix(f'.{EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}')}"
-            f".{EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME}.{plugin_name}"
-        )  # Python will find module relative to __package__ path,
+        module.__package__ = plugin_name
+        # Python will find module relative to __package__ path,
         # without this module.__package__ change Python will throw an ImportError.
         spec.loader.exec_module(module)
         return module
@@ -289,6 +316,7 @@ class ExternalPluginHandler:
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
             EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
         )
         from ._venv_state_manager import switch_venv_state
 
@@ -304,9 +332,12 @@ class ExternalPluginHandler:
             plugin_root_dir: Path = metadata[
                 EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR
             ]
+            project_dir: Path = metadata[
+                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+            ]
             if metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS] is False:
                 try:
-                    module = self.load_plugin(plugin_name, cli_script)
+                    module = self.load_plugin(plugin_name, cli_script, project_dir)
                 except (Exception, BaseException) as e:
                     if get_development_mode() is True:
                         raise e
@@ -331,6 +362,7 @@ class ExternalPluginHandler:
                             typer_app,
                             plugin_root_dir,
                             None,
+                            project_dir,
                         )
             else:
                 venv_dir: Path = metadata[
@@ -338,7 +370,7 @@ class ExternalPluginHandler:
                 ]
                 if venv_dir is not None:
                     try:
-                        switch_venv_state(True, venv_dir)
+                        switch_venv_state(True, venv_dir, project_dir)
                     except (ValueError, RuntimeError) as e:
                         message: str = (
                             f"An exception occurred while trying to load a local "
@@ -351,7 +383,9 @@ class ExternalPluginHandler:
                         yield
                     else:
                         try:
-                            module = self.load_plugin(plugin_name, cli_script)
+                            module = self.load_plugin(
+                                plugin_name, cli_script, project_dir
+                            )
                         except (Exception, BaseException) as e:
                             if get_development_mode() is True:
                                 raise e
@@ -372,16 +406,14 @@ class ExternalPluginHandler:
                             except AttributeError:
                                 yield
                             else:
-                                switch_venv_state(False, venv_dir)
+                                switch_venv_state(False, venv_dir, project_dir)
                                 typer_app.info.name = plugin_name
                                 yield PluginInfo(
-                                    typer_app,
-                                    plugin_root_dir,
-                                    venv_dir,
+                                    typer_app, plugin_root_dir, venv_dir, project_dir
                                 )
                 else:
                     try:
-                        module = self.load_plugin(plugin_name, cli_script)
+                        module = self.load_plugin(plugin_name, cli_script, project_dir)
                     except (Exception, BaseException) as e:
                         if get_development_mode() is True:
                             raise e
@@ -403,9 +435,7 @@ class ExternalPluginHandler:
                         else:
                             typer_app.info.name = plugin_name
                             yield PluginInfo(
-                                typer_app,
-                                plugin_root_dir,
-                                None,
+                                typer_app, plugin_root_dir, None, project_dir
                             )
 
 

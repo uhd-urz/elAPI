@@ -1,6 +1,11 @@
 # ruff: noqa: F401
 from ._config_history import AppliedConfigIdentity, FieldValueWithKey
-from ._overload_history import ApplyConfigHistory, reinitiate_config
+from ._overload_history import (
+    ApplyConfigHistory,
+    reinitiate_config,
+    validate_configuration,
+    preventive_missing_warning,
+)
 
 # noinspection PyUnresolvedReferences
 from .config import (
@@ -11,6 +16,7 @@ from .config import (
     LOCAL_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
     DEFAULT_EXPORT_DATA_FORMAT,
+    VERSION_FILE_NAME,
     CONFIG_FILE_NAME,
     KEY_HOST,
     KEY_API_TOKEN,
@@ -20,6 +26,7 @@ from .config import (
     KEY_VERIFY_SSL,
     KEY_TIMEOUT,
     KEY_DEVELOPMENT_MODE,
+    KEY_PLUGIN_KEY_NAME,
     HOST,
     API_TOKEN,
     TOKEN_BEARER,
@@ -29,6 +36,7 @@ from .config import (
     UNSAFE_TOKEN_WARNING,
     ENABLE_HTTP2,
     DEVELOPMENT_MODE,
+    PLUGIN,
     TMP_DIR,
     CONFIG_FILE_EXTENSION,
     CANON_YAML_EXTENSION,
@@ -41,6 +49,7 @@ from .config import (
     EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME,
     EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
     EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
+    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
     EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
     EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR,
     history,
@@ -51,6 +60,7 @@ from .config import (
 from .log_file import LOG_FILE_PATH
 from .overridable_vars import (
     get_active_host,
+    get_active_host_url_without_api_subdir,
     get_active_api_token,
     get_active_export_dir,
     get_active_unsafe_token_warning,
@@ -58,7 +68,8 @@ from .overridable_vars import (
     get_active_verify_ssl,
     get_active_timeout,
     get_development_mode,
+    get_active_plugin_configs,
 )
+from .validators import PluginConfigurationValidator as _PluginConfigurationValidator
 
-if get_development_mode() is False:
-    reinitiate_config(ignore_essential_validation=True)
+validate_configuration(limited_to=[_PluginConfigurationValidator])

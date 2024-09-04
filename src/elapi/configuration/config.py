@@ -18,6 +18,11 @@ from .._names import (
     APP_BRAND_NAME,  # noqa: F401
     CONFIG_FILE_EXTENSION,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
+    VERSION_FILE_NAME,  # noqa: F401
+    ELAB_NAME,  # noqa: F401
+    ELAB_BRAND_NAME,  # noqa: F401
+    ELAB_API_EXPECTED_VERSION,  # noqa: F401
+    ELAB_HOST_URL_API_SUFFIX,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
     FALLBACK_EXPORT_DIR,  # noqa: F401
@@ -35,6 +40,7 @@ from .._names import (
     KEY_VERIFY_SSL,
     KEY_TIMEOUT,
     KEY_DEVELOPMENT_MODE,
+    KEY_PLUGIN_KEY_NAME,
 )
 from ..core_validators import (
     Validate,
@@ -185,6 +191,10 @@ TIMEOUT = settings.get(KEY_TIMEOUT, None)
 DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
 DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
 
+# Plugins
+PLUGIN = settings.get(KEY_PLUGIN_KEY_NAME, None)
+PLUGIN_DEFAULT_VALUE: dict = {}
+
 
 for key_name, key_val in [
     (KEY_HOST, HOST),
@@ -195,6 +205,7 @@ for key_name, key_val in [
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
+    (KEY_PLUGIN_KEY_NAME, PLUGIN),
 ]:
     try:
         history.patch(key_name, key_val)
@@ -211,12 +222,18 @@ for key_name, key_val in [
         ).applied_config[key_name]
 
 # Temporary data storage location
-# elapi will dump API response data in TMP_DIR so the data can be used for debugging purposes.
-TMP_DIR: Path = ProperPath(TMP_DIR, err_logger=logger).create()
+# This location is not currently used anywhere, for potential future use only.
+TMP_DIR: [ProperPath, Path, Missing] = ProperPath(TMP_DIR, err_logger=logger)
+try:
+    TMP_DIR.create()
+except TMP_DIR.PathException:
+    TMP_DIR = Missing("NONE!")
+else:
+    TMP_DIR = TMP_DIR.expanded
 
 # Plugin file definitions and locations
 ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
-INTERNAL_PLUGIN_DIRECTORY_NAME: str = "plugins"
+INTERNAL_PLUGIN_DIRECTORY_NAME: str = KEY_PLUGIN_KEY_NAME.lower()
 INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX: str = "cli"
 INTERNAL_PLUGIN_TYPER_APP_FILE_NAME: str = (
     f"{INTERNAL_PLUGIN_TYPER_APP_FILE_NAME_PREFIX}.py"
@@ -243,4 +260,5 @@ EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS = (
 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME: str = "plugin_name"
 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH: str = "cli_script"
 EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH: str = "venv_dir"
+EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH: str = "project_dir"
 EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR: str = "plugin_root_dir"

@@ -1,20 +1,10 @@
+from .formats import BaseFormat, PDFAFormat, ZIPAFormat
 from ... import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
-
-_UNIQUE_SUPPORTED_FORMATS = [
-    "json",
-    "yaml",
-    "pdf",
-    "pdfa",
-    "zip",
-    "zipa",
-    "eln",
-    "csv",
-    "qrpng",
-]
 supported_format_values = ", ".join(
-    f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
+    f"**{_.upper()}**"
+    for _ in BaseFormat.supported_formatter_names(__package__)
 )
 
 __PARAMETERS__doc__ = {
@@ -33,11 +23,13 @@ __PARAMETERS__doc__ = {
     "upload_attachment_rename": "Rename file given with --path before attaching. "
                                 "Rename will the rename the entire file name including its extension part.",
     "upload_attachment_comment": "Add text comment to a file.",
-    "download_attachment_attachment_id": "ID of an existing attachment. Attachment IDs aren't shown on experiment "
-                                         "pages. Attachment SHA can be seen by clicking \"More information\" "
-                                         "of an attachment. First 6 digits (or more) of the attachment SHA256 "
-                                         "hash can also be passed as an attachment ID.",
+    "download_attachment_attachment_id": "ID of an existing attachment. Attachment IDs are not displayed on "
+                                         "experiment pages. First 6 digits (or more) of the attachment SHA256 "
+                                         "hash can also be passed as an attachment ID. "
+                                         "Attachment SHA can be found by clicking the \"More information\" "
+                                         "option of an attachment.",
     "data_format": f"Experiment output format. Supported values are: {supported_format_values}. "
+                   f"{PDFAFormat.reference}, {ZIPAFormat.reference} are 'long-term storage' formats. "
                    f"The supported formats follow the _'Export'_ options available "
                    f"for an experiment on the browser GUI. As such, **only** JSON and YAML formats can be printed "
                    f"on the terminal. All other supported formats are exported to "
@@ -49,7 +41,7 @@ __PARAMETERS__doc__ = {
                       f"`export_dir` value from configuration file is used. "
                       f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
                       f"- If a directory path is provided as a value, "
-                      f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+                      f"i.e., _'--export \\<path/to/directory\\>'_, then that path is used instead. "
                       f"When the path is a directory, "
                       f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
                       f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "

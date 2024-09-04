@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Optional, Literal, Type
+from typing import Optional, Literal, Type, Union
 
 import typer
 from click import Context
@@ -54,28 +54,33 @@ class CLIFormat:
     def __new__(
         cls,
         data_format: str,
+        package_identifier: str,
         export_file_ext: Optional[str] = None,
     ):
         from ...styles import Format, FormatError
 
         try:
-            format = Format(data_format)
+            format = Format(data_format, package_identifier=package_identifier)
         except FormatError as e:
             logger.error(e)
             logger.info(
                 f"{APP_NAME} will fallback to '{cls.FALLBACK_DATA_FORMAT}' format."
             )
             format = Format(
-                cls.FALLBACK_DATA_FORMAT
+                cls.FALLBACK_DATA_FORMAT, package_identifier=package_identifier
             )  # Falls back to DEFAULT_EXPORT_DATA_FORMAT
-        if export_file_ext and export_file_ext not in format.convention:
-            logger.info(
-                f"File extension is '{export_file_ext}' but data format will be '{format.name.upper()}'."
-            )
+        format_convention: Union[str, Iterable[str]] = format.convention
         if isinstance(format.convention, str):
             ...
         elif isinstance(format.convention, Iterable):
-            format.convention = next(iter(format.convention))
+            format.convention = next(
+                iter(format_convention)
+            )  # only accept the first item as convention and modify format.convention
+        if export_file_ext and export_file_ext not in format_convention:
+            logger.info(
+                f"File extension is '{export_file_ext}' but data "
+                f"format will be of format '{format.convention.upper()}'."
+            )
         return format
 
 

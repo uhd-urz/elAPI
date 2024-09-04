@@ -1,9 +1,10 @@
 from ... import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
+from .formats import BaseFormat, _CSVFormat
 
-_UNIQUE_SUPPORTED_FORMATS = ["json", "yaml"]
 supported_format_values = ", ".join(
-    f"**{_.upper()}**" for _ in _UNIQUE_SUPPORTED_FORMATS
+    f"**{_.upper()}**"
+    for _ in BaseFormat.supported_formatter_names(__package__)
 )
 
 __PARAMETERS__doc__ = {
@@ -20,7 +21,7 @@ __PARAMETERS__doc__ = {
     "owners_info_only": "If passed, then only `owners-info` will be stored. "
     "Both _--teams-info-only_ and _--owners-info-only_ cannot be passed.",
     "data_format": f"Format style for the output. Supported values are: {supported_format_values}. "
-                   f"CSV is **not** a supported format for this command as the "
+                   f"{_CSVFormat.name.upper()} is **not** a supported format for this command as the "
                    f"output data structure is too complex for CSV. "
                    f"The values are case insensitive. The default format is `{DEFAULT_EXPORT_DATA_FORMAT.upper()}`. "
                    "If an unsupported format value is provided then the output "
@@ -29,9 +30,10 @@ __PARAMETERS__doc__ = {
                       f"`export_dir` value from configuration file is used. "
                       f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
                       f"- If a directory path is provided as a value, "
-                      f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+                      f"i.e., _'--export \\<path/to/directory\\>'_, then that path is used instead. "
                       f"When the path is a directory, "
-                      f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*.\n"
+                      f"the file name is auto-generated using the following scheme: "
+                      f"*'DATE_HHMMSS_\\<FUNCTION\\>.EXT'*.\n"
                       f"- If a file path is passed, i.e., _'--export <path/to/file.json>'_, "
                       f"then data is simply exported to that file. This allows custom file name scheme. "
                       f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "

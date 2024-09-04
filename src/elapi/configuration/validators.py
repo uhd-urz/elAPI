@@ -3,7 +3,7 @@ from typing import Optional, Iterable
 
 from ._config_history import MinimalActiveConfiguration, FieldValueWithKey
 from ..core_validators import Validator, CriticalValidationError
-from ..styles import stdin_console, Missing
+from ..styles import stdout_console, Missing
 from ..styles.highlight import NoteText
 
 
@@ -35,7 +35,7 @@ class HostConfigurationValidator(Validator):
 
         if isinstance(self.active_configuration.get_value(KEY_HOST), Missing):
             logger.critical(f"'{KEY_HOST.lower()}' is missing from configuration file.")
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host is the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -47,7 +47,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -59,7 +59,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -71,7 +71,7 @@ class HostConfigurationValidator(Validator):
                 f"'{KEY_HOST.lower()}' is detected in configuration file, "
                 f"but it's empty."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"Host contains the URL of the root API endpoint. Example:"
                     f"\n{_HOST_EXAMPLE}",
@@ -109,7 +109,7 @@ class APITokenConfigurationValidator(Validator):
             logger.critical(
                 f"'{KEY_API_TOKEN.lower()}' is missing from configuration file."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests."
                 )
@@ -120,7 +120,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -133,7 +133,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -144,7 +144,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's not a string."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -155,7 +155,7 @@ class APITokenConfigurationValidator(Validator):
                 f"'{KEY_API_TOKEN.lower()}' is detected in configuration file, "
                 f"but it's empty."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "An API token with at least read-access is required to make requests.",
                 )
@@ -248,7 +248,7 @@ class ExportDirConfigurationValidator(Validator):
                         f"{KEY_EXPORT_DIR}: {config_export_dir} from configuration file "
                         f"is not a directory!"
                     )
-                    stdin_console.print(
+                    stdout_console.print(
                         NoteText(
                             "If you want to export to a file use '--export <path-to-file>'.\n",
                             stem="Note",
@@ -363,6 +363,72 @@ class DecimalWithFallbackConfigurationValidator(Validator):
         return float(value)
 
 
+class PluginConfigurationValidator(Validator):
+    ALREADY_VALIDATED: bool = False
+    __slots__ = ()
+
+    def __init__(
+        self,
+        minimal_active_config_obj: MinimalActiveConfiguration,
+        /,
+        key_name: str,
+        fallback_value: dict,
+    ):
+        self.active_configuration = minimal_active_config_obj
+        self.key_name = key_name
+        self.fallback_value = fallback_value
+
+    @property
+    def active_configuration(self) -> MinimalActiveConfiguration:
+        return self._active_configuration
+
+    @active_configuration.setter
+    def active_configuration(self, value: MinimalActiveConfiguration):
+        if not isinstance(value, MinimalActiveConfiguration):
+            raise TypeError(
+                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
+            )
+        self._active_configuration = value
+
+    def validate(self) -> dict:
+        from dynaconf.utils.boxing import DynaBox
+        from ..loggers import Logger
+        from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
+        from ..utils import add_message
+
+        value: DynaBox = self.active_configuration.get_value(self.key_name)
+        if isinstance(value, Missing):
+            return self.fallback_value
+        if value is None:
+            message = (
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's null."
+            )
+            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+            return self.fallback_value
+        if not isinstance(value, dict):
+            message = (
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
+            )
+            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+            return self.fallback_value
+        else:
+            value: dict = value.to_dict()  # Dynaconf uses Box:
+            # https://github.com/cdgriffith/Box/wiki/Converters#dictionary
+            for plugin_name, plugin_config in value.copy().items():
+                if not isinstance(plugin_config, dict):
+                    message = (
+                        f"Configuration value for plugin '{plugin_name}' "
+                        f"exists in '{CONFIG_FILE_NAME}' under '{self.key_name.lower()}', "
+                        f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary. "
+                        f"Plugin configuration for '{plugin_name}' will be ignored."
+                    )
+                    add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+                    value.pop(plugin_name)
+        return value
+
+
 class MainConfigurationValidator(Validator):
     ALL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -370,6 +436,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
+        PluginConfigurationValidator,
     ]
     ESSENTIAL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -379,6 +446,7 @@ class MainConfigurationValidator(Validator):
         ExportDirConfigurationValidator,
         BooleanWithFallbackConfigurationValidator,
         DecimalWithFallbackConfigurationValidator,
+        PluginConfigurationValidator,
     ]
     __slots__ = ()
 
@@ -432,6 +500,7 @@ class MainConfigurationValidator(Validator):
         from .config import KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING_DEFAULT_VAL
         from .config import KEY_TIMEOUT, TIMEOUT_DEFAULT_VAL
         from .config import KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL
+        from .config import KEY_PLUGIN_KEY_NAME, PLUGIN_DEFAULT_VALUE
 
         validated_fields: list[FieldValueWithKey] = []
 
@@ -496,4 +565,14 @@ class MainConfigurationValidator(Validator):
             ).get()
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
+        if PluginConfigurationValidator in self.limited_to:
+            plugin = Validate(
+                PluginConfigurationValidator(
+                    self.active_configuration,
+                    KEY_PLUGIN_KEY_NAME,
+                    PLUGIN_DEFAULT_VALUE,
+                )
+            ).get()
+            # Update validated_fields after validation
+            validated_fields.append(FieldValueWithKey(KEY_PLUGIN_KEY_NAME, plugin))
         return validated_fields

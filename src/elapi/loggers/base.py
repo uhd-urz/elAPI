@@ -6,11 +6,16 @@ from .handlers.stderr import STDERRHandler
 
 class LogMessageTuple:
     def __init__(
-        self, message: str, level: int = logging.NOTSET, logger: type(None) = None
+        self,
+        message: str,
+        level: int = logging.NOTSET,
+        logger: Optional[logging.Logger] = None,
+        is_aggressive: bool = False,
     ):
         self.message = message
         self.level = level
         self.logger = logger
+        self.is_aggressive = is_aggressive
 
     @property
     def message(self):
@@ -39,10 +44,21 @@ class LogMessageTuple:
     @logger.setter
     def logger(self, value):
         if not isinstance(value, (logging.Logger, type(None))):
-            raise ValueError(
-                f"logger must be an instance of {logging.Logger.__name__}."
-            )
+            raise TypeError(f"logger must be an instance of {logging.Logger.__name__}.")
         self._logger = value
+
+    @property
+    def is_aggressive(self):
+        return self._is_aggressive
+
+    @is_aggressive.setter
+    def is_aggressive(self, value):
+        if not isinstance(value, bool):
+            raise TypeError("is_aggressive must be a boolean.")
+        self._is_aggressive = value
+
+    def items(self) -> tuple[str, int, Optional[logging.Logger], bool]:
+        return self.message, self.level, self.logger, self.is_aggressive
 
 
 class MainLogger:

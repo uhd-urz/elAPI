@@ -31,7 +31,12 @@ from ..configuration import FALLBACK_EXPORT_DIR
 from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
-from ..styles import stdin_console, stderr_console, rich_format_help_with_callback
+from ..styles import (
+    stdout_console,
+    stderr_console,
+    rich_format_help_with_callback,
+    __PACKAGE_IDENTIFIER__ as styles_package_identifier,
+)
 
 logger = Logger()
 file_logger = FileLogger()
@@ -39,7 +44,11 @@ pretty.install()
 
 
 app = Typer()
-SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = ("init", "show-config", "version")
+SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
+    "init",
+    "show-config",
+    "version",
+)  # version is no longer a plugin, but it used to be
 SPECIAL_SENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
 COMMANDS_TO_SKIP_CLI_STARTUP: list = list(SENSITIVE_PLUGIN_NAMES)
 CLI_STARTUP_CALLBACK_PANEL_NAME: str = f"{APP_NAME} global options"
@@ -62,14 +71,20 @@ EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY: dict = {}
 INTERNAL_PLUGIN_PANEL_NAME: str = "Built-in plugins"
 THIRD_PARTY_PLUGIN_PANEL_NAME: str = "Third-party plugins"
 
+OVERRIDE_CONFIG_OPTION_NAME_LONG: str = "--override-config"
+OVERRIDE_CONFIG_OPTION_NAME_SHORT: str = "--OC"
+OVERRIDE_CONFIG_OPTION_NAME: str = (
+    f"{OVERRIDE_CONFIG_OPTION_NAME_LONG}/{OVERRIDE_CONFIG_OPTION_NAME_SHORT}"
+)
+
 
 @app.callback()
 def cli_startup(
     override_config: Annotated[
         Optional[str],
         typer.Option(
-            "--override-config",
-            "--OC",
+            OVERRIDE_CONFIG_OPTION_NAME_LONG,
+            OVERRIDE_CONFIG_OPTION_NAME_SHORT,
             help=docs["cli_startup"],
             show_default=False,
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
@@ -79,36 +94,88 @@ def cli_startup(
     import click
     from sys import argv
     from ..styles import print_typer_error
-    from ..configuration import (
+    from ..configuration.config import (
+        settings,
+        CONFIG_FILE_NAME,
         KEY_API_TOKEN,
+        KEY_PLUGIN_KEY_NAME,
+        KEY_DEVELOPMENT_MODE,
         AppliedConfigIdentity,
         minimal_active_configuration,
     )
     from ..configuration.config import APIToken
     from ..core_validators import Exit
     from ..configuration import reinitiate_config
+    from ..utils import MessagesList
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
+
+    def show_aggressive_log_message():
+        messages = MessagesList()
+
+        for log_tuple in messages:
+            message, level, logger_, is_aggressive = log_tuple.items()
+            if is_aggressive is True:
+                logger.log(level, message) if logger_ is None else logger_.log(
+                    level, message
+                )
 
     try:
         override_config: dict = get_structured_data(
-            override_config, option_name="--override-config/--OC"
+            override_config, option_name=OVERRIDE_CONFIG_OPTION_NAME
         )
     except ValueError:
         raise Exit(1)
     else:
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
         for key, value in override_config.items():
+            if key.lower() == KEY_DEVELOPMENT_MODE.lower():
+                print_typer_error(
+                    f"Special configuration key '{KEY_DEVELOPMENT_MODE.lower()}' cannot be "
+                    f"overridden with {OVERRIDE_CONFIG_OPTION_NAME}."
+                )
+                raise Exit(1)
             if key.lower() == KEY_API_TOKEN.lower():
                 try:
-                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
                         APIToken(value), OVERRIDABLE_FIELDS_SOURCE
                     )
                 except ValueError:
-                    minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
                         value, OVERRIDABLE_FIELDS_SOURCE
                     )
+            elif key.lower() == KEY_PLUGIN_KEY_NAME.lower():
+                plugins = minimal_active_configuration[key].value
+                if not isinstance(value, dict):
+                    # I.e., invalid type for plugin value. --override-config will simply comply.
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
+                        value, OVERRIDABLE_FIELDS_SOURCE
+                    )
+                else:
+                    for plugin_name, plugin_config in value.items():
+                        if not isinstance(plugin_config, dict):
+                            # I.e., invalid type for plugin value. --override-config will simply comply.
+                            continue
+                        try:
+                            plugins[plugin_name].update(plugin_config)
+                        except KeyError:
+                            if getattr(
+                                settings.get(KEY_PLUGIN_KEY_NAME), "get", dict().get
+                            )(plugin_name):
+                                logger.warning(
+                                    f"Plugin configuration in {CONFIG_FILE_NAME} for '{plugin_name}' plugin "
+                                    f"was ignored due to type violation, but '{OVERRIDE_CONFIG_OPTION_NAME}' was "
+                                    f"passed configuration value for the same plugin, which will be considered. "
+                                    f"This might still lead to unexpected errors for the '{plugin_name}' plugin. "
+                                    f"It is strongly recommended to fix the type error first "
+                                    f"in {CONFIG_FILE_NAME}."
+                                )
+                            plugins[plugin_name] = {}
+                            plugins[plugin_name].update(plugin_config)
+                    minimal_active_configuration[key] = AppliedConfigIdentity(
+                        plugins, OVERRIDABLE_FIELDS_SOURCE
+                    )
             else:
-                minimal_active_configuration[key.upper()] = AppliedConfigIdentity(
+                minimal_active_configuration[key] = AppliedConfigIdentity(
                     value, OVERRIDABLE_FIELDS_SOURCE
                 )
         if (
@@ -122,12 +189,13 @@ def cli_startup(
         ):
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
+                show_aggressive_log_message()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
                     print_typer_error(
                         f"{APP_NAME} command '{calling_sub_command_name}' does not support "
-                        f"the override argument --override-config/--OC."
+                        f"the override argument {OVERRIDE_CONFIG_OPTION_NAME}."
                     )
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
@@ -142,11 +210,14 @@ def cli_switch_venv_state(state: bool, /) -> None:
         venv_dir = EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
             click.get_current_context().command.name
         ].venv
+        project_dir = EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[
+            click.get_current_context().command.name
+        ].project_dir
     except KeyError:
         ...
     else:
         if venv_dir is not None:
-            switch_venv_state(state, venv_dir)
+            switch_venv_state(state, venv_dir, project_dir)
 
 
 def cli_startup_for_plugins(
@@ -178,13 +249,13 @@ def cli_cleanup_for_third_party_plugins(*args, override_config=None):
     cli_switch_venv_state(False)
 
 
-for _app in internal_plugin_typer_apps:
-    if _app is not None:
-        app_name = _app.info.name
-        INTERNAL_PLUGIN_NAME_REGISTRY[app_name] = _app
-        COMMANDS_TO_SKIP_CLI_STARTUP.append(_app.info.name)
+for inter_app_obj in internal_plugin_typer_apps:
+    if inter_app_obj is not None:
+        app_name = inter_app_obj.info.name
+        INTERNAL_PLUGIN_NAME_REGISTRY[app_name] = inter_app_obj
+        COMMANDS_TO_SKIP_CLI_STARTUP.append(inter_app_obj.info.name)
         app.add_typer(
-            _app,
+            inter_app_obj,
             rich_help_panel=INTERNAL_PLUGIN_PANEL_NAME,
             callback=cli_startup_for_plugins,
         )
@@ -218,7 +289,6 @@ def messages_panel():
     import logging
     from ..styles import NoteText
     from ..configuration import CONFIG_FILE_NAME
-    from ..loggers import FileLogger
     from rich.panel import Panel
     from rich.table import Table
     from rich.logging import RichHandler
@@ -241,8 +311,8 @@ def messages_panel():
         grid.add_column(style="bold")
         grid.add_column()
         for i, log_tuple in enumerate(messages, start=1):
-            message, level, logger_ = log_tuple.__dict__.values()
-            FileLogger().log(level, message) if logger_ is None else logger_.log(
+            message, level, logger_, is_aggressive = log_tuple.items()
+            file_logger.log(level, message) if logger_ is None else logger_.log(
                 level, message
             )
             log_record.levelno = log_tuple.level
@@ -299,7 +369,7 @@ def init(
             "--host",
             help=docs["init_host"],
             show_default=False,
-            prompt=f'Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
+            prompt=f'1. Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
         ),
     ],
     api_token: Annotated[
@@ -308,7 +378,7 @@ def init(
             "--api-token",
             help=docs["init_api_token"],
             show_default=False,
-            prompt=f'Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
+            prompt=f'2. Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
         ),
     ],
     export_directory: Annotated[
@@ -317,7 +387,7 @@ def init(
             "--export-dir",
             help=docs["init_export_dir"],
             show_default=False,
-            prompt=f'Enter your {docs["init_export_dir"][0]}{docs["init_export_dir"][1:].rstrip(".")}',
+            prompt=f'3. Enter your {docs["init_export_dir"][0].lower()}{docs["init_export_dir"][1:].rstrip(".")}',
         ),
     ] = FALLBACK_EXPORT_DIR,
 ) -> None:
@@ -345,9 +415,9 @@ def init(
     from ..path import ProperPath
     from time import sleep
 
-    with stdin_console.status(
+    with stdout_console.status(
         f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
-    ):
+    ) as status:
         sleep(0.5)
         typer.echo()  # mainly for a newline!
         try:
@@ -365,6 +435,7 @@ def init(
             try:
                 with path.open(mode="r") as f:
                     if f.read():
+                        status.stop()
                         logger.error(
                             f"A configuration file '{LOCAL_CONFIG_LOC}' already exists and it's not empty! "
                             f"It's ambiguous what to do in this situation."
@@ -375,6 +446,7 @@ def init(
                 if isinstance(e, FileNotFoundError):
                     path.create()
                 else:
+                    status.stop()
                     logger.error(e)
                     logger.error("Configuration initialization has failed!")
                     raise typer.Exit(1)
@@ -394,7 +466,7 @@ timeout: 90
                 logger.error("Configuration initialization has failed!")
                 raise typer.Exit(1)
             else:
-                stdin_console.print(
+                stdout_console.print(
                     "Configuration file has been successfully created! "
                     f"Run '{APP_NAME} show-config' to see the configuration path "
                     "and more configuration details.",
@@ -479,7 +551,7 @@ def get(
     import re
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GETRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, GETRequest, ElabFTWURLError
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..plugins.commons import get_structured_data
     from ..core_validators import Validate, Exit
@@ -488,68 +560,71 @@ def get(
     from ..styles import Highlight, print_typer_error, NoteText
     from ..configuration import get_active_host
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    if export is False:
-        _export_dest = None
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    data_format, export_dest, export_file_ext = CLIExport(
-        data_format, _export_dest, export_overwrite
-    )
-    if not query:
-        format = CLIFormat(data_format, export_file_ext)
-    else:
-        logger.info(
-            "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
+        if export is False:
+            _export_dest = None
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        data_format, export_dest, export_file_ext = CLIExport(
+            data_format, _export_dest, export_overwrite
         )
-        format = CLIFormat("txt", None)  # Use "txt" formatting to show binary
-
-    try:
-        session = GETRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        if not query:
+            format = CLIFormat(data_format, styles_package_identifier, export_file_ext)
+        else:
+            logger.info(
+                "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
+            format = CLIFormat(
+                "txt", styles_package_identifier, None
+            )  # Use "txt" formatting to show binary
+
+        try:
+            session = GETRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                headers=headers,
+            )
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdout_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
     try:
         formatted_data = format(response_data := raw_response.json())
     except UnicodeDecodeError:
@@ -590,11 +665,13 @@ def get(
             )
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -677,7 +754,7 @@ def post(
     from httpx import ConnectError
     from ssl import SSLError
     from .. import APP_NAME
-    from ..api import POSTRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -688,103 +765,106 @@ def post(
     from ..path import ProperPath
     from ..configuration import get_active_host
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        data: dict = get_structured_data(json_, option_name="--data/-d")
-    except ValueError:
-        raise Exit(1)
-    # else:
-    # TODO: Due to strange compatibility issue between typer.context and python 3.9,
-    #   passing json_ as arguments is temporarily deprecated.
-    # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
-    # data_values: list[str, ...] = data.args[1::2]
-    # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
-    try:
-        file: Optional[dict] = get_structured_data(file, option_name="--file")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = POSTRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    if file:
         try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            data: dict = get_structured_data(json_, option_name="--data/-d")
+        except ValueError:
+            raise Exit(1)
+        # else:
+        # TODO: Due to strange compatibility issue between typer.context and python 3.9,
+        #   passing json_ as arguments is temporarily deprecated.
+        # data_keys: list[str, ...] = [_.removeprefix("--") for _ in data.args[::2]]
+        # data_values: list[str, ...] = data.args[1::2]
+        # data: dict[str:str, ...] = dict(zip(data_keys, data_values))
+        try:
+            file: Optional[dict] = get_structured_data(file, option_name="--file")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = POSTRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        if file:
             try:
-                _file_name, _file_path = file["file"]
-            except ValueError:
-                _file_name = None
-                _file_path = file["file"]
-            try:
-                _file_comment = file["comment"]
+                try:
+                    _file_name, _file_path = file["file"]
+                except ValueError:
+                    _file_name = None
+                    _file_path = file["file"]
+                try:
+                    _file_comment = file["comment"]
+                except KeyError:
+                    _file_comment = None
             except KeyError:
-                _file_comment = None
-        except KeyError:
-            logger.critical(
-                f"Error: Given value with --file doesn't follow the expected pattern. "
-                f"See '{APP_NAME} post --help' for more on exactly how to use --file."
-            )
-            raise typer.Exit(1)
+                logger.critical(
+                    f"Error: Given value with --file doesn't follow the expected pattern. "
+                    f"See '{APP_NAME} post --help' for more on exactly how to use --file."
+                )
+                raise typer.Exit(1)
+            else:
+                _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(
+                    mode="rb"
+                )
+                file = {
+                    "file": (_file_name or _file_path.expanded.name, _file_obj),
+                    "comment": (None, _file_comment or ""),
+                }
         else:
-            _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(mode="rb")
-            file = {
-                "file": (_file_name or _file_path.expanded.name, _file_obj),
-                "comment": (None, _file_comment or ""),
-            }
-    else:
-        file = None
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            data=data,
-            files=file,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+            file = None
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                data=data,
+                files=file,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
-    try:
-        # noinspection PyUnboundLocalVariable
-        _file_obj.close()
-    except UnboundLocalError:
-        ...
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdout_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
+        try:
+            # noinspection PyUnboundLocalVariable
+            _file_obj.close()
+        except UnboundLocalError:
+            ...
 
-    format = Format(data_format)
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
@@ -800,13 +880,13 @@ def post(
                 else:
                     typer.echo(f"{_id},{_url}")
                     raise typer.Exit()
-            stdin_console.print("Success: Resource created!", style="green")
+            stdout_console.print("Success: Resource created!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -815,11 +895,13 @@ def post(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -892,7 +974,7 @@ def patch(
     """
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import PATCHRequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -901,72 +983,73 @@ def patch(
     from ..configuration import get_active_host
     from ..plugins.commons import get_structured_data
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        data: dict = get_structured_data(json_, option_name="--data/-d")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = PATCHRequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            data=data,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            data: dict = get_structured_data(json_, option_name="--data/-d")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = PATCHRequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                data=data,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
-    format = Format(data_format)
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdout_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            stdin_console.print("Success: Resource modified!", style="green")
+            stdout_console.print("Success: Resource modified!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -975,11 +1058,13 @@ def patch(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -1052,7 +1137,7 @@ def delete(
     """
     from httpx import ConnectError
     from ssl import SSLError
-    from ..api import DELETERequest, ElabFTWURLError
+    from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
     from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
@@ -1061,67 +1146,68 @@ def delete(
     from ..configuration import get_active_host
     from ..plugins.commons import get_structured_data
 
-    validate_identity = Validate(HostIdentityValidator())
-    validate_identity()
+    with GlobalSharedSession(limited_to="sync"):
+        validate_identity = Validate(HostIdentityValidator())
+        validate_identity()
 
-    try:
-        query: dict = get_structured_data(query, option_name="--query")
-    except ValueError:
-        raise Exit(1)
-    try:
-        headers: dict = get_structured_data(headers, option_name="--headers")
-    except ValueError:
-        raise Exit(1)
-    try:
-        session = DELETERequest()
-    except SSLError as e:
-        logger.error(e)
-        raise Exit() from e
-    try:
-        raw_response = session(
-            endpoint_name,
-            endpoint_id,
-            sub_endpoint_name,
-            sub_endpoint_id,
-            query,
-            headers=headers,
-        )
-    except (AttributeError, TypeError) as e:
-        err_msg = (
-            f"Given data was successfully parsed but there was an error while processing it. "
-            f'Exception details: "{e.__class__.__name__}: {e}".'
-        )
-        file_logger.error(err_msg)
-        print_typer_error(err_msg)
-        stdin_console.print(
-            NoteText(
-                "See --help for examples of how to pass values in JSON format.",
-                stem="Note",
+        try:
+            query: dict = get_structured_data(query, option_name="--query")
+        except ValueError:
+            raise Exit(1)
+        try:
+            headers: dict = get_structured_data(headers, option_name="--headers")
+        except ValueError:
+            raise Exit(1)
+        try:
+            session = DELETERequest()
+        except SSLError as e:
+            logger.error(e)
+            raise Exit() from e
+        try:
+            raw_response = session(
+                endpoint_name,
+                endpoint_id,
+                sub_endpoint_name,
+                sub_endpoint_id,
+                query,
+                headers=headers,
             )
-        )
-        raise Exit(1)
-    except ElabFTWURLError as e:
-        file_logger.error(e)
-        print_typer_error(f"{e}")
-        raise Exit(1) from e
-    except ConnectError as e:
-        logger.error(
-            f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
-            f"Exception details: {e}"
-        )
-        raise Exit(1) from e
-    format = Format(data_format)
+        except (AttributeError, TypeError) as e:
+            err_msg = (
+                f"Given data was successfully parsed but there was an error while processing it. "
+                f'Exception details: "{e.__class__.__name__}: {e}".'
+            )
+            file_logger.error(err_msg)
+            print_typer_error(err_msg)
+            stdout_console.print(
+                NoteText(
+                    "See --help for examples of how to pass values in JSON format.",
+                    stem="Note",
+                )
+            )
+            raise Exit(1)
+        except ElabFTWURLError as e:
+            file_logger.error(e)
+            print_typer_error(f"{e}")
+            raise Exit(1) from e
+        except ConnectError as e:
+            logger.error(
+                f"{APP_NAME} failed to establish a connection to host '{get_active_host()}'. "
+                f"Exception details: {e}"
+            )
+            raise Exit(1) from e
+    format = Format(data_format, package_identifier=styles_package_identifier)
     try:
         formatted_data = format(raw_response.json())
     except JSONDecodeError:
         if raw_response.is_success:
-            stdin_console.print("Success: Resource deleted!", style="green")
+            stdout_console.print("Success: Resource deleted!", style="green")
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
                 f"The HTTP return was: '{raw_response}'."
             )
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     "This error can occur if you are passing any invalid JSON.",
                     stem="Hint",
@@ -1130,11 +1216,13 @@ def delete(
             raise typer.Exit(1)
     else:
         if highlight_syntax is True:
-            highlight = Highlight(format.name)
+            highlight = Highlight(
+                format.name, package_identifier=styles_package_identifier
+            )
             if not raw_response.is_success:
                 stderr_console.print(highlight(formatted_data))
                 raise Exit(1)
-            stdin_console.print(highlight(formatted_data))
+            stdout_console.print(highlight(formatted_data))
         else:
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
@@ -1157,7 +1245,7 @@ def show_config(
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
-    stdin_console.print(md)
+    stdout_console.print(md)
 
 
 @app.command()
@@ -1165,10 +1253,11 @@ def version() -> str:
     """
     Show version number.
     """
-    from ..plugins.version import elapi_version
+    from .. import APP_NAME
+    from ..utils import get_app_version
 
-    _version = elapi_version()
-    typer.echo(_version)
+    _version = get_app_version()
+    stdout_console.print(f"{APP_NAME} {_version}", highlight=False)
     return _version
 
 
@@ -1183,20 +1272,20 @@ def cleanup() -> None:
     from ..path import ProperPath
     from time import sleep
 
-    with stdin_console.status("Cleaning up...", refresh_per_second=15):
+    with stdout_console.status("Cleaning up...", refresh_per_second=15):
         sleep(0.5)
         typer.echo()  # mainly for a newline!
         ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
-    stdin_console.print("Done!", style="green")
+    stdout_console.print("Done!", style="green")
 
 
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
-        _app, _path, _venv = plugin_info
+        ext_app_obj, _path, _venv, _proj_dir = plugin_info
     else:
         continue
-    if _app is not None:
-        original_name: str = _app.info.name
+    if ext_app_obj is not None:
+        original_name: str = ext_app_obj.info.name
         app_name: str = original_name.lower()
         if app_name in EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY:
             error_message = (
@@ -1251,11 +1340,11 @@ for plugin_info in external_local_plugin_typer_apps:
             )
         else:
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
-                _app, _path, _venv
+                ext_app_obj, _path, _venv, _proj_dir
             )
             COMMANDS_TO_SKIP_CLI_STARTUP.append(app_name)
             app.add_typer(
-                _app,
+                ext_app_obj,
                 rich_help_panel=THIRD_PARTY_PLUGIN_PANEL_NAME,
                 callback=cli_startup_for_plugins,
                 result_callback=cli_cleanup_for_third_party_plugins,

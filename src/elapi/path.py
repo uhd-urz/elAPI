@@ -139,7 +139,7 @@ class ProperPath:
             else f"PATH={target}"
         )
 
-    def create(self, verbose: bool = True) -> Union[Path, None]:
+    def create(self, verbose: bool = True) -> None:
         path = self.expanded.resolve(strict=False)
         try:
             if self.kind == "file":
@@ -176,8 +176,6 @@ class ProperPath:
             self.err_logger.error(os_err)
             self.PathException = exception
             raise os_err
-        else:
-            return path
 
     def _remove_file(self, _file: Path = None, verbose: bool = False) -> None:
         file = _file if _file else self.expanded
@@ -215,8 +213,9 @@ class ProperPath:
             for ref in ls_ref:
                 try:
                     self._remove_file(_file=ref, verbose=verbose)
-                except ValueError:
-                    # ValueError occurring means most likely the file is a directory
+                except (ValueError, PermissionError):
+                    # Both ValueError and PermissionError occurring means that
+                    # most likely the file is a directory
                     rmtree(ref)
                     self.err_logger.info(
                         f"Deleted directory (recursively): {ref}"

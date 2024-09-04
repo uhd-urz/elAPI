@@ -7,7 +7,7 @@ import yaml
 from ...core_validators import Exit, Validator, Validate, ValidationError
 from ...loggers import FileLogger
 from ...path import ProperPath
-from ...styles import print_typer_error, stdin_console, NoteText
+from ...styles import print_typer_error, stdout_console, NoteText
 
 file_logger = FileLogger()
 
@@ -114,7 +114,7 @@ class ValidateCLIYAMLFile(Validator):
 def get_structured_data(
     input_: str, /, option_name: str, show_note: bool = True
 ) -> dict:
-    from ...styles.format import JSONFormat, YAMLFormat
+    from ...styles.formats import JSONFormat, YAMLFormat
 
     SUPPORTED_INPUT_FORMAT: str = "JSON"
 
@@ -146,7 +146,7 @@ def get_structured_data(
             f"but it could not be understood as {SUPPORTED_INPUT_FORMAT.upper()} nor a file path."
         )
         if show_note:
-            stdin_console.print(
+            stdout_console.print(
                 NoteText(
                     f"See --help for how to use {option_name}.",
                     stem="Note",

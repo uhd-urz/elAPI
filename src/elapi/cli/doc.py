@@ -1,12 +1,14 @@
 """
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
+
 from .._names import CONFIG_FILE_NAME
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT, EXPORT_DIR
-from ..styles import BaseFormat
+from ..styles import BaseFormat, __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
 supported_highlighting_formats = ", ".join(
-    f"**{_.upper()}**" for _ in BaseFormat.supported_formatter_names()
+    f"**{_.upper()}**"
+    for _ in BaseFormat.supported_formatter_names(styles_package_identifier)
 )
 
 __PARAMETERS__doc__ = {
@@ -33,8 +35,8 @@ __PARAMETERS__doc__ = {
              "a JSON or YAML **file path**. "
              f"E.g., `{APP_NAME} get experiments <experiment ID> --query '{{\"format\": \"csv\"}}'` "
              f"will make a `GET` request to "
-             f"_'https://demo.elabftw.net/api/v2/experiments/\<experiment ID\>/?format=csv'_ "
-             f"which in response will send back the experiment with \<experiment ID\> in CSV format.\n"
+             f"_'https://demo.elabftw.net/api/v2/experiments/\\<experiment ID\\>/?format=csv'_ "
+             f"which in response will send back the experiment with \\<experiment ID\\> in CSV format.\n"
              f"- --query can be powerful. It can be used to make requests for arbitrary data formats "
              f"which can conflict with how --format/-F works. Hence, --format is disabled (i.e., it takes no effect) "
              f"when --query is passed.",
@@ -64,9 +66,9 @@ __PARAMETERS__doc__ = {
               f"`export_dir` value from configuration file is used. "
               f"It should be clear that `export_dir` in a configuration file only accepts a directory path.\n"
               f"- If a directory path is provided as a value, "
-              f"i.e., _'--export \<path/to/directory\>'_, then that path is used instead. "
+              f"i.e., _'--export \\<path/to/directory\\>'_, then that path is used instead. "
               f"When the path is a directory, "
-              f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\<FUNCTION\>.EXT'*. "
+              f"the file name is auto-generated using the following scheme: *'DATE_HHMMSS_\\<FUNCTION\\>.EXT'*. "
               f"File extension (EXT) cannot always be inferred if response data is in binary which can be the case if "
               f"**--query is used** to define data format. In which case, --export will save the data to a "
               f"file with `.bin` extension. To avoid this, a proper file path with correct extension "
@@ -98,10 +100,10 @@ __PARAMETERS__doc__ = {
                f"`{APP_NAME} get info --headers '{{\"Accept\": \"application/json\", \"User-Agent\": "
                f"\"My custom agent 1.0\"}}'`.",
     "no_keys": "Do not show the names of configuration keywords.",
-    "init_host": 'The host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
+    "init_host": 'host URL of your eLabFTW instance. It will look like \"https://demo.elabftw.net/api/v2\".',
     "init_api_token": 'API token (or API key) of your eLabFTW instance. You can generate it from eLabFTW "User Panel". '
                       'Make sure your API key has proper permission for your future tasks.',
-    "init_export_dir": f"Preferred export directory. If '--export-dir' isn't passed, {EXPORT_DIR} will be "
+    "init_export_dir": f"Preferred export directory. If '--export-dir' is not passed, {EXPORT_DIR} will be "
                         "set as the export directory.",
     "cli_startup": f"⚡️Force override detected configuration from '{CONFIG_FILE_NAME}'. "
                      "The value can be in **JSON** format as a string, or a JSON or YAML **file path**. "

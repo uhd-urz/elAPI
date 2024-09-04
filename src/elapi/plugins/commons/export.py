@@ -96,12 +96,11 @@ class ExportPathValidator(PathValidator):
         self._can_overwrite = value
 
     def validate(self) -> ProperPath:
-        from ...configuration import APP_NAME, KEY_EXPORT_DIR, get_active_export_dir
-        from ...styles import stdin_console, NoteText
-        from ...utils import missing_warning
+        from ...configuration import APP_NAME, KEY_EXPORT_DIR, get_active_export_dir, preventive_missing_warning
+        from ...styles import stdout_console, NoteText
 
         export_dir = get_active_export_dir()
-        missing_warning((KEY_EXPORT_DIR, export_dir))
+        preventive_missing_warning((KEY_EXPORT_DIR, export_dir))
         if self.export_path is not None:
             try:
                 path = ProperPath(super().validate(), err_logger=logger)
@@ -121,7 +120,7 @@ class ExportPathValidator(PathValidator):
                         f"--export path '{self.export_path}' already exists! "
                         f"{APP_NAME} will use fallback export location."
                     )
-                    stdin_console.print(
+                    stdout_console.print(
                         NoteText(
                             "Use '--overwrite' to force '--export' to write to an existing file.\n",
                             stem="Note",
