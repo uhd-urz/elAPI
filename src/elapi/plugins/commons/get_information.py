@@ -106,7 +106,8 @@ class RecursiveInformation:
                         stdout_console.print()  # Print a new line to not overlap with progress bar
                         logger.warning(
                             f"Request for '{self.endpoint_name}' data was received by the server but "
-                            f"request was not successful. Exception details: '{e!r}'. "
+                            f"request was not successful. Response status: {response.status_code}. "
+                            f"Exception details: '{e!r}'. "
                             f"Response: '{response.text}'"
                         )
                         await self.cleanup_remaining(event_loop, endpoint)
