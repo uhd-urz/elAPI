@@ -14,6 +14,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
 
 import sys
 from functools import partial
+from json import JSONDecodeError
 from typing import Optional
 
 import typer
@@ -633,6 +634,14 @@ def get(
             "--export/-e will not be able to infer the data format if export path is a directory."
         )
         formatted_data = format(response_data := raw_response.content)
+    except JSONDecodeError as e:
+        logger.error(
+            f"Request for '{endpoint_name}' data was received by the server but "
+            f"request was not successful. Response status: {raw_response.status_code}. "
+            f"Exception details: '{e!r}'. "
+            f"Response: '{raw_response.text}'"
+        )
+        raise Exit(1) from e
     if export:
         if isinstance(response_data, bytes):
             format.name = "binary"
@@ -755,7 +764,6 @@ def post(
     from ssl import SSLError
     from .. import APP_NAME
     from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
@@ -975,7 +983,6 @@ def patch(
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
@@ -1138,7 +1145,6 @@ def delete(
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
