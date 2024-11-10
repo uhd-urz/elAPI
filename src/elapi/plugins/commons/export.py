@@ -10,6 +10,9 @@ logger = Logger()
 
 
 class Export:
+    EXPORT_DATE_FORMAT: str = "%Y-%m-%d"
+    EXPORT_TIME_FORMAT: str = "%H%M%S"
+    EXPORT_FILE_NAME_PREFIX_FORMAT: str = f"{EXPORT_DATE_FORMAT}_{EXPORT_TIME_FORMAT}"
     __slots__ = (
         "file_extension",
         "format_name",
@@ -38,7 +41,10 @@ class Export:
     @file.setter
     def file(self, value):
         date = datetime.now()
-        file_name_prefix: str = f'{date.strftime("%Y-%m-%d")}_{date.strftime("%H%M%S")}'
+        file_name_prefix: str = (
+            f"{date.strftime(Export.EXPORT_DATE_FORMAT)}_"
+            f"{date.strftime(Export.EXPORT_TIME_FORMAT)}"
+        )
         self._file_name = f"{file_name_prefix}_{value}.{self.file_extension}"
 
     @property
@@ -96,7 +102,12 @@ class ExportPathValidator(PathValidator):
         self._can_overwrite = value
 
     def validate(self) -> ProperPath:
-        from ...configuration import APP_NAME, KEY_EXPORT_DIR, get_active_export_dir, preventive_missing_warning
+        from ...configuration import (
+            APP_NAME,
+            KEY_EXPORT_DIR,
+            get_active_export_dir,
+            preventive_missing_warning,
+        )
         from ...styles import stdout_console, NoteText
 
         export_dir = get_active_export_dir()
