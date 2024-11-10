@@ -1,12 +1,23 @@
 import datetime
+import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Optional, Callable, Union, Iterable
 
-from .specification import OwnersDataSpecification
+from dateutil import parser
+
+from .specification import (
+    OwnersDataSpecification,
+    REGISTRY_KEY_TEAMS_INFO_DATE,
+    REGISTRY_KEY_OWNERS_INFO_DATE,
+    BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
+    BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
+)
+from ..._names import ELAB_BRAND_NAME
+from ...core_validators import Validator, ValidationError
 from ...loggers import Logger
 from ...path import ProperPath
 from ...styles import FormatError
-from ...core_validators import Validator, ValidationError
 
 logger = Logger()
 
@@ -130,9 +141,11 @@ class OwnersInformationValidator(Validator):
     def validate(self):
         spec = OwnersDataSpecification()
         formatter = OwnersInformationModifier(self.owners)
+        owner_ids = set(self.owners.items())
         try:
             for team in self.teams:
                 team_id = team["id"]
+                owner_ids.discard(team_id)
                 # Validate team owner identifying information
                 formatter.format(team_id, spec.TEAM_OWNER_ID, allow_null=False)
                 formatter.format(team_id, spec.TEAM_OWNER_FIRST_NAME)
@@ -187,12 +200,12 @@ class OwnersInformationValidator(Validator):
             # See: https://stackoverflow.com/a/48850520, https://stackoverflow.com/a/24999035
         except (SanitizationError, FormatError) as e:
             raise ValidationError(e)
-
-        for team_id in self.owners.items():
-            if team_id not in [team["id"] for team in self.teams]:
-                logger.info(
-                    f"Team ID '{team_id}' exists in owners data that doesn't exist in eLabFTW teams database."
-                )
+        if len(owner_ids) != 0:
+            logger.info(
+                f"The following team IDs '{', '.join(map(str, owner_ids))}' exist in the "
+                f"metadata ('{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}') "
+                f"that do not exist in {ELAB_BRAND_NAME} teams database."
+            )
         return self.owners.items()
 
 
@@ -256,7 +269,7 @@ class BillingInformationPathValidator(Validator):
                 )
             self._month = value
 
-    def validate(self) -> tuple[ProperPath, ProperPath]:
+    def validate(self) -> tuple[Path, dict, dict]:
         import re
         from dateutil import parser
         from collections import namedtuple
@@ -352,6 +365,67 @@ class BillingInformationPathValidator(Validator):
         latest_teams_info_tuple = max(teams_info_files, key=lambda x: x.date)
         latest_owners_info_tuple = max(owners_info_files, key=lambda x: x.date)
         return (
-            latest_teams_info_tuple.parent / latest_teams_info_tuple.name,
-            latest_owners_info_tuple.parent / latest_owners_info_tuple.name,
+            latest_teams_info_tuple.parent,
+            {
+                "file": latest_teams_info_tuple.parent / latest_teams_info_tuple.name,
+                "date": latest_teams_info_tuple.date,
+            },
+            {
+                "file": latest_owners_info_tuple.parent / latest_owners_info_tuple.name,
+                "date": latest_owners_info_tuple.date,
+            },
         )
+
+
+class BillingRegistryValidator(Validator):
+    def __init__(
+        self,
+        registry_file_path: Path,
+        /,
+        teams_info_file_metadata: dict,
+        owners_info_file_metadata: dict,
+    ):
+        self.registry_file_path = registry_file_path
+        self.teams_info_file_metadata = teams_info_file_metadata
+        self.owners_info_file_metadata = owners_info_file_metadata
+
+    def validate(self):
+        try:
+            registry_data = json.loads(self.registry_file_path.read_text())
+        except JSONDecodeError as e:
+            raise ValidationError(
+                f"Existing registry file {self.registry_file_path} contains invalid JSON. "
+                f"Exception details: {e}"
+            )
+        else:
+            try:
+                registry_teams_info_date = parser.parse(
+                    registry_data[REGISTRY_KEY_TEAMS_INFO_DATE]
+                )
+                registry_owners_info_date = parser.parse(
+                    registry_data[REGISTRY_KEY_OWNERS_INFO_DATE]
+                )
+            except KeyError as e:
+                raise ValidationError(
+                    f"Registry file {self.registry_file_path} must contain all necessary fields. "
+                    f"Missing key: {e.args[0]}"
+                )
+            teams_info_date: datetime = self.teams_info_file_metadata["date"]
+            owners_info_date: datetime = self.owners_info_file_metadata["date"]
+            if teams_info_date != registry_teams_info_date:
+                raise ValidationError(
+                    f"'{REGISTRY_KEY_TEAMS_INFO_DATE}: {registry_teams_info_date}' in "
+                    f"registry file {self.registry_file_path} "
+                    f"does not match the latest {BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB} "
+                    f"file date '{teams_info_date}'. The registry file might be outdated. "
+                    f"Registry file cannot be considered!"
+                )
+            if owners_info_date != registry_owners_info_date:
+                raise ValidationError(
+                    f"'{REGISTRY_KEY_OWNERS_INFO_DATE}: {registry_owners_info_date}' in "
+                    f"registry file {self.registry_file_path} "
+                    f"does not match the latest {BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB} "
+                    f"file date '{owners_info_date}'. The registry file might be outdated. "
+                    f"Registry file cannot be considered!"
+                )
+            return registry_data
