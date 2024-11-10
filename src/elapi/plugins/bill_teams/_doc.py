@@ -1,6 +1,9 @@
-from ... import APP_NAME
-from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 from .formats import BaseFormat, _CSVFormat
+from .specification import CLI_DATE_VALID_FORMAT, BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB, \
+    BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB, REGISTRY_FILE_NAME
+from ... import APP_NAME
+from ..._names import LOG_FILE_NAME
+from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
 supported_format_values = ", ".join(
     f"**{_.upper()}**"
@@ -38,6 +41,43 @@ __PARAMETERS__doc__ = {
                       f"then data is simply exported to that file. This allows custom file name scheme. "
                       f"If _--format/-F_ is absent, then {APP_NAME} can use the file extension as the data format. "
                       f"If _--format/-F_ is also present, then file extension is ignored, "
-                      f"and --format value takes precedence.\n"
-
+                      f"and --format value takes precedence.\n",
+    "start_date": f"Billing start year and month. The value must be ISO 8601 compliant, and "
+                  f"in the following format only: **{CLI_DATE_VALID_FORMAT}**. "
+                  f"If no --start-date is passed, then month that is 6 months in the past "
+                  f"from --end-date is assumed.",
+    "end_date": f"Billing end year and month. The value must be ISO 8601 compliant, and "
+                f"in the following format only: **{CLI_DATE_VALID_FORMAT}**. "
+                f"If no --end-date is passed, then the month that is 6 months in the future "
+                f"from --start-date is assumed. --end-date is always inclusive as months start from 1 (this is "
+                f"similar to 1-based indexing). If neither --end-date nor --start-date is passed, then "
+                f"the month before the current month is assumed for --end-date.",
+    "registry_team_id": "Target team ID. If not team ID is passed, then all team IDs are targeted.",
+    "do_not_print_missing_in_teams_info_log": f"A warning log is shown if team is found in "
+                                              f"'{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}' but not in "
+                                              f"'{BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB}'. However, "
+                                              f"this log message can clutter the terminal if the "
+                                              f"situation is expected. Passing "
+                                              f"_--do-not-print-missing-in-teams-info-log_ will only store those logs "
+                                              f"in {LOG_FILE_NAME} file. A single warning message will still be "
+                                              f"shown to at least inform the user. **Note:** The log messages are "
+                                              f"only generated when {REGISTRY_FILE_NAME} file is first populated "
+                                              f"(i.e., when the file doesn't exist, and is being created "
+                                              f"for the first time).",
+    "include_force": f"Force include team to registry. If a team has been billed already, "
+                     f"then team cannot be **re-included** to registry without _--force_.",
+    "ot_datum": "Year and month for the 'Datum' column. The value must be ISO 8601 compliant, and "
+                f"in the following format only: **{CLI_DATE_VALID_FORMAT}**. Always, the first day of "
+                f"the month is assumed. When no _--datum_ is passed, the current month is assumed.",
+    "ot_include_monthly_bill": "By default, monthly bill columns (i.e., 'Gesamt' columns) are not filled in, "
+                               "leaving them to Excel. They can be filled in by passing _--include-monthly-bill_.",
+    "ot_dry_run": "When _--dry-run_ is passed, generate-table will defer from asking registry "
+                  "to make any updates (e.g., incrementing billing counter). This can be useful for "
+                  "testing.",
+    "ot_ignore_exempt": "generate-table will listen to the registry files for what teams "
+                        "to include and what to exempt. _--ignore-exempt_ can be passed to ignore "
+                        "the include/exempt status assigned to a team in the registry so that all teams "
+                        "are included into the output table regardless of their include/exempt status "
+                        "and billing counter. _--dry-run_ is always assumed when _--ignore-exempt_. "
+                        "This can be useful for testing."
 }
