@@ -177,7 +177,7 @@ class ProperPath:
             self.PathException = exception
             raise os_err
 
-    def _remove_file(self, _file: Path = None, verbose: bool = False) -> None:
+    def _remove_file(self, _file: Optional[Path] = None, verbose: bool = False) -> None:
         file = _file if _file else self.expanded
         if not isinstance(file, Path):
             raise ValueError(
