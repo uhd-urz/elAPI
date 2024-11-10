@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Union
 
 from ._config_history import MinimalActiveConfiguration, FieldValueWithKey
 from ..core_validators import Validator, CriticalValidationError
@@ -7,24 +7,32 @@ from ..styles import stdout_console, Missing
 from ..styles.highlight import NoteText
 
 
-class HostConfigurationValidator(Validator):
-    ALREADY_VALIDATED: bool = False
-    __slots__ = ()
-
-    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration, /):
+class ConfigurationValidation:
+    def __init__(
+        self, minimal_active_config_obj: Union[MinimalActiveConfiguration, dict], /
+    ):
         self.active_configuration = minimal_active_config_obj
 
     @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
+    def active_configuration(self) -> Union[MinimalActiveConfiguration, dict]:
         return self._active_configuration
 
     @active_configuration.setter
     def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
+        if not isinstance(value, (MinimalActiveConfiguration, dict)):
             raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
+                f"Value must be an instance of "
+                f"{MinimalActiveConfiguration.__name__} or {dict.__name__}."
             )
         self._active_configuration = value
+
+
+class HostConfigurationValidator(ConfigurationValidation, Validator):
+    ALREADY_VALIDATED: bool = False
+    __slots__ = ()
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
     def validate(self) -> str:
         from ..loggers import Logger
@@ -81,24 +89,12 @@ class HostConfigurationValidator(Validator):
         return host
 
 
-class APITokenConfigurationValidator(Validator):
+class APITokenConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration, /):
-        self.active_configuration = minimal_active_config_obj
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
+    def __init__(self, *args):
+        super().__init__(*args)
 
     def validate(self) -> str:
         from ..loggers import Logger
@@ -164,24 +160,12 @@ class APITokenConfigurationValidator(Validator):
         return api_token
 
 
-class ExportDirConfigurationValidator(Validator):
+class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration, /):
-        self.active_configuration = minimal_active_config_obj
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
+    def __init__(self, *args):
+        super().__init__(*args)
 
     def validate(self) -> Path:
         import errno
@@ -263,32 +247,14 @@ class ExportDirConfigurationValidator(Validator):
                 return export_dir
 
 
-class BooleanWithFallbackConfigurationValidator(Validator):
+class BooleanWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(
-        self,
-        minimal_active_config_obj: MinimalActiveConfiguration,
-        /,
-        key_name: str,
-        fallback_value: bool,
-    ):
-        self.active_configuration = minimal_active_config_obj
+    def __init__(self, *args, key_name: str, fallback_value: bool):
+        super().__init__(*args)
         self.key_name = key_name
         self.fallback_value = fallback_value
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
 
     def validate(self) -> bool:
         from ..loggers import Logger
@@ -313,32 +279,14 @@ class BooleanWithFallbackConfigurationValidator(Validator):
         return value
 
 
-class DecimalWithFallbackConfigurationValidator(Validator):
+class DecimalWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(
-        self,
-        minimal_active_config_obj: MinimalActiveConfiguration,
-        /,
-        key_name: str,
-        fallback_value: float,
-    ):
-        self.active_configuration = minimal_active_config_obj
+    def __init__(self, *args, key_name: str, fallback_value: float):
+        super().__init__(*args)
         self.key_name = key_name
         self.fallback_value = fallback_value
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
 
     def validate(self) -> float:
         from ..loggers import Logger
@@ -363,32 +311,14 @@ class DecimalWithFallbackConfigurationValidator(Validator):
         return float(value)
 
 
-class PluginConfigurationValidator(Validator):
+class PluginConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(
-        self,
-        minimal_active_config_obj: MinimalActiveConfiguration,
-        /,
-        key_name: str,
-        fallback_value: dict,
-    ):
-        self.active_configuration = minimal_active_config_obj
+    def __init__(self, *args, key_name: str, fallback_value: dict):
+        super().__init__(*args)
         self.key_name = key_name
         self.fallback_value = fallback_value
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
 
     def validate(self) -> dict:
         from dynaconf.utils.boxing import DynaBox
@@ -429,7 +359,7 @@ class PluginConfigurationValidator(Validator):
         return value
 
 
-class MainConfigurationValidator(Validator):
+class MainConfigurationValidator(ConfigurationValidation, Validator):
     ALL_VALIDATORS: list = [
         HostConfigurationValidator,
         APITokenConfigurationValidator,
@@ -457,7 +387,7 @@ class MainConfigurationValidator(Validator):
     ):
         from ._config_history import MinimalActiveConfiguration
 
-        self.active_configuration = MinimalActiveConfiguration()
+        super().__init__(MinimalActiveConfiguration())
         self.limited_to = limited_to
 
     @property
@@ -479,18 +409,6 @@ class MainConfigurationValidator(Validator):
                         f"Value must be an iterable of {Validator.__name__} subclass."
                     )
             self._limited_to = value
-
-    @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
-        return self._active_configuration
-
-    @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
-            raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
-            )
-        self._active_configuration = value
 
     def validate(self) -> list[FieldValueWithKey]:
         from ..core_validators import Validate, ValidationError
@@ -533,8 +451,8 @@ class MainConfigurationValidator(Validator):
             unsafe_token_warning = Validate(
                 BooleanWithFallbackConfigurationValidator(
                     self.active_configuration,
-                    KEY_UNSAFE_TOKEN_WARNING,
-                    UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
+                    key_name=KEY_UNSAFE_TOKEN_WARNING,
+                    fallback_value=UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
                 )
             ).get()
             # Update validated_fields after validation
@@ -549,8 +467,8 @@ class MainConfigurationValidator(Validator):
                 value = Validate(
                     BooleanWithFallbackConfigurationValidator(
                         self.active_configuration,
-                        key_name,
-                        default_value,
+                        key_name=key_name,
+                        fallback_value=default_value,
                     )
                 ).get()
                 # Update validated_fields after validation
@@ -559,8 +477,8 @@ class MainConfigurationValidator(Validator):
             timeout = Validate(
                 DecimalWithFallbackConfigurationValidator(
                     self.active_configuration,
-                    KEY_TIMEOUT,
-                    TIMEOUT_DEFAULT_VAL,
+                    key_name=KEY_TIMEOUT,
+                    fallback_value=TIMEOUT_DEFAULT_VAL,
                 )
             ).get()
             # Update validated_fields after validation
@@ -569,8 +487,8 @@ class MainConfigurationValidator(Validator):
             plugin = Validate(
                 PluginConfigurationValidator(
                     self.active_configuration,
-                    KEY_PLUGIN_KEY_NAME,
-                    PLUGIN_DEFAULT_VALUE,
+                    key_name=KEY_PLUGIN_KEY_NAME,
+                    fallback_value=PLUGIN_DEFAULT_VALUE,
                 )
             ).get()
             # Update validated_fields after validation
