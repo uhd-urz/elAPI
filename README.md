@@ -156,7 +156,7 @@ If both `host` and `api_token` are detected, you are good to go!
 ### Overriding configuration
 
 elAPI now supports `--override/--OC` as a global option that can be used to override the configuration parameters
-as detected by `elapi show-cofig`. All plugins will also automatically listen to the overridden configuration. This can
+as detected by `elapi show-config`. All plugins will also automatically listen to the overridden configuration. This can
 be useful to set certain configurations temporarily. E.g., `elapi --OC '{"timeout": 300"}' get info` will override
 the `timeout` from the configuration files.
 
