@@ -309,10 +309,6 @@ else:
     # noinspection PyTypeChecker
     @app.command(name="store-info")
     def store_teams_and_owners(
-        root_directory: Annotated[
-            str,
-            typer.Option("--root-dir", help=docs["root_directory"], show_default=False),
-        ],
         owners_data_path: Annotated[
             str,
             typer.Option(
@@ -344,11 +340,13 @@ else:
 
         **Example**:
 
-        `$ elapi bill-teams store-info --root-dir ~/bill-teams --meta-source <CSV file path to owners information>` will
-        store the information in the following structure. _YYYY_ and _MM_ refer to year and month number respectively.
+        `$ elapi bill-teams store-info --meta-source <CSV file path to owners information>` will
+        store the information in the following structure.
+        The export location `root_dir: <directory>` must be defined under
+        `plugins.bill_teams` in the configuration file. _YYYY_ and _MM_ refer to year and month number respectively.
 
         ```sh
-        ~/bill-teams/
+        ~/bill-teams/  # from root_dir: ~/bill-teams/ in elapi.yml
         └── YYYY/
             └── MM/
                 ├── <YYYY-MM-DD_HHMMSS>_owners_info.json
@@ -357,7 +355,6 @@ else:
         """
         from ...styles import print_typer_error
         from ...path import ProperPath
-        from ...core_validators import Validate, PathValidator, ValidationError
         from .specification import (
             CLI_DATE_VALID_FORMAT,
             CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
@@ -373,17 +370,7 @@ else:
             )
             raise Exit(1)
 
-        if not ProperPath(root_directory).kind == "dir":
-            print_typer_error("'--root-dir' must be a path to a directory.")
-            raise Exit(1)
-        try:
-            validate_path = Validate(PathValidator(root_directory))
-            root_directory: ProperPath = validate_path.get()
-        except ValidationError:
-            logger.error(
-                f"--root-dir path '{root_directory}' could not be validated! Data could not be stored in desired location."
-            )
-            raise Exit(1)
+        root_directory: ProperPath = get_root_dir()
         if target_date is None:
             target_date = datetime.now()
         else:
