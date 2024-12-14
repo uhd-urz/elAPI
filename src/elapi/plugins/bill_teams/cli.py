@@ -370,7 +370,10 @@ else:
             )
             raise Exit(1)
 
-        root_directory: ProperPath = get_root_dir()
+        root_directory: ProperPath = ProperPath(get_root_dir())
+        root_directory.create()
+        # Not strictly necessary, as Export already crates the paren directories,
+        # but mainly for the log.
         if target_date is None:
             target_date = datetime.now()
         else:

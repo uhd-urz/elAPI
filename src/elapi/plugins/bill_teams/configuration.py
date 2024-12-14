@@ -47,12 +47,6 @@ class RootDirConfigurationValidator(ConfigurationValidation, Validator):
                     )
                     raise CriticalValidationError
                 root_dir = root_dir.expanded
-                if not root_dir.exists():
-                    logger.error(
-                        f"'{PLUGIN_LINK}.{CONFIG_KEY_ROOT_DIR}' value '{root_dir}' "
-                        f"found in configuration file does not exist as a path."
-                    )
-                    raise CriticalValidationError
                 return root_dir
 
 
