@@ -584,9 +584,8 @@ def get(
             logger.info(
                 "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
             )
-            format = CLIFormat(
-                "txt", styles_package_identifier, None
-            )  # Use "txt" formatting to show binary
+            highlight_syntax = False
+            format = CLIFormat("txt", styles_package_identifier, None)
 
         try:
             session = GETRequest()
@@ -628,6 +627,7 @@ def get(
             raise Exit(1) from e
     try:
         formatted_data = format(response_data := raw_response.json())
+        # Because we prioritize the fact that most responses are sent as JSON
     except UnicodeDecodeError:
         logger.info(
             "Response data is in binary (or not UTF-8 encoded). "
@@ -635,13 +635,20 @@ def get(
         )
         formatted_data = format(response_data := raw_response.content)
     except JSONDecodeError as e:
-        logger.error(
-            f"Request for '{endpoint_name}' data was received by the server but "
-            f"request was not successful. Response status: {raw_response.status_code}. "
-            f"Exception details: '{e!r}'. "
-            f"Response: '{raw_response.text}'"
-        )
-        raise Exit(1) from e
+        if raw_response.status_code == 200:
+            logger.info(
+                f"Request was successful, but response data could not be parsed as JSON. "
+                f"Response will be read as binary."
+            )
+            formatted_data = format(response_data := raw_response.content)
+        else:
+            logger.error(
+                f"Request for '{endpoint_name}' data was received by the server but "
+                f"request was not successful. Response status: {raw_response.status_code}. "
+                f"Exception details: '{e!r}'. "
+                f"Response: '{raw_response.text}'"
+            )
+            raise Exit(1) from e
     if export:
         if isinstance(response_data, bytes):
             format.name = "binary"
@@ -682,6 +689,8 @@ def get(
                 raise Exit(1)
             stdout_console.print(highlight(formatted_data))
         else:
+            if isinstance(response_data, bytes):
+                formatted_data = response_data
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
                 raise Exit(1)

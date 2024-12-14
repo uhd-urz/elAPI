@@ -162,6 +162,19 @@ class CSVFormat(BaseFormat):
         return csv_as_string
 
 
+class TXTFormat(BaseFormat):
+    name: str = "txt"
+    convention: list[str] = ["txt"]
+    package_identifier: str = styles_package_identifier
+
+    @classmethod
+    def pattern(cls) -> str:
+        return r"^txt|text|plaintext$"
+
+    def __call__(self, data: Any) -> str:
+        return str(data)
+
+
 class RegisterFormattingLanguage:
     def __init__(self, language: str, *, package_identifier: str):
         self.package_identifier = package_identifier
