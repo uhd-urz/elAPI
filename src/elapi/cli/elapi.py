@@ -28,7 +28,7 @@ from ._plugin_handler import (
 )
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
-from ..configuration import FALLBACK_EXPORT_DIR
+from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
 from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
@@ -38,11 +38,12 @@ from ..styles import (
     rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
+from ..utils.typer_patches import patch_typer_flag_value
 
 logger = Logger()
 file_logger = FileLogger()
 pretty.install()
-
+patch_typer_flag_value()
 
 app = Typer()
 SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
@@ -513,17 +514,16 @@ def get(
         ),
     ] = False,
     export: Annotated[
-        Optional[bool],
+        Optional[str],
         typer.Option(
             "--export",
             "-e",
             help=docs["export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
+            is_flag=False,
+            flag_value="",
             show_default=False,
         ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    ] = None,
     export_overwrite: Annotated[
         bool,
         typer.Option("--overwrite", help=docs["export_overwrite"], show_default=False),
@@ -565,8 +565,8 @@ def get(
         validate_identity = Validate(HostIdentityValidator())
         validate_identity()
 
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
         try:
             query: dict = get_structured_data(query, option_name="--query")
         except ValueError:
@@ -576,7 +576,7 @@ def get(
         except ValueError:
             raise Exit(1)
         data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
+            data_format, export, export_overwrite
         )
         if not query:
             format = CLIFormat(data_format, styles_package_identifier, export_file_ext)
@@ -649,7 +649,7 @@ def get(
                 f"Response: '{raw_response.text}'"
             )
             raise Exit(1) from e
-    if export:
+    if export is not None:
         if isinstance(response_data, bytes):
             format.name = "binary"
             format.convention = "bin"
@@ -659,25 +659,25 @@ def get(
             _query_params = "_".join(map(lambda x: f"{x[0]}={x[1]}", query.items()))
             file_name_stub += f"_query_{_query_params}" if query else ""
         file_name_stub = re.sub(r"_{2,}", "_", file_name_stub).rstrip("_")
-        export = Export(
+        export_response = Export(
             export_dest,
             file_name_stub=file_name_stub,
             file_extension=format.convention,
             format_name=format.name,
         )
         if not raw_response.is_success:
-            export(data=formatted_data, verbose=False)
+            export_response(data=formatted_data, verbose=False)
             logger.warning(
                 "Request was not successful. "
-                f"Response for '{export.file_name_stub}' is exported to "
-                f"{export.destination} anyway in {export.format_name} format."
+                f"Response for '{export_response.file_name_stub}' is exported to "
+                f"{export_response.destination} anyway in {export_response.format_name} format."
             )
             raise Exit(1)
         else:
-            export(data=formatted_data, verbose=False)
+            export_response(data=formatted_data, verbose=False)
             logger.info(
-                f"Response for '{export.file_name_stub}' is successfully exported to "
-                f"{export.destination} in {export.format_name} format."
+                f"Response for '{export_response.file_name_stub}' is successfully exported to "
+                f"{export_response.destination} in {export_response.format_name} format."
             )
     else:
         if highlight_syntax is True:

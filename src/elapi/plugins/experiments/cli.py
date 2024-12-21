@@ -9,14 +9,16 @@ from .experiments import (
     append_to_experiment,
 )
 from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
+from ...configuration import get_active_export_dir
 from ...core_validators import ValidationError
 from ...loggers import Logger
 from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, Typer
 from ...styles import stdout_console, stderr_console
+from ...utils.typer_patches import patch_typer_flag_value
 
 logger = Logger()
 
-
+patch_typer_flag_value()
 app = Typer(name="experiments", help="Manage experiments.")
 
 
@@ -40,17 +42,16 @@ def get(
         ),
     ] = False,
     export: Annotated[
-        Optional[bool],
+        Optional[str],
         typer.Option(
             "--export",
             "-e",
             help=elapi_docs["export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
+            is_flag=False,
+            flag_value="",
             show_default=False,
         ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    ] = None,
     export_overwrite: Annotated[
         bool,
         typer.Option(
@@ -74,8 +75,8 @@ def get(
         validate_config = Validate(HostIdentityValidator())
         validate_config()
 
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
         try:
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
@@ -83,18 +84,18 @@ def get(
             raise typer.Exit(1)
         else:
             data_format, export_dest, export_file_ext = CLIExport(
-                data_format, _export_dest, export_overwrite
+                data_format, export, export_overwrite
             )
             format = CLIFormat(data_format, __package__, export_file_ext)
 
             experiment_name: str = f"experiment_{experiment_id}"
             if isinstance(format, BinaryFormat):
-                if not export:
+                if export is not None:
                     logger.info(
                         f"Data with format '{data_format}' cannot be shown on the terminal. "
                         f"Data will be exported."
                     )
-                export = True
+                export = get_active_export_dir()
                 with stdout_console.status(
                     f"Getting {experiment_name}...", refresh_per_second=15
                 ):
@@ -106,15 +107,15 @@ def get(
                 response = FixedExperimentEndpoint().get(experiment_id)
                 formatted_data = format(response_data := response.json())
 
-            if export:
+            if export is not None:
                 file_name_stub = experiment_name
-                export = Export(
+                export_response = Export(
                     export_dest,
                     file_name_stub=file_name_stub,
                     file_extension=format.convention,
                     format_name=format.name,
                 )
-                export(data=formatted_data, verbose=True)
+                export_response(data=formatted_data, verbose=True)
             else:
                 if highlight_syntax is True:
                     highlight = Highlight(format.name, package_identifier=__package__)
@@ -277,17 +278,16 @@ def download_attachment(
         ),
     ],
     export: Annotated[
-        Optional[bool],
+        Optional[str],
         typer.Option(
             "--export",
             "-e",
             help=elapi_docs["export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
+            is_flag=False,
+            flag_value="",
             show_default=False,
         ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    ] = None,
     export_overwrite: Annotated[
         bool,
         typer.Option(
@@ -308,9 +308,10 @@ def download_attachment(
         validate_config = Validate(HostIdentityValidator())
         validate_config()
 
-        if export is False:
-            _export_dest = None
-        export = True  # export is always true for downloading attachment
+        if (
+            export == "" or export is None
+        ):  # exporting is the default for downloading attachment
+            export = get_active_export_dir()
         try:
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
@@ -334,10 +335,10 @@ def download_attachment(
                 raise typer.Exit(1)
             else:
                 data_format, export_dest, export_file_ext = CLIExport(
-                    attachment_extension, _export_dest, export_overwrite
+                    attachment_extension, export, export_overwrite
                 )
                 _is_real_id = attachment_id == attachment_real_id
-                if export:
+                if export is not None:
                     if export_file_ext and export_file_ext != attachment_extension:
                         logger.info(
                             f"File extension is '{export_file_ext}' but "
@@ -347,10 +348,10 @@ def download_attachment(
                         f"attachment_{attachment_real_id if _is_real_id else attachment_hash[:6]}_"
                         f"{attachment_name}"
                     )
-                    export = Export(
+                    export_attachment = Export(
                         export_dest,
                         file_name_stub=file_name_stub,
                         file_extension=attachment_extension,
                         format_name=data_format,
                     )
-                    export(data=attachment, verbose=True)
+                    export_attachment(data=attachment, verbose=True)

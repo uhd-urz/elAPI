@@ -24,7 +24,7 @@ else:
     from ...styles import print_typer_error
     from ._doc import __PARAMETERS__doc__ as docs
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-    from ...configuration import APP_NAME
+    from ...configuration import APP_NAME, get_active_export_dir
     from ...loggers import Logger
     from ...styles import stdout_console, stderr_console
     from ...core_validators import RuntimeValidationError, Exit, ValidationError
@@ -35,6 +35,7 @@ else:
     from ..commons import Export
     from ...styles import Highlight
     from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ...utils.typer_patches import patch_typer_flag_value
     from .registry import (
         _initialize_registry_file,
         _is_team_bill_generation_metadata_sane,
@@ -63,6 +64,7 @@ else:
         OUTPUT_TABLE_FILE_NAME_STUB,
     )
 
+    patch_typer_flag_value()
     app = Typer(
         name=PLUGIN_NAME,
         help="Manage bills incurred by teams.",
@@ -100,17 +102,16 @@ else:
         ] = False,
         sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
         export: Annotated[
-            Optional[bool],
+            Optional[str],
             typer.Option(
                 "--export",
                 "-e",
                 help=elapi_docs["export"] + docs["export_details"],
-                is_flag=True,
-                is_eager=True,
+                is_flag=False,
+                flag_value="",
                 show_default=False,
             ),
-        ] = False,
-        _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+        ] = None,
         export_overwrite: Annotated[
             bool,
             typer.Option(
@@ -135,14 +136,14 @@ else:
             except RuntimeValidationError as e:
                 validation_status.stop()
                 raise e
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
         if sort_json_format is True:
             package_identifier: str = __package__
         else:
             package_identifier: str = styles_package_identifier
         data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
+            data_format, export, export_overwrite
         )
         format = CLIFormat(data_format, package_identifier, export_file_ext)
 
@@ -167,7 +168,7 @@ else:
 
         teams_list = uvloop.run(gather_teams_list())
         formatted_teams = format(teams := teams_list.items())
-        if export:
+        if export is not None:
             export_teams = Export(
                 export_dest,
                 file_name_stub=BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
@@ -210,17 +211,16 @@ else:
             ),
         ] = False,
         export: Annotated[
-            Optional[bool],
+            Optional[str],
             typer.Option(
                 "--export",
                 "-e",
                 help=elapi_docs["export"] + docs["export_details"],
-                is_flag=True,
-                is_eager=True,
+                is_flag=False,
+                flag_value="",
                 show_default=False,
             ),
-        ] = False,
-        _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+        ] = None,
         export_overwrite: Annotated[
             bool,
             typer.Option(
@@ -250,8 +250,8 @@ else:
                     except RuntimeValidationError as e:
                         validation_status.stop()
                         raise e
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
 
         if sort_json_format is True:
             package_identifier: str = __package__
@@ -259,7 +259,7 @@ else:
             package_identifier: str = styles_package_identifier
 
         data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
+            data_format, export, export_overwrite
         )
         format = CLIFormat(data_format, package_identifier, export_file_ext)
 
@@ -290,7 +290,7 @@ else:
             raise Exit(1)
         formatted_owners = format(owners := ol.items())
 
-        if export:
+        if export is not None:
             export_teams = Export(
                 export_dest,
                 file_name_stub=BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
@@ -398,7 +398,7 @@ else:
         store_location = root_directory / target_year / target_month
 
         if teams_info_only is True:
-            get_teams(sort_json_format=True, export=True, _export_dest=store_location)
+            get_teams(sort_json_format=True, export=str(store_location))
             return
         if owners_info_only is True:
             if owners_data_path is None:
@@ -409,22 +409,18 @@ else:
             get_owners(
                 owners_data_path,
                 sort_json_format=True,
-                export=True,
-                _export_dest=store_location,
+                export=str(store_location),
             )
             return
         if owners_data_path is None:
             print_typer_error("Missing option '--meta-source'.")
             raise Exit(1)
-        _teams_info = get_teams(
-            sort_json_format=True, export=True, _export_dest=store_location
-        )
+        _teams_info = get_teams(sort_json_format=True, export=str(store_location))
         get_owners(
             owners_data_path,
             skip_essential_validation=True,
             sort_json_format=True,
-            export=True,
-            _export_dest=store_location,
+            export=str(store_location),
         )
 
     def _parse_cli_input_date(user_date: str, /, date_cli_arg: str):
@@ -772,17 +768,16 @@ else:
             ),
         ] = False,
         export: Annotated[
-            Optional[bool],
+            Optional[str],
             typer.Option(
                 "--export",
                 "-e",
                 help=elapi_docs["export"] + docs["export_details"],
-                is_flag=True,
-                is_eager=True,
+                is_flag=False,
+                flag_value="",
                 show_default=False,
             ),
-        ] = False,
-        _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+        ] = None,
         export_overwrite: Annotated[
             bool,
             typer.Option(
@@ -806,8 +801,8 @@ else:
 
         if ignore_exempt is True:
             dry_run = True
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
         DE_MONTHS_ONLY = list(de_months.__dict__.values())
         if datum is None:
             datum = BILLING_BASE_DATE
@@ -826,7 +821,7 @@ else:
                 raise Exit(1)
             registry_files_info.append((path, year, month))
         data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
+            data_format, export, export_overwrite
         )
         format = CLIFormat(data_format, styles_package_identifier, export_file_ext)
         OT_CONTAINER: dict = {}
@@ -1092,7 +1087,7 @@ else:
             for registry_file_path, registry_data in billed_registries.items():
                 modify_registry_file(registry_file_path, registry_data)
         formatted_ot = format(list(OT_CONTAINER.values()))
-        if export:
+        if export is not None:
             export_teams = Export(
                 export_dest,
                 file_name_stub=OUTPUT_TABLE_FILE_NAME_STUB,
