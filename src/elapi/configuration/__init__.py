@@ -70,6 +70,7 @@ from .overridable_vars import (
     get_development_mode,
     get_active_plugin_configs,
 )
+from .validators import ConfigurationValidation
 from .validators import PluginConfigurationValidator as _PluginConfigurationValidator
 
 validate_configuration(limited_to=[_PluginConfigurationValidator])

@@ -12,8 +12,10 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
         $ elapi get users --id <id>
 """
 
+import platform
 import sys
 from functools import partial
+from json import JSONDecodeError
 from typing import Optional
 
 import typer
@@ -27,7 +29,7 @@ from ._plugin_handler import (
 )
 from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
-from ..configuration import FALLBACK_EXPORT_DIR
+from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
 from ..loggers import Logger, FileLogger
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import get_custom_help_text
@@ -37,11 +39,13 @@ from ..styles import (
     rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
+from ..utils import get_external_python_version, PythonVersionCheckFailed
+from ..utils.typer_patches import patch_typer_flag_value
 
 logger = Logger()
 file_logger = FileLogger()
 pretty.install()
-
+patch_typer_flag_value()
 
 app = Typer()
 SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
@@ -262,7 +266,13 @@ for inter_app_obj in internal_plugin_typer_apps:
 
 
 def disable_plugin(
-    main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
+    main_app: Typer,
+    /,
+    *,
+    plugin_name: str,
+    err_msg: str,
+    panel_name: str,
+    short_reason: Optional[str] = None,
 ):
     import logging
     from ..utils import add_message
@@ -272,11 +282,15 @@ def disable_plugin(
         if plugin_name == registered_app.typer_instance.info.name:
             main_app.registered_groups.pop(i)
             break
+    help_message = (
+        f"🚫️ Disabled{' due to ' + short_reason if short_reason is not None else ''}. "
+        f"See `--help` or log file to know more."
+    )
 
     @main_app.command(
         name=plugin_name,
         rich_help_panel=panel_name,
-        help="🚫️ Disabled due to name conflict. See `--help` or log file to know more.",
+        help=help_message,
     )
     def name_conflict_error():
         from ..core_validators import Exit
@@ -512,17 +526,16 @@ def get(
         ),
     ] = False,
     export: Annotated[
-        Optional[bool],
+        Optional[str],
         typer.Option(
             "--export",
             "-e",
             help=docs["export"] + docs["export_details"],
-            is_flag=True,
-            is_eager=True,
+            is_flag=False,
+            flag_value="",
             show_default=False,
         ),
-    ] = False,
-    _export_dest: Annotated[Optional[str], typer.Argument(hidden=True)] = None,
+    ] = None,
     export_overwrite: Annotated[
         bool,
         typer.Option("--overwrite", help=docs["export_overwrite"], show_default=False),
@@ -564,8 +577,8 @@ def get(
         validate_identity = Validate(HostIdentityValidator())
         validate_identity()
 
-        if export is False:
-            _export_dest = None
+        if export == "":
+            export = get_active_export_dir()
         try:
             query: dict = get_structured_data(query, option_name="--query")
         except ValueError:
@@ -575,7 +588,7 @@ def get(
         except ValueError:
             raise Exit(1)
         data_format, export_dest, export_file_ext = CLIExport(
-            data_format, _export_dest, export_overwrite
+            data_format, export, export_overwrite
         )
         if not query:
             format = CLIFormat(data_format, styles_package_identifier, export_file_ext)
@@ -583,9 +596,8 @@ def get(
             logger.info(
                 "When --query is not empty, formatting with '--format/-F' and highlighting are disabled."
             )
-            format = CLIFormat(
-                "txt", styles_package_identifier, None
-            )  # Use "txt" formatting to show binary
+            highlight_syntax = False
+            format = CLIFormat("txt", styles_package_identifier, None)
 
         try:
             session = GETRequest()
@@ -627,13 +639,29 @@ def get(
             raise Exit(1) from e
     try:
         formatted_data = format(response_data := raw_response.json())
+        # Because we prioritize the fact that most responses are sent as JSON
     except UnicodeDecodeError:
         logger.info(
             "Response data is in binary (or not UTF-8 encoded). "
             "--export/-e will not be able to infer the data format if export path is a directory."
         )
         formatted_data = format(response_data := raw_response.content)
-    if export:
+    except JSONDecodeError as e:
+        if raw_response.status_code == 200:
+            logger.info(
+                f"Request was successful, but response data could not be parsed as JSON. "
+                f"Response will be read as binary."
+            )
+            formatted_data = format(response_data := raw_response.content)
+        else:
+            logger.error(
+                f"Request for '{endpoint_name}' data was received by the server but "
+                f"request was not successful. Response status: {raw_response.status_code}. "
+                f"Exception details: '{e!r}'. "
+                f"Response: '{raw_response.text}'"
+            )
+            raise Exit(1) from e
+    if export is not None:
         if isinstance(response_data, bytes):
             format.name = "binary"
             format.convention = "bin"
@@ -643,25 +671,25 @@ def get(
             _query_params = "_".join(map(lambda x: f"{x[0]}={x[1]}", query.items()))
             file_name_stub += f"_query_{_query_params}" if query else ""
         file_name_stub = re.sub(r"_{2,}", "_", file_name_stub).rstrip("_")
-        export = Export(
+        export_response = Export(
             export_dest,
             file_name_stub=file_name_stub,
             file_extension=format.convention,
             format_name=format.name,
         )
         if not raw_response.is_success:
-            export(data=formatted_data, verbose=False)
+            export_response(data=formatted_data, verbose=False)
             logger.warning(
                 "Request was not successful. "
-                f"Response for '{export.file_name_stub}' is exported to "
-                f"{export.destination} anyway in {export.format_name} format."
+                f"Response for '{export_response.file_name_stub}' is exported to "
+                f"{export_response.destination} anyway in {export_response.format_name} format."
             )
             raise Exit(1)
         else:
-            export(data=formatted_data, verbose=False)
+            export_response(data=formatted_data, verbose=False)
             logger.info(
-                f"Response for '{export.file_name_stub}' is successfully exported to "
-                f"{export.destination} in {export.format_name} format."
+                f"Response for '{export_response.file_name_stub}' is successfully exported to "
+                f"{export_response.destination} in {export_response.format_name} format."
             )
     else:
         if highlight_syntax is True:
@@ -673,6 +701,8 @@ def get(
                 raise Exit(1)
             stdout_console.print(highlight(formatted_data))
         else:
+            if isinstance(response_data, bytes):
+                formatted_data = response_data
             if not raw_response.is_success:
                 typer.echo(formatted_data, file=sys.stderr)
                 raise Exit(1)
@@ -755,7 +785,6 @@ def post(
     from ssl import SSLError
     from .. import APP_NAME
     from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..plugins.commons import get_location_from_headers
@@ -975,7 +1004,6 @@ def patch(
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
@@ -1138,7 +1166,6 @@ def delete(
     from httpx import ConnectError
     from ssl import SSLError
     from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
-    from json import JSONDecodeError
     from ..core_validators import Validate
     from ..api.validators import HostIdentityValidator
     from ..styles import Format, Highlight, NoteText, print_typer_error
@@ -1303,6 +1330,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         elif app_name in INTERNAL_PLUGIN_NAME_REGISTRY:
             error_message = (
@@ -1320,6 +1348,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=INTERNAL_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         elif app_name in RESERVED_PLUGIN_NAMES:
             error_message = (
@@ -1337,8 +1366,47 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         else:
+            if _venv is not None:
+                try:
+                    external_plugin_python_version = get_external_python_version(
+                        venv_dir=_venv
+                    )[:2]
+                except PythonVersionCheckFailed as e:
+                    error_message = (
+                        f"Plugin name '{original_name}' from {_path} uses virtual environment "
+                        f"{_venv} whose own Python version could not "
+                        f"be determined for the following reason: {e}. Plugin will be disabled."
+                    )
+                    disable_plugin(
+                        app,
+                        plugin_name=app_name,
+                        err_msg=error_message,
+                        panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                        short_reason="undetermined .venv Python version",
+                    )
+                    continue
+                else:
+                    if external_plugin_python_version != (
+                        own_python_version := platform.python_version_tuple()[:2]
+                    ):
+                        error_message = (
+                            f"Plugin name '{original_name}' from {_path} uses virtual environment "
+                            f"{_venv} whose Python version (major and minor) "
+                            f"'{'.'.join(external_plugin_python_version)}' "
+                            f"does not match {APP_NAME}'s own Python version "
+                            f"'{'.'.join(own_python_version)}'. Plugin will be disabled."
+                        )
+                        disable_plugin(
+                            app,
+                            plugin_name=app_name,
+                            err_msg=error_message,
+                            panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                            short_reason=".venv Python version conflict",
+                        )
+                        continue
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
                 ext_app_obj, _path, _venv, _proj_dir
             )
