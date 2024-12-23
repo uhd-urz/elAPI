@@ -1394,7 +1394,7 @@ for plugin_info in external_local_plugin_typer_apps:
                     ):
                         error_message = (
                             f"Plugin name '{original_name}' from {_path} uses virtual environment "
-                            f"{_venv} whose Python version (major and micro) "
+                            f"{_venv} whose Python version (major and minor) "
                             f"'{'.'.join(external_plugin_python_version)}' "
                             f"does not match {APP_NAME}'s own Python version "
                             f"'{'.'.join(own_python_version)}'. Plugin will be disabled."
