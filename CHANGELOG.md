@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2024-12-21
+
+This release mainly revamps and completes the `bill-teams` plugin that is used for billing eLabFTW usage at the
+[University of Heidelberg](https://www.uni-heidelberg.de/en). It also addresses one important issue with third-party
+plugins about version Python version mismatch.
+
+### Added
+
+- Revamped `bill-teams` plugins with `generate-table` and `registry` commands
+- Add `TXT` format support for `--format` wherever `--format` is supported
+
+### Fixed
+
+- Fix response format being incorrectly fallback-ing to `TXT` (GH #143)
+- Fix plugins using packages that use binary builds failing (GH #145)
+
+### Changes
+
+- Improved how internal logic for `--export` acting as a both boolean and a string (e.g., a file path)
+- A third-party plugin that uses a virtual environment must use the same Python version as elAPI's own (GH #146)
+
 ## [2.2.0] - 2024-09-04
 
 This release brings some general bugfixes, improvements, and new library APIs.
