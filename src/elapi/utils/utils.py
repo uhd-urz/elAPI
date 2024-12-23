@@ -1,11 +1,16 @@
 import re
+import subprocess
 from pathlib import Path
+from typing import Tuple
 
 from .._names import VERSION_FILE_NAME
 from ..styles import Missing
 
 
 class PreventiveWarning(RuntimeWarning): ...
+
+
+class PythonVersionCheckFailed(Exception): ...
 
 
 def check_reserved_keyword(
@@ -47,6 +52,47 @@ def update_kwargs_with_defaults(kwargs: dict, /, defaults: dict) -> None:
 
 def get_app_version() -> str:
     return Path(f"{__file__}/../../{VERSION_FILE_NAME}").resolve().read_text().strip()
+
+
+def _get_venv_relative_python_binary_path() -> Path:
+    return Path("bin/python")
+
+
+def get_external_python_version(venv_dir: Path) -> Tuple[str, str, str]:
+    external_python_path: Path = (
+        venv_dir / _get_venv_relative_python_binary_path()
+    ).resolve()
+    if external_python_path.exists() is False:
+        raise PythonVersionCheckFailed(
+            f"Resolved Python binary path {external_python_path} does not exist"
+        )
+    try:
+        external_python_version_call = subprocess.run(
+            [str(external_python_path), "--version"],
+            check=True,
+            encoding="utf-8",
+            timeout=5,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise PythonVersionCheckFailed(e) from e
+    except TimeoutError as e:
+        raise PythonVersionCheckFailed(e) from e
+    else:
+        external_python_version_match = re.search(
+            r"^Python (\d+)\.(\d+)\.(\d+)$",  # ensures 3 strings in match.groups()
+            external_python_version_call.stdout,
+            flags=re.IGNORECASE,
+        )
+        if external_python_version_match is not None:
+            # noinspection PyTypeChecker
+            external_python_version: Tuple[str, str, str] = (
+                external_python_version_match.groups()
+            )
+            return external_python_version
+        raise PythonVersionCheckFailed(
+            "Matching Python version not found in output string"
+        )
 
 
 class NoException(Exception): ...

@@ -12,6 +12,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
         $ elapi get users --id <id>
 """
 
+import platform
 import sys
 from functools import partial
 from json import JSONDecodeError
@@ -38,6 +39,7 @@ from ..styles import (
     rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
+from ..utils import get_external_python_version, PythonVersionCheckFailed
 from ..utils.typer_patches import patch_typer_flag_value
 
 logger = Logger()
@@ -264,7 +266,13 @@ for inter_app_obj in internal_plugin_typer_apps:
 
 
 def disable_plugin(
-    main_app: Typer, /, *, plugin_name: str, err_msg: str, panel_name: str
+    main_app: Typer,
+    /,
+    *,
+    plugin_name: str,
+    err_msg: str,
+    panel_name: str,
+    short_reason: Optional[str] = None,
 ):
     import logging
     from ..utils import add_message
@@ -274,11 +282,15 @@ def disable_plugin(
         if plugin_name == registered_app.typer_instance.info.name:
             main_app.registered_groups.pop(i)
             break
+    help_message = (
+        f"🚫️ Disabled{' due to ' + short_reason if short_reason is not None else ''}. "
+        f"See `--help` or log file to know more."
+    )
 
     @main_app.command(
         name=plugin_name,
         rich_help_panel=panel_name,
-        help="🚫️ Disabled due to name conflict. See `--help` or log file to know more.",
+        help=help_message,
     )
     def name_conflict_error():
         from ..core_validators import Exit
@@ -1318,6 +1330,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         elif app_name in INTERNAL_PLUGIN_NAME_REGISTRY:
             error_message = (
@@ -1335,6 +1348,7 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=INTERNAL_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         elif app_name in RESERVED_PLUGIN_NAMES:
             error_message = (
@@ -1352,8 +1366,47 @@ for plugin_info in external_local_plugin_typer_apps:
                 plugin_name=app_name,
                 err_msg=error_message,
                 panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                short_reason="naming conflict",
             )
         else:
+            if _venv is not None:
+                try:
+                    external_plugin_python_version = get_external_python_version(
+                        venv_dir=_venv
+                    )[:2]
+                except PythonVersionCheckFailed as e:
+                    error_message = (
+                        f"Plugin name '{original_name}' from {_path} uses virtual environment "
+                        f"{_venv} whose own Python version could not "
+                        f"be determined for the following reason: {e}. Plugin will be disabled."
+                    )
+                    disable_plugin(
+                        app,
+                        plugin_name=app_name,
+                        err_msg=error_message,
+                        panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                        short_reason="undetermined .venv Python version",
+                    )
+                    continue
+                else:
+                    if external_plugin_python_version != (
+                        own_python_version := platform.python_version_tuple()[:2]
+                    ):
+                        error_message = (
+                            f"Plugin name '{original_name}' from {_path} uses virtual environment "
+                            f"{_venv} whose Python version (major and minor) "
+                            f"'{'.'.join(external_plugin_python_version)}' "
+                            f"does not match {APP_NAME}'s own Python version "
+                            f"'{'.'.join(own_python_version)}'. Plugin will be disabled."
+                        )
+                        disable_plugin(
+                            app,
+                            plugin_name=app_name,
+                            err_msg=error_message,
+                            panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
+                            short_reason=".venv Python version conflict",
+                        )
+                        continue
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
                 ext_app_obj, _path, _venv, _proj_dir
             )
