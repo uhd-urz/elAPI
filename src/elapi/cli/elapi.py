@@ -1404,7 +1404,7 @@ for plugin_info in external_local_plugin_typer_apps:
                             plugin_name=app_name,
                             err_msg=error_message,
                             panel_name=THIRD_PARTY_PLUGIN_PANEL_NAME,
-                            short_reason="undetermined .venv Python version",
+                            short_reason=".venv Python version conflict",
                         )
                         continue
             EXTERNAL_LOCAL_PLUGIN_NAME_REGISTRY[app_name] = PluginInfo(
