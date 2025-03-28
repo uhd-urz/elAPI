@@ -308,7 +308,7 @@ class ExternalPluginHandler:
         spec.loader.exec_module(module)
         return module
 
-    def get_typer_apps(self) -> Generator[PluginInfo, None, None]:
+    def get_typer_apps(self) -> Generator[Optional[PluginInfo], None, None]:
         import logging
         from ..configuration import (
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
