@@ -57,7 +57,7 @@ class PathValidator(Validator):
     def _self_created_files(self):
         return self.__self_created_files
 
-    def validate(self):
+    def validate(self) -> Path:
         errno: Optional[int] = None
         _self_created_file: bool = False
         for p in self.path:
