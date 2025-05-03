@@ -19,7 +19,7 @@
 # └────────────────┘
 # - For now, we only attach to an experiment that already exists in eLabFTW.
 # - We of course get the path of the local file for attachment. Here, we already have two
-# example files stored in ./Attachments directory.
+# example files stored in ./attachments directory.
 # - The minimum Python version required is 3.9. It's recommended that we create a
 # Python virtual environment, and we run/edit the script from inside the environment.
 # - We need to install elAPI from inside the activated virtual environment.
@@ -45,7 +45,7 @@ from elapi.plugins.experiments import attach_to_experiment
 # We can just use the elapi experiments plugin that already
 # offers a method to attach a file to an existing experiment.
 EXPERIMENT_ID = 129
-ATTACHMENT_FILE = Path(__file__).parent / "Attachments/ChemischeElemente_Beispiel.csv"
+ATTACHMENT_FILE = Path(__file__).parent / "attachments/ChemischeElemente_Beispiel.csv"
 attach_to_experiment(
     experiment_id=129,
     file_path=ATTACHMENT_FILE,

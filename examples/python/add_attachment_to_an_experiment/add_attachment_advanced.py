@@ -17,7 +17,7 @@
 # └────────────────┘
 # - We only attach to an experiment that already exists in eLabFTW.
 # - We get the path of the local file for attachment. Here, we already have two
-# example files stored in ./Attachments directory.
+# example files stored in ./attachments directory.
 # - The minimum Python version required is 3.9. It's recommended that we create a
 # Python virtual environment, and we run/edit the script from inside the environment.
 # - We need to install elAPI from inside the activated virtual environment.
@@ -71,7 +71,7 @@ validate()
 
 UNIQUE_ELAB_ID = "20240309-b629ba4a6789fac1662505d057a3c57459ccc646"
 # Unique eLabID instead of experiment ID of our experiment
-ATTACHMENT_FILE = Path(__file__).parent / "Attachments/elapi_get_architecture_old.pdf"
+ATTACHMENT_FILE = Path(__file__).parent / "attachments/elapi_get_architecture_old.pdf"
 # +-------------------------------+
 # |  Run validation for           |
 # |  experiment ID/unique eLabID  |
