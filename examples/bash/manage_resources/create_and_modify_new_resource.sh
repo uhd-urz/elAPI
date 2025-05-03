@@ -31,8 +31,8 @@ echo "New resource/item with ID $resource_id created."
 
 # 4. We now use the new resource ID to make a PATCH request to modify the title,
 # body, and status.
-elapi patch items --id "$resource_id" --data "{'title': 'Resource Material $RANDOM_NUM',
-'body': 'This resource is created via elAPI.', 'status': 6}" 1>/dev/null
+elapi patch items --id "$resource_id" --data "{\"title\": \"Resource Material ${RANDOM_NUM}\",
+\"body\": \"This resource is created via elAPI.\", \"status\": 6}" 1>/dev/null
 # eLabFTW sends the resource data in JSON when the PATCH request goes through.
 # elAPI will print that data to STDOUT. We actually don't need that data.
 # So, we redirect it to /dev/null/.
