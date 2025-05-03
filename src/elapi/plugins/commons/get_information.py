@@ -28,7 +28,7 @@ class Information:
     def __init__(self, endpoint_name: str):
         self.endpoint_name = endpoint_name
 
-    def items(self) -> list[dict, ...]:
+    def items(self) -> list[dict]:
         from ...api import GETRequest
 
         session = GETRequest()

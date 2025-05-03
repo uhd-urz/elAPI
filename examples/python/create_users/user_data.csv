@@ -1,0 +1,7 @@
+first_name,last_name,email,team_id,valid_until
+Kevin,Klein,kevin.klein@localhost.example,2,2024-12-01
+Selma,Carl,selma.carl@localhost.example,2,2024-12-01
+Wilma,Mann,wilma.mann@localhost.example,3,3000-01-01
+Horst,Müller,horst.mueller@localhost.example,3,3000-01-01
+Philipp,Larenz,philipp.larenz@localhost.example,2,2024-12-01
+Claudia,Amann,claudia.amann@localhost.example,2,3000-01-01

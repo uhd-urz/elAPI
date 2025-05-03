@@ -93,6 +93,11 @@ validate = Validate(HostIdentityValidator())
 
 
 def get_all_experiments_data() -> List[dict]:
+    """
+    eLabFTW doesn't send back all experiments at once but in batches.
+    get_all_experiments_data function collects the experiment data from each batch
+    until no batch is left. The collected list of all experiments is returned.
+    """
     default_query: dict = {"scope": 2, "state": "1%2C2%2C3"}
     batch_response = experiment_endpoint.get(endpoint_id=None, query=default_query)
     try:
