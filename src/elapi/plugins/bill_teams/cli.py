@@ -735,6 +735,15 @@ else:
                 show_default=True,
             ),
         ] = False,
+        include_team_id: Annotated[
+            Optional[bool],
+            typer.Option(
+                "--include-team-id",
+                "--iti",
+                help=docs["ot_include_team_id"],
+                show_default=True,
+            ),
+        ] = False,
         dry_run: Annotated[
             Optional[bool],
             typer.Option(
@@ -884,6 +893,8 @@ else:
                             OT_HELPER_CONTAINER[team_id]["management_limit"] = (
                                 management_limit
                             )
+                        if include_team_id is True:
+                            OT_CONTAINER[team_id]["Team ID"] = team_id
                         OT_CONTAINER[team_id][ot_header_spec.ACCOUNT_NUMBER] = ""
                         OT_CONTAINER[team_id][ot_header_spec.DEPARTMENT] = (
                             extras[owners_spec.BILLING_INSTITUTE1] or NAN

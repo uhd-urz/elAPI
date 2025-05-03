@@ -67,7 +67,8 @@ __PARAMETERS__doc__ = {
                 f"in the following format only: **{CLI_DATE_VALID_FORMAT}**. Always, the first day of "
                 f"the month is assumed. When no _--datum_ is passed, the current month is assumed.",
     "ot_include_monthly_bill": "By default, monthly bill columns (i.e., 'Gesamt' columns) are not filled in, "
-                               "leaving them to Excel. They can be filled in by passing _--include-monthly-bill_.",
+                               "leaving them to Excel. They can be filled in by "
+                               "passing _--include-monthly-bill_/_--imb_.",
     "ot_dry_run": "When _--dry-run_ is passed, generate-table will defer from asking registry "
                   "to make any updates (e.g., incrementing billing counter). This can be useful for "
                   "testing.",
@@ -76,5 +77,7 @@ __PARAMETERS__doc__ = {
                         "the include/exempt status assigned to a team in the registry so that all teams "
                         "are included into the output table regardless of their include/exempt status "
                         "and billing counter. _--dry-run_ is always assumed when _--ignore-exempt_. "
-                        "This can be useful for testing."
+                        "This can be useful for testing.",
+    "ot_include_team_id": "By default, team IDs are not included. A new column with team IDs will be included "
+                          "with _--include-team-id/--iti_. This can be useful for debugging.",
 }
