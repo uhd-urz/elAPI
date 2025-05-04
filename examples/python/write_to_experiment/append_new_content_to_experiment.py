@@ -31,6 +31,7 @@
 
 from typing import Union, Optional
 
+from elapi.core_validators import Exit
 from elapi.loggers import Logger
 from elapi.plugins.experiments import ExperimentIDValidator, FixedExperimentEndpoint
 from elapi.validators import Validate, HostIdentityValidator, ValidationError
@@ -51,12 +52,12 @@ def append_to_experiment(
 
     try:
         # ExperimentIDValidator checks first if the experiment ID exists.
-        # If unique eLabID is given, the corresponding experiment ID is returned with
+        # If a unique eLabID is given, the corresponding experiment ID is returned with
         # get() method.
         experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
     except ValidationError as e:
         logger.error(e)
-        raise SystemExit(1)
+        raise Exit(1)
 
     # FixedExperimentEndpoint is just shortcut for FixedEndpoint("experiments")
     session = FixedExperimentEndpoint()
