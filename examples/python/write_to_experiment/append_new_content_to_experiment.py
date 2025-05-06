@@ -31,9 +31,10 @@
 
 from typing import Union, Optional
 
+from elapi.api import FixedEndpoint
 from elapi.core_validators import Exit
 from elapi.loggers import Logger
-from elapi.plugins.experiments import ExperimentIDValidator, FixedExperimentEndpoint
+from elapi.plugins.experiments import ExperimentIDValidator
 from elapi.validators import Validate, HostIdentityValidator, ValidationError
 
 logger = Logger()
@@ -59,8 +60,8 @@ def append_to_experiment(
         logger.error(e)
         raise Exit(1)
 
-    # FixedExperimentEndpoint is just shortcut for FixedEndpoint("experiments")
-    session = FixedExperimentEndpoint()
+    # There is also a shortcut "FixedExperimentEndpoint" that can be imported from elapi.plugins.experiments
+    session = FixedEndpoint("experiments")
     # The experiment body is stored in "body" in the response data.
     # We want to make sure first, we don't overwrite the existing experiment body.
     current_body: Optional[str] = session.get(experiment_id).json()["body"]
