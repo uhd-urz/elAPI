@@ -24,7 +24,7 @@
 # Python virtual environment, and we run/edit the script from inside the environment.
 # - We need to install elAPI from inside the activated virtual environment.
 # Simple `pip install elapi` should work.
-# Note: The elAPI we installed through pipx remains isolated, only meant to work as
+# Note: The elAPI we installed using `uv tool` or pipx remains isolated and is meant to work as
 # a user-friendly CLI tool. Here, we want to use elAPI as a library.
 # ┌─────────────────┐
 # │  Code overview  │
