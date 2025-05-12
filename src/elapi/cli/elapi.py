@@ -3,7 +3,7 @@
 """``elAPI`` is a powerful, extensible API interface to eLabFTW. It supports serving all kinds of requests
 documented in https://doc.elabftw.net/api/v2/ with ease.
 
-**Example**::
+**Example**:
 
     From https://doc.elabftw.net/api/v2/#/Users/read-user:
         > GET /users/{id}
@@ -332,7 +332,7 @@ def messages_panel():
             log_record.levelno = log_tuple.level
             log_record.levelname = logging.getLevelName(log_tuple.level)
             # The following is the only way that I could figure out for the log
-            # message to show up in rich panel without breaking the pretty rich formatting.
+            # message to show up in a rich panel without breaking the pretty rich formatting.
             message = handler.render(
                 record=log_record,
                 traceback=None,
@@ -383,7 +383,7 @@ def init(
             "--host",
             help=docs["init_host"],
             show_default=False,
-            prompt=f'1. Enter your {docs["init_host"][0].lower()}{docs["init_host"][1:].rstrip(".")}',
+            prompt=f"1. Enter your {docs['init_host'][0].lower()}{docs['init_host'][1:].rstrip('.')}",
         ),
     ],
     api_token: Annotated[
@@ -392,7 +392,7 @@ def init(
             "--api-token",
             help=docs["init_api_token"],
             show_default=False,
-            prompt=f'2. Enter your {docs["init_api_token"][0]}{docs["init_api_token"][1:].rstrip(".")}',
+            prompt=f"2. Enter your {docs['init_api_token'][0]}{docs['init_api_token'][1:].rstrip('.')}",
         ),
     ],
     export_directory: Annotated[
@@ -401,7 +401,7 @@ def init(
             "--export-dir",
             help=docs["init_export_dir"],
             show_default=False,
-            prompt=f'3. Enter your {docs["init_export_dir"][0].lower()}{docs["init_export_dir"][1:].rstrip(".")}',
+            prompt=f"3. Enter your {docs['init_export_dir'][0].lower()}{docs['init_export_dir'][1:].rstrip('.')}",
         ),
     ] = FALLBACK_EXPORT_DIR,
 ) -> None:
@@ -409,7 +409,7 @@ def init(
     A quick and simple command to initialize elAPI configuration file.
     A 'host' and an 'api_token' are absolutely necessary to be able to make API calls to eLabFTW API endpoints.
     We define those values in the configuration file. elAPI is capable of multiple configuration files
-    that follow an order of hierarchy. This command is meant to be user-friendly, and only creates one configuration
+    that follow an order of hierarchy. This command is meant to be user-friendly and only creates one configuration
     file in the user's home directory. See [README](https://pypi.org/project/elapi/) for use-cases of
     advanced configuration files.
 
@@ -557,7 +557,7 @@ def get(
 
     With `elapi` you can do the following:
     <br/>
-    `$ elapi get users` will return list of all users.
+    `$ elapi get users` will return a list of all users.
     <br/>
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
@@ -910,6 +910,7 @@ def post(
                     typer.echo(f"{_id},{_url}")
                     raise typer.Exit()
             stdout_console.print("Success: Resource created!", style="green")
+            return None
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
@@ -1072,6 +1073,7 @@ def patch(
     except JSONDecodeError:
         if raw_response.is_success:
             stdout_console.print("Success: Resource modified!", style="green")
+            return None
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
@@ -1229,6 +1231,7 @@ def delete(
     except JSONDecodeError:
         if raw_response.is_success:
             stdout_console.print("Success: Resource deleted!", style="green")
+            return None
         else:
             logger.error(
                 f"Warning: Something unexpected happened! "
