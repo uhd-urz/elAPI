@@ -1,4 +1,4 @@
-from elapi.configuration import KEY_PLUGIN_KEY_NAME
+from ...configuration import KEY_PLUGIN_KEY_NAME
 
 PLUGIN_NAME: str = "bill-teams"
 PLUGIN_LINK: str = f"{KEY_PLUGIN_KEY_NAME}.{PLUGIN_NAME}".lower()
