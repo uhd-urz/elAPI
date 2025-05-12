@@ -1,6 +1,6 @@
 class Missing:
     """
-    Missing is a string representation of None object.
+    Missing is a string representation of a None object.
     """
 
     __slots__ = "_message"
@@ -27,6 +27,7 @@ class Missing:
     def __eq__(self, other) -> bool:
         if not other or isinstance(other, Missing):
             return True
+        return False
 
     def __bool__(self) -> bool:
         return False
