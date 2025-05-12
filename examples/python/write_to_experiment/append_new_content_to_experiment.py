@@ -17,7 +17,7 @@
 # Python virtual environment, and we run/edit the script from inside the environment.
 # - We need to install elAPI from inside the activated virtual environment.
 # Simple `uv add elapi` or `pip install elapi` will work.
-# Note: The elAPI we installed through pipx remains isolated, meant to work as
+# Note: The elAPI we installed using `uv tool` or pipx remains isolated and is meant to work as
 # a user-friendly CLI tool. Here, we want to use elAPI as a library.
 # ┌─────────────────┐
 # │  Code overview  │
@@ -27,7 +27,7 @@
 # We define append_to_experiment that accepts an experiment ID or unique eLabID
 # We validate the experiment ID/unique eLabID
 # We store the existing experiment body
-# We send a PATCH request with existing experiment body + new content
+# We send a PATCH request with the existing experiment body + new content
 
 from typing import Union, Optional
 

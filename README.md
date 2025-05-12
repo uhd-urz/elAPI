@@ -39,15 +39,18 @@ local `~/Downloads/` folder.
 
 ## Installation
 
-We recommend [`pipx`](https://pipx.pypa.io/stable/) for installing elAPI for use of its CLI functionalities. Pipx
-installs packages in isolated virtual environments, so Pipx-installed elAPI should not conflict with elAPI installed
-inside other virtual environments.
+We recommend [`uv`](https://docs.astral.sh/uv/concepts/tools/) and [`pipx`](https://pipx.pypa.io/stable/) for installing
+elAPI for use of its CLI functionalities. Both uv and Pipx
+install packages in isolated virtual environments, so elAPI installed as a CLI tool should not conflict with elAPI
+installed inside other virtual environments.
 
 ```shell
-$ pipx install elapi
+$ uv tool install elapi
+# elAPI can be updated to the latest version with 
+# uv tool upgrade elapi
 ```
 
-After installation with Pipx is complete, you would also be able to run elAPI just by entering the `elapi` command on
+After installation with uv is complete, you would also be able to run elAPI just by entering the `elapi` command on
 the terminal. You can move on to ["Getting started"](#getting-started).
 
 ### Advanced installation
