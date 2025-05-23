@@ -1,0 +1,13 @@
+[project]
+name = "obfuscate"
+version = "0.1.0"
+description = "elAPI obfuscate plugin obfuscates sensitive experiment and resource titles."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "elapi>=2.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
