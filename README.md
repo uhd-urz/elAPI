@@ -39,7 +39,7 @@ local `~/Downloads/` folder.
 
 ## Installation
 
-We recommend [`uv`](https://docs.astral.sh/uv/concepts/tools/) and [`pipx`](https://pipx.pypa.io/stable/) for installing
+We recommend either [`uv`](https://docs.astral.sh/uv/concepts/tools/) or [`pipx`](https://pipx.pypa.io/stable/) for installing
 elAPI for use of its CLI functionalities. Both uv and Pipx
 install packages in isolated virtual environments, so elAPI installed as a CLI tool should not conflict with elAPI
 installed inside other virtual environments.

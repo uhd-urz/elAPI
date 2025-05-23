@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use elAPI in your work, please cite it using the following metadata."
+title: "elAPI"
+version: "2.3.1"
+doi: 10.11588/DATA/E4XHXZ
+date-released: 2023-11-15
+authors:
+  - family-names: Xion
+    given-names: Mahadi
+  - family-names: Haller
+    given-names: Alexander
+license: AGPL-3.0
+conference: E-Science-Tage 2025
+repository-code: https://github.com/uhd-urz/elAPI
+url: https://doi.org/10.11588/DATA/E4XHXZ
+type: software

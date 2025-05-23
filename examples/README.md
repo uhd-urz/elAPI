@@ -49,9 +49,9 @@ typically `~/.local/share/elapi/plugins`). You can find the exact local third-pa
 $ cp -v examples/python/create_plugins/awesome ~/.local/share/elapi/plugins/
 ```
 
-Once done, run `elapi`, and it should show the plugin `aweomse` under third-party plugins.
+Once done, run `elapi`, and it should show the plugin `awesome` under third-party plugins.
 
 
 > [!IMPORTANT]
-> The `obfuscate` plugin should not be run in production, unless you absolutely intend to, as
-> the plugin will obfuscate or modify resource/experiment titles.
+> The `obfuscate` plugin should not be run in production, unless you absolutely intend to.
+> The plugin will obfuscate/modify all resource/experiment titles.
