@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-05-23
+
+This release brings some minor bug fixes and improvements.
+
+### Added
+
+- Added `--include-team-ids` to `bill-teams generate-table`
+- Long-awaited [examples/](https://github.com/uhd-urz/elAPI/tree/main/examples)
+
+### Fixed
+
+- elAPI re-installations (or new installation) would break `--help` due to breaking click update (
+  GH https://github.com/fastapi/typer/discussions/1215)
+
+### Changes
+
+- Migrated from Poetry from uv (GH #148)
+
+
 ## [2.3.0] - 2024-12-21
 
 This release mainly revamps and completes the `bill-teams` plugin that is used for billing eLabFTW usage at the

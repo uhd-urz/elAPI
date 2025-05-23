@@ -5,9 +5,9 @@ from typing import Union
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
+from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
-from ...core_validators import Exit
 
 logger = Logger()
 
@@ -31,7 +31,7 @@ class TeamsInformation:
     endpoint_name = "teams"
 
     @classmethod
-    def items(cls) -> list[dict, ...]:
+    def items(cls) -> list[dict]:
         from ..commons import Information
 
         return Information(cls.endpoint_name).items()
@@ -95,8 +95,8 @@ class TeamsList:
 
     def __init__(
         self,
-        users_information: list[dict, ...],
-        teams_information: list[dict, ...],
+        users_information: list[dict],
+        teams_information: list[dict],
     ):
         self.users = users_information
         self.teams = teams_information

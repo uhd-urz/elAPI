@@ -1,18 +1,16 @@
-[tool.poetry]
+[project]
 name = "elapi"
-version = "2.3.0"
+version = "2.3.1"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
-authors = [
-    "Alexander Haller, Mahadi Xion <elabftw@uni-heidelberg.de>",
-]
-maintainers = [
-    "Mahadi Xion <mahadi.xion@urz.uni-heidelberg.de>",
-]
+authors = [{ name = "Alexander Haller, Mahadi Xion", email = "elabftw@uni-heidelberg.de" }]
+requires-python = ">=3.9.0,<4"
 readme = "README.md"
-homepage = "https://www.urz.uni-heidelberg.de/en/service-catalogue/software-and-applications/elabftw"
-repository = "https://github.com/uhd-urz/elAPI/"
 license = "AGPL-3.0-only"
-keywords = ["elabftw", "api"]
+maintainers = [{ name = "Mahadi Xion", email = "mahadi.xion@urz.uni-heidelberg.de" }]
+keywords = [
+    "elabftw",
+    "api",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: AnyIO",
@@ -26,33 +24,37 @@ classifiers = [
     "Topic :: System :: Systems Administration",
     "Topic :: Utilities",
 ]
+dependencies = [
+    "dynaconf>=3.2.0,<4",
+    "httpx>=0.24.1,<0.25",
+    "httpx-auth>=0.17.0,<0.18",
+    "rich>=13.8.0,<14",
+    "typer[all]>=0.9.0,<0.10",
+    "pyyaml>=6.0.1,<7",
+    "mistune>=3.0.2,<4",
+    "h2>=4.1.0,<5",
+    "click>=8.1.8,<8.2"
+]
+
+[project.optional-dependencies]
+uhd-urz = [
+    "python-dateutil>=2.9.0.post0,<3",
+    "tenacity>=9.0.0,<10",
+    "uvloop>=0.20.0,<0.21",
+]
 
 [project.urls]
+Homepage = "https://www.urz.uni-heidelberg.de/de/service-katalog/software-und-anwendungen/elabftw"
+Repository = "https://github.com/uhd-urz/elAPI.git"
+Issues = "https://github.com/uhd-urz/elAPI/issues"
 Changelog = "https://github.com/uhd-urz/elAPI/blob/main/CHANGELOG.md"
 
-[tool.poetry.scripts]
+[project.scripts]
 elapi = "elapi.cli.elapi:app"
 
-[tool.poetry.dependencies]
-python = "^3.9.0"
-dynaconf = "^3.2.0"
-httpx = "^0.24.1"
-httpx-auth = "^0.17.0"
-rich = "^13.8.0" # typer already depends on rich. We define rich here to use the latest version of rich
-typer = { extras = ["all"], version = "^0.9.0" }
-pyyaml = "^6.0.1"
-mistune = "^3.0.2"
-h2 = "^4.1.0"
-tenacity = { version = "^9.0.0", optional = true }
-python-dateutil = { version = "^2.9.0.post0", optional = true }
-uvloop = { version = "^0.20.0", optional = true }
-
-[tool.poetry.extras]
-uhd-urz = ["python-dateutil", "tenacity", "uvloop"]
-
-[tool.poetry.group.dev.dependencies]
-ptpython = "^3.0.23"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["ptpython>=3.0.23,<4"]
