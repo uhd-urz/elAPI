@@ -39,8 +39,8 @@ local `~/Downloads/` folder.
 
 ## Installation
 
-We recommend either [`uv`](https://docs.astral.sh/uv/concepts/tools/) or [`pipx`](https://pipx.pypa.io/stable/) for installing
-elAPI for use of its CLI functionalities. Both uv and Pipx
+We recommend either [`uv`](https://docs.astral.sh/uv/concepts/tools/) or [`pipx`](https://pipx.pypa.io/stable/) for
+installing elAPI for use of its CLI functionalities. Both uv and Pipx
 install packages in isolated virtual environments, so elAPI installed as a CLI tool should not conflict with elAPI
 installed inside other virtual environments.
 
@@ -50,7 +50,7 @@ $ uv tool install elapi
 # uv tool upgrade elapi
 ```
 
-After installation with uv is complete, you would also be able to run elAPI just by entering the `elapi` command on
+After installation with `uv` is complete, you would also be able to run elAPI just by entering the `elapi` command on
 the terminal. You can move on to ["Getting started"](#getting-started).
 
 ### Advanced installation
@@ -163,17 +163,19 @@ as detected by `elapi show-config`. All plugins will also automatically listen t
 be useful to set certain configurations temporarily. E.g., `elapi --OC '{"timeout": 300"}' get info` will override
 the `timeout` from the configuration files.
 
-## Usage
+## Examples and usage
 
-elAPI can be invoked from the command-line.
+Check out the [examples directory](https://github.com/uhd-urz/elAPI/tree/main/examples) for some comprehensive code
+examples with elAPI. elAPI CLI usage details can be displayed with:
 
 ```shell
-$ elapi --help 
+$ elapi --help
+
 ```
 
 ### `GET` requests
 
-Request an overview of running eLabFTW server:
+Request an overview of a running eLabFTW server:
 
 ```shell
 $ elapi get info -F yml
