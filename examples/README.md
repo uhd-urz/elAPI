@@ -38,3 +38,20 @@ python examples/python/download_experiments/download_bulk_experiments.py
 > [!TIP]
 > Some entities such as "experiments" and "resources" share similar endpoints. So, if there's an example script about
 > experiments, it's very likely the same script will work with resources (or items) as well.
+
+## How to test an example plugin
+
+Copy and paste the `awesome` folder from `create_plugins/awesome` into your local elAPI third-party plugins folder (
+typically `~/.local/share/elapi/plugins`). You can find the exact local third-party plugin directory location by running
+`elapi show-config`
+
+```shell
+$ cp -v examples/python/create_plugins/awesome ~/.local/share/elapi/plugins/
+```
+
+Once done, run `elapi`, and it should show the plugin `aweomse` under third-party plugins.
+
+
+> [!IMPORTANT]
+> The `obfuscate` plugin should not be run in production, unless you absolutely intend to, as
+> the plugin will obfuscate or modify resource/experiment titles.
