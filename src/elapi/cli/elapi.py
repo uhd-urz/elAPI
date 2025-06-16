@@ -342,7 +342,6 @@ def messages_panel():
                 ),
             )
             grid.add_row(f"{i}.", message)
-        logger.handlers[-1]._log_render.show_path = True
         grid.add_row(
             "",
             NoteText(
