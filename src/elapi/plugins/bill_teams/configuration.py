@@ -1,16 +1,16 @@
 from pathlib import Path
 
 from .names import CONFIG_PLUGIN_NAME, PLUGIN_LINK, CONFIG_KEY_ROOT_DIR
-from ...configuration import get_active_plugin_configs, CONFIG_FILE_NAME, ConfigurationValidation
+from ...configuration import (
+    get_active_plugin_configs,
+    CONFIG_FILE_NAME,
+    ConfigurationValidation,
+)
 from ...core_validators import Validator, Validate, CriticalValidationError
 from ...loggers import Logger
 from ...path import ProperPath
 
 logger = Logger()
-
-bill_teams_plugin_config: dict = get_active_plugin_configs().get(
-    CONFIG_PLUGIN_NAME, dict()
-)
 
 
 class RootDirConfigurationValidator(ConfigurationValidation, Validator):
@@ -18,6 +18,9 @@ class RootDirConfigurationValidator(ConfigurationValidation, Validator):
     __slots__ = ()
 
     def __init__(self):
+        bill_teams_plugin_config: dict = get_active_plugin_configs().get(
+            CONFIG_PLUGIN_NAME, dict()
+        )
         super().__init__(bill_teams_plugin_config)
 
     def validate(self) -> Path:
