@@ -52,7 +52,9 @@ try:
 except KeyError:
     unsafe_token_use_source = FALLBACK_SOURCE_NAME
 finally:
-    unsafe_token_use_value = "True" if get_active_unsafe_token_warning(skip_validation=True) else "False"
+    unsafe_token_use_value = (
+        "True" if get_active_unsafe_token_warning(skip_validation=True) else "False"
+    )
 
 try:
     enable_http2_source = detected_config[KEY_ENABLE_HTTP2].source
@@ -60,7 +62,9 @@ try:
 except KeyError:
     enable_http2_source = FALLBACK_SOURCE_NAME
 finally:
-    enable_http2_value = "True" if get_active_enable_http2(skip_validation=True) else "False"
+    enable_http2_value = (
+        "True" if get_active_enable_http2(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -69,7 +73,9 @@ try:
 except KeyError:
     verify_ssl_source = FALLBACK_SOURCE_NAME
 finally:
-    verify_ssl_value = "True" if get_active_verify_ssl(skip_validation=True) else "False"
+    verify_ssl_value = (
+        "True" if get_active_verify_ssl(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -88,7 +94,9 @@ try:
 except KeyError:
     development_mode_source = FALLBACK_SOURCE_NAME
 finally:
-    development_mode_value = "True" if get_development_mode(skip_validation=True) else "False"
+    development_mode_value = (
+        "True" if get_development_mode(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -124,7 +132,7 @@ def show(no_keys: bool) -> str:
 The following information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name [Key]: Value ← Source
 
-- {ColorText("Log file path").colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
+- {ColorText('Log file path').colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
 """
         + (
             f"- {ColorText('Host address').colorize(LIGHTGREEN)}"
@@ -164,11 +172,11 @@ The following information includes configuration values and their sources as det
         )
         + f": {get_active_export_dir(skip_validation=True)} ← `{export_dir_source}`"
         + f"""
-- {ColorText("App data directory").colorize(LIGHTGREEN)}: {APP_DATA_DIR}
-- {ColorText("Third-party plugins directory").colorize(LIGHTCYAN)}: {
+- {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {
             EXTERNAL_LOCAL_PLUGIN_DIR
         }
-- {ColorText("Caching directory").colorize(LIGHTGREEN)}: {
+- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {
             TMP_DIR
             if not isinstance(TMP_DIR, Missing)
             else f"_{ColorText(TMP_DIR).colorize(RED)}_"
