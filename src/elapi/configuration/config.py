@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from dynaconf import Dynaconf
 
@@ -83,10 +83,11 @@ settings = Dynaconf(
     env_switcher=f"{env_var_app_name}_ENV",
     # environment variable to apply mode of environment (e.g., dev, production)
     core_loaders=["YAML"],  # will not read any file extensions except YAML
-    # loaders=['conf'],  # will not work without properly defining a custom loader for .conf first
+    # loaders=['conf'], # will not work without properly defining a custom loader for .conf first
     yaml_loader="safe_load",  # safe load doesn't execute arbitrary Python code in YAML files
     settings_files=[SYSTEM_CONFIG_LOC, LOCAL_CONFIG_LOC, PROJECT_CONFIG_LOC],
-    # the order of settings_files list is the overwrite priority order. PROJECT_CONFIG_LOC has the highest priority.
+    # Order of the "settings_files" list is the overwrite priority order.
+    # PROJECT_CONFIG_LOC has the highest priority.
 )
 
 history = ConfigHistory(settings)
@@ -136,13 +137,13 @@ class APIToken:
             if len(self._token) in r:
                 expose = expose_table[r]
                 break
-        return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[:-expose-1:-1][::-1]}"
+        return f"{self.token[:expose]}{self.mask_char * (expose + 1)}{self.token[: -expose - 1 : -1][::-1]}"
 
 
 # Note elabftw-python uses the term "api_key" for "API_TOKEN"
 API_TOKEN: str = settings.get(KEY_API_TOKEN, None)
 
-# Here, bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
+# Here, the bearer term "Authorization" already follows convention, that's why it's not part of the configuration file
 TOKEN_BEARER: str = "Authorization"
 # Reference: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
@@ -171,15 +172,15 @@ else:
 # The history is ready to be inspected
 inspect = InspectConfigHistory(history)
 
-# UNSAFE_TOKEN_WARNING falls back to True if not defined in configuration
+# UNSAFE_TOKEN_WARNING falls back to True if not defined in the configuration
 UNSAFE_TOKEN_WARNING_DEFAULT_VAL: bool = True
 UNSAFE_TOKEN_WARNING = settings.get(KEY_UNSAFE_TOKEN_WARNING, None)
 
-# ENABLE_HTTP2 falls back to False if not defined in configuration
+# ENABLE_HTTP2 falls back to False if not defined in the configuration
 ENABLE_HTTP2_DEFAULT_VAL: bool = False
 ENABLE_HTTP2 = settings.get(KEY_ENABLE_HTTP2, None)
 
-# VERIFY_SSL falls back to True if not defined in configuration
+# VERIFY_SSL falls back to True if not defined in the configuration
 VERIFY_SSL_DEFAULT_VAL: bool = True
 VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
 
@@ -187,7 +188,7 @@ VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
 TIMEOUT_DEFAULT_VAL: float = 90.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
 TIMEOUT = settings.get(KEY_TIMEOUT, None)
 
-# DEVELOPMENT_MODE falls back to false if not defined in configuration
+# DEVELOPMENT_MODE falls back to false if not defined in the configuration
 DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
 DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
 
@@ -223,7 +224,7 @@ for key_name, key_val in [
 
 # Temporary data storage location
 # This location is not currently used anywhere, for potential future use only.
-TMP_DIR: [ProperPath, Path, Missing] = ProperPath(TMP_DIR, err_logger=logger)
+TMP_DIR: Union[ProperPath, Path, Missing] = ProperPath(TMP_DIR, err_logger=logger)
 try:
     TMP_DIR.create()
 except TMP_DIR.PathException:

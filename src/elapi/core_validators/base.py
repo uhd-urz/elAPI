@@ -27,7 +27,7 @@ class Exit(BaseException):
 
 class RuntimeValidationError(Exit, ValidationError):
     def __init__(self, *args) -> None:
-        super().__init__(*args or (1,))  # default error code is always 1
+        super().__init__(*args or (1,))  # the default error code is always 1
 
 
 class CriticalValidationError(Exit, ValidationError): ...
