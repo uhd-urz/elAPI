@@ -339,7 +339,7 @@ class ExternalPluginHandler:
                 try:
                     module = self.load_plugin(plugin_name, cli_script, project_dir)
                 except (Exception, BaseException) as e:
-                    if get_development_mode() is True:
+                    if get_development_mode(skip_validation=True) is True:
                         raise e
                     message: str = (
                         f"An exception occurred while trying to load a local "
@@ -387,7 +387,7 @@ class ExternalPluginHandler:
                                 plugin_name, cli_script, project_dir
                             )
                         except (Exception, BaseException) as e:
-                            if get_development_mode() is True:
+                            if get_development_mode(skip_validation=True) is True:
                                 raise e
                             message: str = (
                                 f"An exception occurred while trying to load a local "
@@ -415,7 +415,7 @@ class ExternalPluginHandler:
                     try:
                         module = self.load_plugin(plugin_name, cli_script, project_dir)
                     except (Exception, BaseException) as e:
-                        if get_development_mode() is True:
+                        if get_development_mode(skip_validation=True) is True:
                             raise e
                         message: str = (
                             f"An exception occurred while trying to load a local "

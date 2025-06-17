@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2025-06-17
+
+This is a hotfix release.
+
+### Fixed
+
+- Newly installed elAPI, without `elapi.yml` configuration file aborts (
+  GH https://github.com/uhd-urz/elAPI/issues/151)
+
 ## [2.3.1] - 2025-05-23
 
 This release brings some minor bug fixes and improvements.
@@ -22,7 +31,6 @@ This release brings some minor bug fixes and improvements.
 ### Changes
 
 - Migrated from Poetry from uv (GH #148)
-
 
 ## [2.3.0] - 2024-12-21
 

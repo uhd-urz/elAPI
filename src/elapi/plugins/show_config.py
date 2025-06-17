@@ -52,7 +52,9 @@ try:
 except KeyError:
     unsafe_token_use_source = FALLBACK_SOURCE_NAME
 finally:
-    unsafe_token_use_value = "True" if get_active_unsafe_token_warning() else "False"
+    unsafe_token_use_value = (
+        "True" if get_active_unsafe_token_warning(skip_validation=True) else "False"
+    )
 
 try:
     enable_http2_source = detected_config[KEY_ENABLE_HTTP2].source
@@ -60,7 +62,9 @@ try:
 except KeyError:
     enable_http2_source = FALLBACK_SOURCE_NAME
 finally:
-    enable_http2_value = "True" if get_active_enable_http2() else "False"
+    enable_http2_value = (
+        "True" if get_active_enable_http2(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -69,7 +73,9 @@ try:
 except KeyError:
     verify_ssl_source = FALLBACK_SOURCE_NAME
 finally:
-    verify_ssl_value = "True" if get_active_verify_ssl() else "False"
+    verify_ssl_value = (
+        "True" if get_active_verify_ssl(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -78,7 +84,7 @@ try:
 except KeyError:
     timeout_source = FALLBACK_SOURCE_NAME
 finally:
-    timeout_value = get_active_timeout()
+    timeout_value = get_active_timeout(skip_validation=True)
     timeout_value = f"{timeout_value} " + ("seconds" if timeout_value > 1 else "second")
 
 
@@ -88,7 +94,9 @@ try:
 except KeyError:
     development_mode_source = FALLBACK_SOURCE_NAME
 finally:
-    development_mode_value = "True" if get_development_mode() else "False"
+    development_mode_value = (
+        "True" if get_development_mode(skip_validation=True) else "False"
+    )
 
 
 try:
@@ -162,12 +170,17 @@ The following information includes configuration values and their sources as det
             if not no_keys
             else ""
         )
-        + f": {get_active_export_dir()} ← `{export_dir_source}`"
+        + f": {get_active_export_dir(skip_validation=True)} ← `{export_dir_source}`"
         + f"""
 - {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
-- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {EXTERNAL_LOCAL_PLUGIN_DIR}
-- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {TMP_DIR if not isinstance(TMP_DIR, Missing) else 
-    f'_{ColorText(TMP_DIR).colorize(RED)}_'}
+- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {
+            EXTERNAL_LOCAL_PLUGIN_DIR
+        }
+- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {
+            TMP_DIR
+            if not isinstance(TMP_DIR, Missing)
+            else f"_{ColorText(TMP_DIR).colorize(RED)}_"
+        }
 """
         + "\n"
         + f"- {ColorText('Unsafe API token use warning').colorize(LIGHTGREEN)}"
