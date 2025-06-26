@@ -109,9 +109,12 @@ def cli_startup(
     )
     from ..configuration.config import APIToken
     from ..core_validators import Exit
-    from ..configuration import reinitiate_config
+    from ..configuration import reinitiate_config, get_development_mode
     from ..utils import MessagesList
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
+
+    if get_development_mode(skip_validation=True) is True:
+        Exit.SYSTEM_EXIT = False
 
     def show_aggressive_log_message():
         messages = MessagesList()
