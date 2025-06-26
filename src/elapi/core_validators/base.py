@@ -1,6 +1,6 @@
 import sys
 from abc import abstractmethod, ABC
-from typing import Any
+from typing import Any, Optional, Callable
 
 
 class ValidationError(Exception): ...
@@ -18,8 +18,19 @@ class Exit(BaseException):
         SYSTEM_EXIT: bool = False
     else:
         SYSTEM_EXIT: bool = True
+    result_callback: Optional[Callable] = None
 
     def __new__(cls, *args, **kwargs):
+        if cls.result_callback is not None:
+            if isinstance(cls.result_callback, Callable):
+                cls.result_callback()
+            else:
+                raise TypeError(
+                    f"result_callback class attribute of "
+                    f"'{Exit.__name__}' must be a callable or None. But "
+                    f"it was assigned the value '{cls.result_callback}' of "
+                    f"type '{type(cls.result_callback)}' instead."
+                )
         if cls.SYSTEM_EXIT:
             return SystemExit(*args)
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
@@ -49,3 +60,4 @@ class Validate:
     def get(self, *args, **kwargs) -> Any:
         for typ in self.typ:
             return typ.validate(*args, **kwargs)
+        return None
