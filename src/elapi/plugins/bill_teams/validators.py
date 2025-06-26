@@ -133,7 +133,7 @@ class OwnersInformationModifier:
 
 
 class OwnersInformationValidator(Validator):
-    def __init__(self, owners_information: dict, teams_information: list[dict, ...]):
+    def __init__(self, owners_information: dict, teams_information: list[dict]):
         self.owners = OwnersInformationContainer(owners_information)
         self.teams = teams_information
 
@@ -297,7 +297,7 @@ class BillingInformationPathValidator(Validator):
         if not (path := root / self.year / self.month).expanded.exists():
             raise ValidationError(
                 f"Path in root directory with month '{self.month}' of year '{self.year}': "
-                f"'{root / self.year/ self.month}' doesn't exist!"
+                f"'{root / self.year / self.month}' doesn't exist!"
             )
         PathInfoTuple = namedtuple("PathInfoTuple", ("parent", "name", "date"))
         teams_info_files: list[PathInfoTuple[Path, str, datetime]] = []
