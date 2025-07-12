@@ -1,0 +1,9 @@
+def a(x, y):
+    pass
+
+b = 2
+
+c = 'value'
+
+class d:
+    pass

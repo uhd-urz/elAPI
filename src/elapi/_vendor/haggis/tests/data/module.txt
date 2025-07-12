@@ -1,0 +1,13 @@
+a = 1
+
+def b(x, y):
+    pass
+
+class c:
+    pass
+
+__d__ = lambda: 4
+
+import builtins as e
+
+nested = ['nested_module.txt']

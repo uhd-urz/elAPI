@@ -12,6 +12,7 @@ __all__ = [
     "LOG_FILE_PATH",
     "_XDG_DATA_HOME",
     "update_logger_state",
+    "add_logging_level",
     "LogItemList",
     "LogRecordContainer",
     "ResultCallbackHandler",
@@ -27,6 +28,7 @@ from .._core_init import (
     ResultCallbackHandler,
     SimpleLogger,
     STDERRBaseHandler,
+    add_logging_level,
 )
 from .base import FileLogger, MainLogger, update_logger_state
 from .handlers import FileBaseHandler

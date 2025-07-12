@@ -6,6 +6,7 @@ __all__ = [
     "Logger",
     "BaseHandler",
     "LoggerUtil",
+    "add_logging_level",
     "get_app_version",
     "NoException",
     "GlobalCLIResultCallback",
@@ -13,6 +14,7 @@ __all__ = [
     "LogRecordContainer",
     "LogItemList",
 ]
+from .._vendor.haggis.logs import add_logging_level
 from ._loggers import (
     BaseHandler,
     DefaultLogLevels,
