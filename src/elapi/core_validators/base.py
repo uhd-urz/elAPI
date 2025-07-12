@@ -1,12 +1,17 @@
 import sys
-from abc import abstractmethod, ABC
-from typing import Any, Optional, Callable
+from abc import ABC, abstractmethod
+from typing import Any, Self, Union
+
+from .._core_init import GlobalCLIResultCallback
 
 
 class ValidationError(Exception): ...
 
 
-class Exit(BaseException):
+class BaseExit(BaseException, ABC): ...
+
+
+class Exit(BaseExit):
     if (
         hasattr(sys, "ps1")
         or hasattr(sys, "ps2")
@@ -18,22 +23,15 @@ class Exit(BaseException):
         SYSTEM_EXIT: bool = False
     else:
         SYSTEM_EXIT: bool = True
-    result_callback: Optional[Callable] = None
 
-    def __new__(cls, *args, **kwargs):
-        if cls.result_callback is not None:
-            if isinstance(cls.result_callback, Callable):
-                cls.result_callback()
-            else:
-                raise TypeError(
-                    f"result_callback class attribute of "
-                    f"'{Exit.__name__}' must be a callable or None. But "
-                    f"it was assigned the value '{cls.result_callback}' of "
-                    f"type '{type(cls.result_callback)}' instead."
-                )
+    def __new__(cls, *args, **kwargs) -> Union[SystemExit, Self]:
+        GlobalCLIResultCallback().call_callbacks()
         if cls.SYSTEM_EXIT:
             return SystemExit(*args)
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
+
+
+BaseExit.register(SystemExit)
 
 
 class RuntimeValidationError(Exit, ValidationError):

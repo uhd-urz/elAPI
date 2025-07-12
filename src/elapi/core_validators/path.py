@@ -1,10 +1,11 @@
 import string
 from pathlib import Path
 from random import choices
-from typing import Union, Iterable, Optional
+from typing import Iterable, Optional, Union
 
-from .base import Validator, ValidationError
+from .._core_init import Logger
 from ..path import ProperPath
+from .base import ValidationError, Validator
 
 
 class PathValidationError(ValidationError):
@@ -12,7 +13,7 @@ class PathValidationError(ValidationError):
         super().__init__(*args)
         self.errno: Optional[int] = None
         # Unlike OSError errno here is an instance attribute instead a class attribute.
-        # This ensures broad use of errno with PathValidationError in the future.
+        # This will ensure broad use of errno with PathValidationError in the future.
 
     def __call__(self, *args):
         super().__init__(*args)
@@ -26,8 +27,6 @@ class PathValidator(Validator):
         retain_created_file: bool = True,
         **kwargs,
     ):
-        from ..loggers import Logger
-
         self.path = path
         self.err_logger = kwargs.get("err_logger", Logger())
         self.TMP_FILE = (

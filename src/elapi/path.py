@@ -5,10 +5,9 @@ import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, TextIO, Generator, Optional
+from typing import Generator, Optional, TextIO, Union
 
-from .loggers import SimpleLogger
-from .utils import NoException
+from ._core_init import Logger, NoException
 
 
 class ProperPath:
@@ -17,12 +16,12 @@ class ProperPath:
         name: Union[str, Path, None, "ProperPath"],
         env_var: bool = False,
         kind: Optional[str] = None,  # Here, None => Undefined/unknown
-        err_logger: logging.Logger = SimpleLogger(),
+        err_logger: Optional[logging.Logger] = None,
     ):
         self.name = name
         self.env_var = env_var
         self.kind = kind
-        self.err_logger = err_logger
+        self.err_logger = err_logger or Logger()
         self.PathException = NoException
 
     def __str__(self):
@@ -64,10 +63,12 @@ class ProperPath:
             raise ValueError("'err_logger' must be a logging.Logger instance!")
         self._err_logger = value
 
+    # noinspection PyPep8Naming
     @property
     def PathException(self) -> type:
         return self._PathException
 
+    # noinspection PyPep8Naming
     # noinspection PyAttributeOutsideInit
     @PathException.setter
     def PathException(self, value: type) -> None:
@@ -78,6 +79,7 @@ class ProperPath:
             )
         self._PathException = value
 
+    # noinspection PyPep8Naming
     @PathException.deleter
     def PathException(self):
         raise AttributeError("PathException cannot be deleted!")
