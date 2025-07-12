@@ -3,7 +3,7 @@ name = "elapi"
 version = "2.3.3"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [{ name = "Alexander Haller, Mahadi Xion", email = "elabftw@uni-heidelberg.de" }]
-requires-python = ">=3.9.0,<4"
+requires-python = ">=3.11.0,<4"
 readme = "README.md"
 license = "AGPL-3.0-only"
 maintainers = [{ name = "Mahadi Xion", email = "mahadi.xion@urz.uni-heidelberg.de" }]
@@ -26,21 +26,25 @@ classifiers = [
 ]
 dependencies = [
     "dynaconf>=3.2.0,<4",
-    "httpx>=0.24.1,<0.25",
-    "httpx-auth>=0.17.0,<0.18",
+    "httpx[http2]>=0.28.1,<0.29",
+    "httpx-auth>=0.23.1,<0.24",
     "rich>=13.8.0,<14",
     "typer[all]>=0.9.0,<0.10",
-    "pyyaml>=6.0.1,<7",
-    "mistune>=3.0.2,<4",
-    "h2>=4.1.0,<5",
-    "click>=8.1.8,<8.2"
+    "pyyaml==6.0.1,<7",
+    "mistune==3.1.3,<4",
+    "click>=8.1.8,<8.2",
+    "httpx-limiter>=0.3.0,<0.4",
+]
+license-files = [
+    "LICENSE",
+    "src/elapi/_vendor/*/LICENSE"
 ]
 
 [project.optional-dependencies]
 uhd-urz = [
     "python-dateutil>=2.9.0.post0,<3",
-    "tenacity>=9.0.0,<10",
-    "uvloop>=0.20.0,<0.21",
+    "tenacity>=9.1.2,<10",
+    "uvloop>=0.21.0,<0.22",
 ]
 
 [project.urls]
@@ -53,8 +57,19 @@ Changelog = "https://github.com/uhd-urz/elAPI/blob/main/CHANGELOG.md"
 elapi = "elapi.cli.elapi:app"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.7.19,<0.8.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["ptpython>=3.0.23,<4"]
+dev = [
+    "pip>=25.1.1", # vendy requires pip
+    "ptpython>=3.0.23,<4",
+    "vendy>=0.0.3",
+]
+
+[tool.vendy]
+target = 'src/elapi/'
+# vendy will auto-crate src/elapi/_vendor
+packages = [
+    "haggis==0.14.1",
+]
