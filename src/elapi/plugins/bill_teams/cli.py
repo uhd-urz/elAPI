@@ -13,67 +13,70 @@ if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop"))
     ...
 else:
     import re
-    import uvloop
-    from typing import Annotated, Optional, Tuple, Generator, Union
+    from typing import Annotated, Generator, Optional, Tuple, Union
 
     import tenacity
+    import uvloop
+    from dateutil import parser
+    from dateutil.relativedelta import relativedelta
     from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
-    from dateutil.relativedelta import relativedelta
-    from dateutil import parser
-    from ...styles import print_typer_error
-    from ._doc import __PARAMETERS__doc__ as docs
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
     from ...configuration import APP_NAME, get_active_export_dir
+    from ...core_validators import Exit, RuntimeValidationError, ValidationError
     from ...loggers import Logger
-    from ...styles import stdout_console, stderr_console
-    from ...core_validators import RuntimeValidationError, Exit, ValidationError
-    from ..commons.cli_helpers import Typer
-    from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
-    from .configuration import get_root_dir
-    from .utils import get_billing_dates
-    from ..commons import Export
-    from ...styles import Highlight
     from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
+    from ...styles import Highlight, print_typer_error, stderr_console, stdout_console
     from ...utils.typer_patches import patch_typer_flag_value
+    from ..commons import Export
+    from ..commons.cli_helpers import Typer
+    from ._doc import __PARAMETERS__doc__ as docs
+    from .configuration import get_root_dir
     from .registry import (
         _initialize_registry_file,
         _is_team_bill_generation_metadata_sane,
+        _registry_communication,
         _update_registry_team_bill_generation_metadata,
         modify_registry_file,
         registry_spec,
-        _registry_communication,
     )
     from .specification import (
         BILLING_BASE_DATE,
+        BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
+        BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
         BILLING_PERIOD,
         CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
         CLI_DATE_VALID_FORMAT,
+        OUTPUT_TABLE_FILE_NAME_STUB,
         REGISTRY_FILE_NAME,
-        BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
-        BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
         _registry_com_spec,
-        owners_spec,
-        ot_header_spec,
-        ot_header_billing_period_spec,
+        de_months,
         get_billing_period_header_entry,
         ot_fixed_texts_spec,
-        de_months,
-        OUTPUT_TABLE_NAN_INDICATOR as NAN,
-        METADATA_BILLING_INTERNAL_EXTERNAL_TO_BOOL as int_ext_to_bool,
-        OUTPUT_TABLE_FILE_NAME_STUB,
+        ot_header_billing_period_spec,
+        ot_header_spec,
+        owners_spec,
     )
+    from .specification import (
+        METADATA_BILLING_INTERNAL_EXTERNAL_TO_BOOL as int_ext_to_bool,
+    )
+    from .specification import (
+        OUTPUT_TABLE_NAN_INDICATOR as NAN,
+    )
+    from .utils import get_billing_dates
 
     patch_typer_flag_value()
     app = Typer(
         name=PLUGIN_NAME,
         help="Manage bills incurred by teams.",
+        result_callback=lambda _, override_config: print("Cleaning up bill-teams"),
     )
 
     registry_app = Typer(
         name=REGISTRY_SUB_PLUGIN_NAME, help=f"Manage {PLUGIN_NAME} registry."
     )
-    app.add_typer(registry_app, rich_help_panel=f"Sub-plugins")
+    app.add_typer(registry_app, rich_help_panel="Sub-plugins")
 
     logger = Logger()
 
@@ -82,7 +85,8 @@ else:
         retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
         stop=stop_after_attempt(6),  # including the very first attempt
         wait=wait_exponential(multiplier=60, min=5, max=4260),
-        retry_error_callback=lambda _: ...,  # meant to suppress raising final exception once all attempts have been made
+        retry_error_callback=lambda _: ...,
+        # meant to suppress raising the final exception once all attempts have been made
     )
     def get_teams(
         data_format: Annotated[
@@ -121,8 +125,8 @@ else:
     ) -> dict:
         """Get billable teams data."""
         from ...api import GlobalSharedSession
-        from ...core_validators import Validate
         from ...api.validators import HostIdentityValidator, PermissionValidator
+        from ...core_validators import Validate
 
         global_session = GlobalSharedSession()
         with stderr_console.status(
@@ -148,9 +152,9 @@ else:
         format = CLIFormat(data_format, package_identifier, export_file_ext)
 
         from .bill_teams import (
-            UsersInformation,
             TeamsInformation,
             TeamsList,
+            UsersInformation,
         )
 
         users_info, teams_info = UsersInformation(), TeamsInformation()
@@ -229,13 +233,13 @@ else:
         ] = False,
     ) -> dict:
         """Get billable team owners data."""
-        from ...core_validators import (
-            Validate,
-            Exit,
-            ValidationError,
-        )
         from ...api import GlobalSharedSession
         from ...api.validators import HostIdentityValidator, PermissionValidator
+        from ...core_validators import (
+            Exit,
+            Validate,
+            ValidationError,
+        )
 
         if not skip_essential_validation:
             with GlobalSharedSession(limited_to="sync"):
@@ -264,9 +268,9 @@ else:
         format = CLIFormat(data_format, package_identifier, export_file_ext)
 
         from .bill_teams import (
-            TeamsInformation,
             OwnersInformation,
             OwnersList,
+            TeamsInformation,
         )
         from .validators import OwnersInformationValidator
 
@@ -353,15 +357,17 @@ else:
                 └── <YYYY-MM-DD_HHMMSS>_teams_info.json
         ```
         """
-        from ...styles import print_typer_error
-        from ...path import ProperPath
-        from .specification import (
-            CLI_DATE_VALID_FORMAT,
-            CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
-        )
-        from datetime import datetime
-        from dateutil import parser
         import re
+        from datetime import datetime
+
+        from dateutil import parser
+
+        from ...path import ProperPath
+        from ...styles import print_typer_error
+        from .specification import (
+            CLI_DATE_PARSE_SIMPLE_REGEX_PATTERN,
+            CLI_DATE_VALID_FORMAT,
+        )
 
         if teams_info_only is True and owners_info_only is True:
             print_typer_error(
@@ -372,7 +378,7 @@ else:
 
         root_directory: ProperPath = ProperPath(get_root_dir())
         root_directory.create()
-        # Not strictly necessary, as Export already crates the paren directories,
+        # Not strictly necessary, as Export already crates the paren directories
         # but mainly for the log.
         if target_date is None:
             target_date = datetime.now()
@@ -495,7 +501,6 @@ else:
     def _get_registry(
         billing_dates: list[Tuple[int, int]],
     ) -> Generator[Tuple[Path, dict], None, None]:
-        from ...path import ProperPath
         from ...core_validators import Validate
         from .validators import (
             BillingInformationPathValidator,
@@ -539,8 +544,8 @@ else:
                     yield registry_file_path, registry_data
 
     def _user_warn_team_is_missing_in_teams_info():
-        from ...loggers import SimpleLogger
         from ..._names import LOG_FILE_NAME
+        from ...loggers import SimpleLogger
 
         stdout_logger = SimpleLogger()
         if (
@@ -639,8 +644,8 @@ else:
         else:
             if team_id == registry_spec.REGISTRY_CLI_IMPLICIT_ARG_INCLUDE_ALL_TEAMS:
                 logger.error(
-                    f"Registry cannot be modified for all teams. "
-                    f"Please pass '--force' to force include teams to registry."
+                    "Registry cannot be modified for all teams. "
+                    "Please pass '--force' to force include teams to registry."
                 )
                 raise Exit(1)
             logger.error(
@@ -676,10 +681,9 @@ else:
         ] = False,
     ) -> None:
         """
-        Exempt teams from billing (or going into output table).
+        Exempt teams from billing (or going into the output table).
         """
         from .registry import (
-            _is_team_bill_generation_metadata_sane,
             _update_registry_team_bill_generation_metadata,
             modify_registry_file,
         )
@@ -795,17 +799,17 @@ else:
         ] = False,
     ) -> None:
         """
-        Generate final table for billing, a.k.a. "output table".
+        Generate the final table for billing, a.k.a. "Output table".
         """
         from .generate_table import (
-            get_ot_template,
-            can_ignore_team,
-            can_exempt_team,
             _update_registry_single_team_bill_generation_metadata,
             calculate_team_monthly_bill,
-            is_billing_management_limited,
+            can_exempt_team,
+            can_ignore_team,
+            get_ot_template,
             get_text_1,
             get_text_2,
+            is_billing_management_limited,
         )
 
         if ignore_exempt is True:
@@ -1000,7 +1004,7 @@ else:
                 try:
                     OT_CONTAINER[team_id][
                         header_entry(ot_header_billing_period_spec.BILLING_TIME)
-                    ] = f"{DE_MONTHS_ONLY[month - 1]} {datum.year}"
+                    ] = f"{DE_MONTHS_ONLY[month - 1]} {year}"
                     OT_CONTAINER[team_id][
                         header_entry(ot_header_billing_period_spec.MEMBER_COUNT)
                     ] = team_registry_data[registry_spec.TEAM_ACTIVE_MEMBER_COUNT]
@@ -1114,3 +1118,7 @@ else:
                 stdout_console.print(highlight(formatted_ot))
             else:
                 typer.echo(formatted_ot)
+
+    @app.command(name="test")
+    def foo():
+        print(f"{logger.handlers=}")
