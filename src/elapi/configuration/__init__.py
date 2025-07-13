@@ -76,4 +76,5 @@ from .overridable_vars import (
 from .validators import ConfigurationValidation
 from .validators import PluginConfigurationValidator as _PluginConfigurationValidator
 
-validate_configuration(limited_to=[_PluginConfigurationValidator])
+if get_development_mode(skip_validation=True) is False:
+    validate_configuration(limited_to=[_PluginConfigurationValidator])
