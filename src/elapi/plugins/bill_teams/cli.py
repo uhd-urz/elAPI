@@ -67,11 +67,7 @@ else:
     from .utils import get_billing_dates
 
     patch_typer_flag_value()
-    app = Typer(
-        name=PLUGIN_NAME,
-        help="Manage bills incurred by teams.",
-        result_callback=lambda _, override_config: print("Cleaning up bill-teams"),
-    )
+    app = Typer(name=PLUGIN_NAME, help="Manage bills incurred by teams.")
 
     registry_app = Typer(
         name=REGISTRY_SUB_PLUGIN_NAME, help=f"Manage {PLUGIN_NAME} registry."
