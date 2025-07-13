@@ -25,7 +25,13 @@ from typing_extensions import Annotated
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
 from ..core_validators import GlobalCLIResultCallback
-from ..loggers import FileLogger, Logger
+from ..loggers import (
+    DefaultLogLevels,
+    FileLogger,
+    GlobalLogRecordContainer,
+    Logger,
+    ResultCallbackHandler,
+)
 from ..plugins.commons.cli_helpers import Typer
 from ..styles import (
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
@@ -124,6 +130,8 @@ def cli_startup(
 
     if get_development_mode(skip_validation=True) is True:
         Exit.SYSTEM_EXIT = False
+        for handler in logger.handlers:
+            handler.setLevel(DefaultLogLevels.DEBUG)
 
     def show_aggressive_log_message():
         messages = MessagesList()
@@ -216,6 +224,15 @@ def cli_startup(
                     raise Exit(1)
                 if calling_sub_command_name in SPECIAL_SENSITIVE_PLUGIN_NAMES:
                     reinitiate_config(ignore_essential_validation=True)
+
+
+def check_result_callback_log_container():
+    if (
+        ResultCallbackHandler.is_store_okay()
+        and ResultCallbackHandler.get_client_count() == 0
+    ):
+        GlobalLogRecordContainer().data.clear()
+        ResultCallbackHandler.is_store_okay = False
 
 
 def cli_switch_venv_state(state: bool, /) -> None:
@@ -1440,3 +1457,6 @@ for plugin_info in external_local_plugin_typer_apps:
                 callback=cli_startup_for_plugins,
                 result_callback=cli_cleanup_for_third_party_plugins,
             )
+# Must be run after all plugins are loaded as they are given
+# a chance to modify ResultCallbackHandler.is_store_okay
+check_result_callback_log_container()

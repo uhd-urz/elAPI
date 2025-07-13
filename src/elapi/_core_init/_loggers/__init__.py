@@ -7,7 +7,7 @@ __all__ = [
     "BaseHandler",
     "LoggerUtil",
     "ResultCallbackHandler",
-    "LogRecordContainer",
+    "GlobalLogRecordContainer",
     "LogItemList",
 ]
 from .base import (
@@ -20,7 +20,7 @@ from .base import (
 from .handlers import (
     BaseHandler,
     LogItemList,
-    LogRecordContainer,
+    GlobalLogRecordContainer,
     ResultCallbackHandler,
     STDERRBaseHandler,
 )

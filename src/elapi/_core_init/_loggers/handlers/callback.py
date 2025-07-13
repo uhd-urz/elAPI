@@ -1,15 +1,15 @@
 from logging import Handler
 
-from .base import LogRecordContainer
+from .base import GlobalLogRecordContainer
 
 
 class ResultCallbackHandler(Handler):
     _client_count: int = 0
-    _store_okay: bool = False
+    _store_okay: bool = True
 
     def __init__(self):
         super().__init__()
-        self.log_container = LogRecordContainer()
+        self.log_container = GlobalLogRecordContainer()
 
     @classmethod
     def enable_store_okay(cls) -> None:

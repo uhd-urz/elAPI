@@ -70,7 +70,7 @@ class STDERRBaseHandler(BaseHandler):
             console=self._get_rich_console(),
         )
         handler.setFormatter(self.formatter)
-        handler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.INFO)
         return handler
 
     @handler.setter

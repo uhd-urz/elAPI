@@ -14,7 +14,7 @@ __all__ = [
     "update_logger_state",
     "add_logging_level",
     "LogItemList",
-    "LogRecordContainer",
+    "GlobalLogRecordContainer",
     "ResultCallbackHandler",
 ]
 from .._core_init import (
@@ -24,7 +24,7 @@ from .._core_init import (
     LoggerUtil,
     LogItemList,
     LogMessageTuple,
-    LogRecordContainer,
+    GlobalLogRecordContainer,
     ResultCallbackHandler,
     SimpleLogger,
     STDERRBaseHandler,

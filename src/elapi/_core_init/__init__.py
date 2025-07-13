@@ -11,7 +11,7 @@ __all__ = [
     "NoException",
     "GlobalCLIResultCallback",
     "ResultCallbackHandler",
-    "LogRecordContainer",
+    "GlobalLogRecordContainer",
     "LogItemList",
 ]
 from .._vendor.haggis.logs import add_logging_level
@@ -22,7 +22,7 @@ from ._loggers import (
     LoggerUtil,
     LogItemList,
     LogMessageTuple,
-    LogRecordContainer,
+    GlobalLogRecordContainer,
     ResultCallbackHandler,
     SimpleLogger,
     STDERRBaseHandler,
