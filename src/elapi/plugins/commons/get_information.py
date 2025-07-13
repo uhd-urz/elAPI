@@ -116,7 +116,7 @@ class RecursiveInformation:
             stdout_console.print()
             logger.warning(
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
-                f"Exception details: '{error!r}'"
+                f"Response status: {response.status_code}. Exception details: '{error!r}'. "
             )
             await self.cleanup_remaining(event_loop, endpoint)
             raise InterruptedError from error

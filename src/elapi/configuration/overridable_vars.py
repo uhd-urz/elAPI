@@ -1,22 +1,23 @@
 from pathlib import Path
 from typing import Union
 
+from ..styles import Missing
 from ._overload_history import reinitiate_config
 from .config import (
-    MinimalActiveConfiguration,
-    APIToken,
-    KEY_HOST,
     ELAB_HOST_URL_API_SUFFIX,
     KEY_API_TOKEN,
-    KEY_EXPORT_DIR,
-    KEY_UNSAFE_TOKEN_WARNING,
-    KEY_ENABLE_HTTP2,
-    KEY_VERIFY_SSL,
-    KEY_TIMEOUT,
+    KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
+    KEY_ENABLE_HTTP2,
+    KEY_EXPORT_DIR,
+    KEY_HOST,
     KEY_PLUGIN_KEY_NAME,
+    KEY_TIMEOUT,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_VERIFY_SSL,
+    APIToken,
+    MinimalActiveConfiguration,
 )
-from ..styles import Missing
 
 
 def get_active_host(*, skip_validation: bool = False) -> str:
@@ -75,6 +76,12 @@ def get_active_timeout(*, skip_validation: bool = False) -> float:
     if not skip_validation:
         _development_mode_validation_switch()
     return MinimalActiveConfiguration().get_value(KEY_TIMEOUT)
+
+
+def get_active_async_rate_limit(*, skip_validation: bool = False) -> float:
+    if not skip_validation:
+        _development_mode_validation_switch()
+    return MinimalActiveConfiguration().get_value(KEY_ASYNC_RATE_LIMIT)
 
 
 def _development_mode_validation_switch() -> None:

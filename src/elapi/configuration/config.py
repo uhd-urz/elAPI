@@ -5,53 +5,53 @@ from typing import Optional, Union
 
 from dynaconf import Dynaconf
 
-from ._config_history import (
-    ConfigHistory,
-    InspectConfigHistory,
-    AppliedConfigIdentity,
-    MinimalActiveConfiguration,
-)
-from .log_file import LOG_FILE_PATH, _XDG_DATA_HOME
 # noinspection PyUnresolvedReferences
 from .._names import (
-    APP_NAME,
     APP_BRAND_NAME,  # noqa: F401
+    APP_NAME,
     CONFIG_FILE_EXTENSION,  # noqa: F401
+    CONFIG_FILE_NAME,  # noqa: F401
     DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
-    VERSION_FILE_NAME,  # noqa: F401
-    ELAB_NAME,  # noqa: F401
-    ELAB_BRAND_NAME,  # noqa: F401
     ELAB_API_EXPECTED_VERSION,  # noqa: F401
+    ELAB_BRAND_NAME,  # noqa: F401
     ELAB_HOST_URL_API_SUFFIX,  # noqa: F401
+    ELAB_NAME,  # noqa: F401
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
     FALLBACK_EXPORT_DIR,  # noqa: F401
-    CONFIG_FILE_NAME,  # noqa: F401
-    TMP_DIR,
-    SYSTEM_CONFIG_LOC,
-    PROJECT_CONFIG_LOC,
+    KEY_API_TOKEN,
+    KEY_ASYNC_RATE_LIMIT,
+    KEY_DEVELOPMENT_MODE,
+    KEY_ENABLE_HTTP2,
+    KEY_EXPORT_DIR,
+    KEY_HOST,
+    KEY_PLUGIN_KEY_NAME,
+    KEY_TIMEOUT,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_VERIFY_SSL,
     LOCAL_CONFIG_LOC,
     LOG_DIR_ROOT,
-    KEY_HOST,
-    KEY_API_TOKEN,
-    KEY_EXPORT_DIR,
-    KEY_UNSAFE_TOKEN_WARNING,
-    KEY_ENABLE_HTTP2,
-    KEY_VERIFY_SSL,
-    KEY_TIMEOUT,
-    KEY_DEVELOPMENT_MODE,
-    KEY_PLUGIN_KEY_NAME,
+    PROJECT_CONFIG_LOC,
+    SYSTEM_CONFIG_LOC,
+    TMP_DIR,
+    VERSION_FILE_NAME,  # noqa: F401
 )
 from ..core_validators import (
-    Validate,
-    ValidationError,
     CriticalValidationError,
     PathValidator,
+    Validate,
+    ValidationError,
 )
-from ..loggers import Logger
+from ..loggers import _XDG_DATA_HOME, LOG_FILE_PATH, Logger
 from ..path import ProperPath
 from ..styles import Missing
 from ..utils import add_message
+from ._config_history import (
+    AppliedConfigIdentity,
+    ConfigHistory,
+    InspectConfigHistory,
+    MinimalActiveConfiguration,
+)
 
 logger = Logger()
 
@@ -188,6 +188,10 @@ VERIFY_SSL = settings.get(KEY_VERIFY_SSL, None)
 TIMEOUT_DEFAULT_VAL: float = 90.0  # from httpx._config import DEFAULT_TIMEOUT_CONFIG
 TIMEOUT = settings.get(KEY_TIMEOUT, None)
 
+
+ASYNC_RATE_LIMIT_DEFAULT_VAL: None = None
+ASYNC_RATE_LIMIT = settings.get(KEY_ASYNC_RATE_LIMIT, None)
+
 # DEVELOPMENT_MODE falls back to false if not defined in the configuration
 DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
 DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
@@ -205,6 +209,7 @@ for key_name, key_val in [
     (KEY_ENABLE_HTTP2, ENABLE_HTTP2),
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
+    (KEY_ASYNC_RATE_LIMIT, ASYNC_RATE_LIMIT),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
     (KEY_PLUGIN_KEY_NAME, PLUGIN),
 ]:

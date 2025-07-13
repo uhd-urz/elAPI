@@ -3,25 +3,30 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Union, Optional, Tuple, Literal
+from typing import Literal, Optional, Tuple, Union
 
+# noinspection PyProtectedMember
 import httpx._client as httpx_private_client_module
-from httpx import Response, Client, AsyncClient, Limits
+from httpx import AsyncBaseTransport, AsyncClient, Client, Limits, Response
+
+# noinspection PyProtectedMember
 from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
+from httpx_limiter import AsyncRateLimitedTransport, Rate
 
-from .. import APP_NAME, APP_BRAND_NAME
+from .. import APP_BRAND_NAME, APP_NAME
 from ..configuration import (
     TOKEN_BEARER,
-    get_active_host,
     get_active_api_token,
+    get_active_async_rate_limit,
     get_active_enable_http2,
-    get_active_verify_ssl,
+    get_active_host,
     get_active_timeout,
+    get_active_verify_ssl,
 )
 from ..loggers import Logger
 from ..styles import Missing
-from ..utils import update_kwargs_with_defaults, get_app_version
+from ..utils import get_app_version, update_kwargs_with_defaults
 
 USER_AGENT: str = (
     f"{APP_BRAND_NAME}/{get_app_version()} {httpx_private_client_module.USER_AGENT}"
@@ -36,8 +41,8 @@ class SessionDefaults:
         default_factory=lambda: Limits(
             max_connections=100,
             max_keepalive_connections=20,
-            # same as HTTPX default. The previous value "30" can be too much for the server when uvloop is used
-            keepalive_expiry=60,
+            # The same as HTTPX default. The previous value "30" can be too much for the server when uvloop is used
+            keepalive_expiry=5,
         )
     )
 
@@ -56,24 +61,27 @@ class SimpleClient(httpx_private_client_module.BaseClient):
         auth: Optional[AuthTypes] = _CustomHeaderApiKey(
             api_key=str(Missing()), header_name=TOKEN_BEARER
         ),
+        transport: Optional[AsyncBaseTransport] = None,
         **kwargs,
     ) -> Union[Client, AsyncClient]:
-        from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
         from ..configuration import (
-            KEY_HOST,
             KEY_API_TOKEN,
+            KEY_ASYNC_RATE_LIMIT,
             KEY_ENABLE_HTTP2,
-            KEY_VERIFY_SSL,
+            KEY_HOST,
             KEY_TIMEOUT,
+            KEY_VERIFY_SSL,
             preventive_missing_warning,
         )
+        from ..utils import check_reserved_keyword
 
         host: str = get_active_host()
         api_token: str = get_active_api_token().token
         enable_http2 = get_active_enable_http2()
         verify_ssl = get_active_verify_ssl()
         timeout = get_active_timeout()
+        active_async_rate_limit = get_active_async_rate_limit()
 
         if isinstance(auth, _CustomHeaderApiKey):
             auth.api_key = api_token
@@ -85,9 +93,29 @@ class SimpleClient(httpx_private_client_module.BaseClient):
             (KEY_TIMEOUT, timeout),
         ):
             preventive_missing_warning(config_field)
-        client = Client if is_async_client is False else AsyncClient
         try:
-            return client(
+            if is_async_client is True:
+                if transport is None and active_async_rate_limit is not None:
+                    transport = AsyncRateLimitedTransport.create(
+                        rate=Rate.create(magnitude=active_async_rate_limit),
+                        http2=enable_http2,
+                        # http2 needs to be passed here if AsyncRateLimitedTransport is used
+                        verify=verify_ssl,
+                    )
+                elif transport is not None and active_async_rate_limit is not None:
+                    logger.warning(
+                        f"When a manual transport parameter is passed to {SimpleClient}, "
+                        f"the '{KEY_ASYNC_RATE_LIMIT}' in the configuration file is ignored. "
+                    )
+                return AsyncClient(
+                    auth=auth,
+                    http2=enable_http2,
+                    verify=verify_ssl,
+                    timeout=timeout,
+                    transport=transport,
+                    **kwargs,
+                )
+            return Client(
                 auth=auth,
                 http2=enable_http2,
                 verify=verify_ssl,
@@ -303,6 +331,7 @@ class APIRequest(ABC):
             return NotImplemented
         if not self.client.is_closed:
             self.client.close()
+        return None
 
     @abstractmethod
     async def aclose(self) -> Optional[type(NotImplemented)]:
@@ -310,6 +339,7 @@ class APIRequest(ABC):
             return NotImplemented
         if not self.client.is_closed:
             await self.client.aclose()
+        return None
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
@@ -482,7 +512,7 @@ class ElabFTWURL:
         else:
             self._sub_endpoint_id = ""
             # Similar to an empty endpoint_id, an empty sub_endpoint_id sends back
-            # the whole list of available resources for a given sub-endpoint as response.
+            # the whole list of available resources for a given sub-endpoint as a response.
 
     @property
     def query(self) -> str:
