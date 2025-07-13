@@ -22,32 +22,39 @@ import typer
 from rich import pretty
 from typing_extensions import Annotated
 
-from ._plugin_handler import PluginInfo
-from ._plugin_handler import (
-    internal_plugin_typer_apps,
-    external_local_plugin_typer_apps,
-)
-from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
-from ..loggers import Logger, FileLogger
+from ..core_validators import GlobalCLIResultCallback
+from ..loggers import FileLogger, Logger
 from ..plugins.commons.cli_helpers import Typer
-from ..styles import get_custom_help_text
 from ..styles import (
-    stdout_console,
-    stderr_console,
-    rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
-from ..utils import get_external_python_version, PythonVersionCheckFailed
+from ..styles import (
+    get_custom_help_text,
+    rich_format_help_with_callback,
+    stderr_console,
+    stdout_console,
+)
+from ..utils import PythonVersionCheckFailed, get_external_python_version
 from ..utils.typer_patches import patch_typer_flag_value
+from ._plugin_handler import (
+    PluginInfo,
+    external_local_plugin_typer_apps,
+    internal_plugin_typer_apps,
+)
+from .doc import __PARAMETERS__doc__ as docs
 
 logger = Logger()
 file_logger = FileLogger()
 pretty.install()
 patch_typer_flag_value()
 
-app = Typer()
+app = Typer(
+    result_callback=lambda _,
+    override_config: GlobalCLIResultCallback().call_callbacks()
+)
+
 SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
     "init",
     "show-config",
@@ -95,23 +102,25 @@ def cli_startup(
         ),
     ] = "{}",
 ) -> type(None):
-    import click
     from sys import argv
-    from ..styles import print_typer_error
+
+    import click
+
+    from ..configuration import get_development_mode, reinitiate_config
     from ..configuration.config import (
-        settings,
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
-        KEY_PLUGIN_KEY_NAME,
         KEY_DEVELOPMENT_MODE,
+        KEY_PLUGIN_KEY_NAME,
+        APIToken,
         AppliedConfigIdentity,
         minimal_active_configuration,
+        settings,
     )
-    from ..configuration.config import APIToken
     from ..core_validators import Exit
-    from ..configuration import reinitiate_config, get_development_mode
-    from ..utils import MessagesList
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
+    from ..styles import print_typer_error
+    from ..utils import MessagesList
 
     if get_development_mode(skip_validation=True) is True:
         Exit.SYSTEM_EXIT = False
@@ -211,6 +220,7 @@ def cli_startup(
 
 def cli_switch_venv_state(state: bool, /) -> None:
     import click
+
     from ._venv_state_manager import switch_venv_state
 
     try:
@@ -278,6 +288,7 @@ def disable_plugin(
     short_reason: Optional[str] = None,
 ):
     import logging
+
     from ..utils import add_message
 
     add_message(err_msg, logging.WARNING)
@@ -304,11 +315,13 @@ def disable_plugin(
 
 def messages_panel():
     import logging
-    from ..styles import NoteText
-    from ..configuration import CONFIG_FILE_NAME
+
+    from rich.logging import RichHandler
     from rich.panel import Panel
     from rich.table import Table
-    from rich.logging import RichHandler
+
+    from ..configuration import CONFIG_FILE_NAME
+    from ..styles import NoteText
     from ..utils import MessagesList
 
     messages = MessagesList()
@@ -424,12 +437,12 @@ def init(
     With arguments: `elapi init --host <host> --api-token <api-token> --export-dir <export-directory>`
 
     """
+    from time import sleep
+
     from .._names import CONFIG_FILE_NAME
     from ..configuration import LOCAL_CONFIG_LOC
-    from ..core_validators import Validate, ValidationError
-    from ..core_validators import PathValidator
+    from ..core_validators import PathValidator, Validate, ValidationError
     from ..path import ProperPath
-    from time import sleep
 
     with stdout_console.status(
         f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
@@ -564,16 +577,17 @@ def get(
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
     import re
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, GETRequest, ElabFTWURLError
-    from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
-    from ..plugins.commons import get_structured_data
-    from ..core_validators import Validate, Exit
+
+    from httpx import ConnectError
+
+    from ..api import ElabFTWURLError, GETRequest, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
-    from ..plugins.commons import Export
-    from ..styles import Highlight, print_typer_error, NoteText
     from ..configuration import get_active_host
+    from ..core_validators import Exit, Validate
+    from ..plugins.commons import Export, get_structured_data
+    from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ..styles import Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -651,8 +665,8 @@ def get(
     except JSONDecodeError as e:
         if raw_response.status_code == 200:
             logger.info(
-                f"Request was successful, but response data could not be parsed as JSON. "
-                f"Response will be read as binary."
+                "Request was successful, but response data could not be parsed as JSON. "
+                "Response will be read as binary."
             )
             formatted_data = format(response_data := raw_response.content)
         else:
@@ -783,18 +797,18 @@ def post(
     `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
-    from httpx import ConnectError
     from ssl import SSLError
+
+    from httpx import ConnectError
+
     from .. import APP_NAME
-    from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
-    from ..core_validators import Validate
+    from ..api import ElabFTWURLError, GlobalSharedSession, POSTRequest
     from ..api.validators import HostIdentityValidator
-    from ..plugins.commons import get_location_from_headers
-    from ..plugins.commons import get_structured_data
-    from ..styles import Format, Highlight, print_typer_error, NoteText
-    from ..core_validators import Exit
-    from ..path import ProperPath
     from ..configuration import get_active_host
+    from ..core_validators import Exit, Validate
+    from ..path import ProperPath
+    from ..plugins.commons import get_location_from_headers, get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -1004,15 +1018,16 @@ def patch(
     <br/>
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
-    from ..core_validators import Validate
+
+    from httpx import ConnectError
+
+    from ..api import ElabFTWURLError, GlobalSharedSession, PATCHRequest
     from ..api.validators import HostIdentityValidator
-    from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..core_validators import Exit, Validate
     from ..plugins.commons import get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -1167,15 +1182,16 @@ def delete(
     <br/>
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
-    from ..core_validators import Validate
+
+    from httpx import ConnectError
+
+    from ..api import DELETERequest, ElabFTWURLError, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
-    from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..core_validators import Exit, Validate
     from ..plugins.commons import get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -1274,6 +1290,7 @@ def show_config(
     Get information about detected configuration values.
     """
     from rich.markdown import Markdown
+
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
@@ -1300,9 +1317,10 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
+    from time import sleep
+
     from ..configuration import TMP_DIR
     from ..path import ProperPath
-    from time import sleep
 
     with stdout_console.status("Cleaning up...", refresh_per_second=15):
         sleep(0.5)
