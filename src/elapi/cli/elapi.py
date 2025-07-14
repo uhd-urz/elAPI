@@ -136,7 +136,9 @@ def cli_startup(
         Exit.SYSTEM_EXIT = False
         for handler in logger.handlers:
             handler.setLevel(DefaultLogLevels.DEBUG)
-
+    # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
+    # However, PluginConfigurationValidator is always run
+    # first when development_mode is enabled
     GlobalCLICallback().call_callbacks()
 
     def show_aggressive_log_message():

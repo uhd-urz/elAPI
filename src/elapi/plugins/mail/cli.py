@@ -41,7 +41,7 @@ def test():
         **email_test_case["main_params"], soft_email_validation=False
     )
     logger.info(
-        f"Sending a test email to {email_test_case['to']}, "
+        f"Attempting to send a test email to {email_test_case['to']}, "
         f"from {email_test_case['main_params']['user']}, with the "
         f"following headers: {email_test_case['headers']}."
     )
