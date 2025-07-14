@@ -1,8 +1,11 @@
 import re
 from dataclasses import dataclass
+from smtplib import SMTPAuthenticationError, SMTPException
+from ssl import SSLError
 from typing import Optional
 
 import yagmail
+from yagmail import YagAddressError
 from yagmail.validate import DOMAIN, LOCAL_PART
 
 from ...configuration import (
@@ -225,12 +228,12 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                         header_value = [header_value]
                     for each_header_value in header_value:
                         try:
-                            full_name, to_email_address, domain = (
+                            _full_name, _to_email_address, _domain = (
                                 _parse_email_with_name(each_header_value)
                             )
                         except PatternNotFoundError:
                             try:
-                                to_email_address, domain = _parse_email_only(
+                                _to_email_address, _domain = _parse_email_only(
                                     each_header_value
                                 )
                             except PatternNotFoundError as e:
@@ -267,12 +270,30 @@ def get_validated_real_email_cases() -> Optional[dict]:
         if not real_cases:
             return None
         all_cases = {**real_cases, **{mail_config_sp_keys.case_test: test_case}}
-        logger.debug("All email cases will be validated.")
+        logger.debug(
+            f"The following email cases are to be "
+            f"validated: {', '.join(all_cases.keys())}"
+        )
         for case_name, case_val in all_cases.items():
-            mail_session = yagmail.SMTP(
-                **case_val["main_params"], soft_email_validation=False
-            )
+            try:
+                mail_session = yagmail.SMTP(
+                    **case_val["main_params"], soft_email_validation=False
+                )
+            except (
+                SMTPException,
+                SMTPAuthenticationError,
+                YagAddressError,
+                ConnectionError,
+                SSLError,
+                NameError,
+            ) as e:
+                logger.error(
+                    f"Email case '{case_name}' could not be validated "
+                    f"because it failed to "
+                    f"establish a connection. Exception details: {e}"
+                )
+                raise Exit(1)
             mail_session.close()
-        _validated_email_cases.real_cases = real_cases
-        _validated_email_cases.test_case = test_case
-        return _validated_email_cases.real_cases
+            _validated_email_cases.real_cases = real_cases
+            _validated_email_cases.test_case = test_case
+            return _validated_email_cases.real_cases
