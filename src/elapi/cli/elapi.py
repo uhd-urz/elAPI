@@ -16,8 +16,10 @@ import platform
 import sys
 from functools import partial
 from json import JSONDecodeError
+from sys import argv
 from typing import Optional
 
+import click
 import typer
 from rich import pretty
 from typing_extensions import Annotated
@@ -62,11 +64,21 @@ pretty.install()
 patch_typer_flag_value()
 
 
-def result_callback_wrapper(override_config):
-    logger.debug(
-        f"Calling {GlobalCLIResultCallback.__name__} (result callback with Typer)"
-    )
-    GlobalCLIResultCallback().call_callbacks()
+def result_callback_wrapper(_, override_config):
+    if (
+        (
+            calling_sub_command_name := (
+                ctx := click.get_current_context()
+            ).invoked_subcommand
+        )
+        not in COMMANDS_TO_SKIP_CLI_STARTUP
+        and ctx.command.name != calling_sub_command_name
+    ):
+        if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
+            logger.debug(
+                f"Calling {GlobalCLIResultCallback.__name__} (result callback with Typer)"
+            )
+            GlobalCLIResultCallback().call_callbacks()
 
 
 app = Typer(result_callback=result_callback_wrapper)
@@ -119,10 +131,6 @@ def cli_startup(
         ),
     ] = "{}",
 ) -> type(None):
-    from sys import argv
-
-    import click
-
     from ..configuration import get_development_mode, reinitiate_config
     from ..configuration.config import (
         CONFIG_FILE_NAME,
