@@ -263,11 +263,11 @@ def get_validated_real_email_cases():
         logger.error(e)
         raise Exit(1)
     else:
-        all_cases = {**real_cases, **test_case}
+        all_cases = {**real_cases, **{mail_config_sp_keys.case_test: test_case}}
         logger.debug("All email cases will be validated.")
-        for case in all_cases:
+        for case_name, case_val in all_cases.items():
             mail_session = yagmail.SMTP(
-                **case["main_params"], soft_email_validation=False
+                **case_val["main_params"], soft_email_validation=False
             )
             mail_session.close()
         _validated_email_cases.real_cases = real_cases
