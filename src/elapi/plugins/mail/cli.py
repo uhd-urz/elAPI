@@ -49,8 +49,10 @@ def test():
         **email_test_case["main_params"], soft_email_validation=False
     )
     logger.info(
-        f"Attempting to send a test email to {email_test_case['to']}, "
-        f"from {email_test_case['main_params']['user']}, with the "
+        f"Attempting to send a test email to "
+        f"'{', '.join(email_test_case['to'])}',\n"
+        f"from '{''.join(email_test_case['main_params']['user'].keys())}',"
+        f"\nwith the "
         f"following headers: {email_test_case['headers']}."
     )
     yagmail_send_params = YagMailSendParams(
