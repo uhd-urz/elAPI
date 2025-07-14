@@ -140,9 +140,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     f"value '{case_body}' is an invalid path value."
                 ) from e
             else:
-                if not (
-                    case_body_path.kind == "file" or case_body_path.expanded.exists()
-                ):
+                if not case_body_path.kind == "file" or not case_body_path.expanded.exists():
                     raise ValidationError(
                         f"'{mail_config_keys.plugin_name}.{mail_config_case_keys.body}' "
                         f"value '{case_body_path}' is not a file path or "
