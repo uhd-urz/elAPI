@@ -1,6 +1,6 @@
 [project]
 name = "elapi"
-version = "2.3.3"
+version = "2.3.4"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [{ name = "Alexander Haller, Mahadi Xion", email = "elabftw@uni-heidelberg.de" }]
 requires-python = ">=3.11.0,<4"
@@ -45,6 +45,9 @@ uhd-urz = [
     "python-dateutil>=2.9.0.post0,<3",
     "tenacity>=9.1.2,<10",
     "uvloop>=0.21.0,<0.22",
+]
+mail = [
+    "yagmail>=0.15.293,<0.16",
 ]
 
 [project.urls]
