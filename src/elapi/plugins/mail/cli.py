@@ -1,3 +1,5 @@
+from email.utils import make_msgid
+
 import yagmail
 
 from ...core_validators import (
@@ -6,6 +8,7 @@ from ...core_validators import (
 from ...loggers import Logger
 from ...plugins.commons import Typer
 from ...utils import GlobalCLIGracefulCallback, GlobalCLIResultCallback
+from ._yagmail import YagMailSendParams
 from .configuration import (
     _validated_email_cases,
     get_mail_is_early_validation_allowed,
@@ -26,7 +29,10 @@ if get_mail_is_early_validation_allowed() is True:
     GlobalCLIGracefulCallback().add_callback(get_validated_real_email_cases)
 
 
-@app.command(name="test", help=f"Send a test email ({mail_config_sp_keys.case_test})")
+@app.command(
+    name="test",
+    help=f"Send a test email ({mail_config_sp_keys.case_test})",
+)
 def test():
     email_test_case = _validated_email_cases.test_case
     if not email_test_case:
@@ -47,8 +53,11 @@ def test():
         f"from {email_test_case['main_params']['user']}, with the "
         f"following headers: {email_test_case['headers']}."
     )
-    mail_session.send(
+    yagmail_send_params = YagMailSendParams(
         to=email_test_case["to"],
         contents=email_test_case["body"],
         headers=email_test_case["headers"],
+        message_id=make_msgid(domain=email_test_case["domain"]),
     )
+    mail_session.send(**yagmail_send_params.__dict__)
+    mail_session.close()

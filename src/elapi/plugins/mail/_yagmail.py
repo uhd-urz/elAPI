@@ -23,6 +23,15 @@ class YagMailSMTPUnusedParams:
     soft_email_validation: str = "soft_email_validation"
 
 
+@dataclass
+class YagMailSendParams:
+    to: list[str]
+    contents: str
+    headers: dict[str, str]
+    message_id: str
+    group_messages: bool = True
+
+
 def get_accepted_yagmail_smtp_class_params() -> list[str]:
     yagmail_smtp_class_params: list[str] = list(
         inspect.signature(yagmail.SMTP).parameters.keys()
