@@ -13,6 +13,7 @@ __all__ = [
     "GlobalCLICallback",
     "ResultCallbackHandler",
     "GlobalLogRecordContainer",
+    "GlobalCLIGracefulCallback",
     "LogItemList",
     "PatternNotFoundError",
 ]
@@ -31,6 +32,7 @@ from ._loggers import (
 )
 from ._utils import (
     GlobalCLICallback,
+    GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
     NoException,
     PatternNotFoundError,

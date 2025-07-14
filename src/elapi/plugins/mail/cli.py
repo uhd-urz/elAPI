@@ -5,7 +5,7 @@ from ...core_validators import (
 )
 from ...loggers import Logger
 from ...plugins.commons import Typer
-from ...utils import GlobalCLICallback, GlobalCLIResultCallback
+from ...utils import GlobalCLIGracefulCallback, GlobalCLIResultCallback
 from .configuration import (
     _validated_email_cases,
     get_mail_is_early_validation_allowed,
@@ -23,14 +23,16 @@ GlobalCLIResultCallback().add_callback(
 
 
 if get_mail_is_early_validation_allowed() is True:
-    GlobalCLICallback().add_callback(get_validated_real_email_cases)
+    GlobalCLIGracefulCallback().add_callback(get_validated_real_email_cases)
 
 
 @app.command(name="test", help=f"Send a test email ({mail_config_sp_keys.case_test})")
 def test():
     email_test_case = _validated_email_cases.test_case
     if not email_test_case:
-        _, email_test_case = get_validated_real_email_cases()
+        validated_cases = get_validated_real_email_cases()
+        if validated_cases:
+            _, email_test_case = validated_cases
     if not email_test_case:
         logger.error(
             f"No {mail_config_sp_keys.case_test} email case found "

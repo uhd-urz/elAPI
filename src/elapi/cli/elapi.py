@@ -43,6 +43,7 @@ from ..styles import (
 )
 from ..utils import (
     GlobalCLICallback,
+    GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
     PythonVersionCheckFailed,
     get_external_python_version,
@@ -222,6 +223,7 @@ def cli_startup(
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
                 show_aggressive_log_message()
+                GlobalCLIGracefulCallback().call_callbacks()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:

@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from typing import Optional
 
 import yagmail
 from yagmail.validate import DOMAIN, LOCAL_PART
@@ -254,7 +255,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
     return st_cases, st_test_case
 
 
-def get_validated_real_email_cases():
+def get_validated_real_email_cases() -> Optional[dict]:
     if _validated_email_cases.real_cases:
         return _validated_email_cases.real_cases
     try:
@@ -263,6 +264,8 @@ def get_validated_real_email_cases():
         logger.error(e)
         raise Exit(1)
     else:
+        if not real_cases:
+            return None
         all_cases = {**real_cases, **{mail_config_sp_keys.case_test: test_case}}
         logger.debug("All email cases will be validated.")
         for case_name, case_val in all_cases.items():

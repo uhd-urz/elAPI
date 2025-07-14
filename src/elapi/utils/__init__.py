@@ -2,6 +2,7 @@
 from .._core_init._utils import (
     GlobalCLICallback,
     GlobalCLIResultCallback,
+    GlobalCLIGracefulCallback,
     NoException,
     PatternNotFoundError,
     get_app_version,
@@ -31,4 +32,5 @@ __all__ = [
     "PatternNotFoundError",
     "GlobalCLICallback",
     "GlobalCLIResultCallback",
+    "GlobalCLIGracefulCallback",
 ]

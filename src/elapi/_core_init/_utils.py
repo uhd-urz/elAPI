@@ -9,6 +9,7 @@ __all__ = [
     "GlobalCLIResultCallback",
     "PatternNotFoundError",
     "GlobalCLICallback",
+    "GlobalCLIGracefulCallback",
 ]
 
 
@@ -80,6 +81,15 @@ class GlobalCLIResultCallback:
 
 
 class GlobalCLICallback:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = _Callback()
+        return cls._instance
+
+
+class GlobalCLIGracefulCallback:
     _instance = None
 
     def __new__(cls):
