@@ -24,7 +24,6 @@ from typing_extensions import Annotated
 
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
-from ..core_validators import GlobalCLIResultCallback
 from ..loggers import (
     DefaultLogLevels,
     FileLogger,
@@ -42,7 +41,12 @@ from ..styles import (
     stderr_console,
     stdout_console,
 )
-from ..utils import PythonVersionCheckFailed, get_external_python_version
+from ..utils import (
+    GlobalCLICallback,
+    GlobalCLIResultCallback,
+    PythonVersionCheckFailed,
+    get_external_python_version,
+)
 from ..utils.typer_patches import patch_typer_flag_value
 from ._plugin_handler import (
     PluginInfo,
@@ -132,6 +136,8 @@ def cli_startup(
         Exit.SYSTEM_EXIT = False
         for handler in logger.handlers:
             handler.setLevel(DefaultLogLevels.DEBUG)
+
+    GlobalCLICallback().call_callbacks()
 
     def show_aggressive_log_message():
         messages = MessagesList()

@@ -3,10 +3,19 @@ from typing import Callable, Optional
 
 from .._names import VERSION_FILE_NAME
 
-__all__ = ["NoException", "get_app_version", "GlobalCLIResultCallback"]
+__all__ = [
+    "NoException",
+    "get_app_version",
+    "GlobalCLIResultCallback",
+    "PatternNotFoundError",
+    "GlobalCLICallback",
+]
 
 
 class NoException(Exception): ...
+
+
+class PatternNotFoundError(Exception): ...
 
 
 def get_app_version() -> str:
@@ -62,6 +71,15 @@ class _Callback:
 
 
 class GlobalCLIResultCallback:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = _Callback()
+        return cls._instance
+
+
+class GlobalCLICallback:
     _instance = None
 
     def __new__(cls):

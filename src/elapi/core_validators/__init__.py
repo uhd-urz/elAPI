@@ -7,13 +7,11 @@ __all__ = [
     "CriticalValidationError",
     "PathValidator",
     "PathValidationError",
-    "GlobalCLIResultCallback",
 ]
 
 from .base import (
     CriticalValidationError,
     Exit,
-    GlobalCLIResultCallback,
     RuntimeValidationError,
     Validate,
     ValidationError,

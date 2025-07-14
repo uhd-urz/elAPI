@@ -10,21 +10,29 @@ __all__ = [
     "get_app_version",
     "NoException",
     "GlobalCLIResultCallback",
+    "GlobalCLICallback",
     "ResultCallbackHandler",
     "GlobalLogRecordContainer",
     "LogItemList",
+    "PatternNotFoundError",
 ]
 from .._vendor.haggis.logs import add_logging_level
 from ._loggers import (
     BaseHandler,
     DefaultLogLevels,
+    GlobalLogRecordContainer,
     Logger,
     LoggerUtil,
     LogItemList,
     LogMessageTuple,
-    GlobalLogRecordContainer,
     ResultCallbackHandler,
     SimpleLogger,
     STDERRBaseHandler,
 )
-from ._utils import GlobalCLIResultCallback, NoException, get_app_version
+from ._utils import (
+    GlobalCLICallback,
+    GlobalCLIResultCallback,
+    NoException,
+    PatternNotFoundError,
+    get_app_version,
+)
