@@ -137,12 +137,14 @@ class SimpleLogger:
 class Logger:
     suppress: bool = False
     suppress_stderr: bool = False
+    suppress_result_callback: bool = False
 
     def __new__(cls) -> logging.Logger:
         main_logger = logger_util.get_registered_wrapper_class("MainLogger")
         if main_logger is not None:
             main_logger.suppress = cls.suppress
             main_logger.suppress_stderr = cls.suppress_stderr
+            main_logger.suppress_result_callback = cls.suppress_result_callback
             return main_logger()
         SimpleLogger.suppress = cls.suppress or cls.suppress_stderr
         return SimpleLogger()
