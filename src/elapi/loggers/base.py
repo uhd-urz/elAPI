@@ -1,3 +1,4 @@
+import logging
 from typing import Type, Union
 
 from .._core_init import (
@@ -31,6 +32,7 @@ class MainLogger:
                 logger.addHandler(stdout_handler)
             if not cls.suppress or not cls.suppress_result_callback:
                 result_callback_handler = ResultCallbackHandler()
+                result_callback_handler.setLevel(logging.INFO)
                 logger.addHandler(result_callback_handler)
         return logger
 

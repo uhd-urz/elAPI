@@ -26,4 +26,5 @@ class ResultCallbackHandler(Handler):
 
     def emit(self, record):
         if self._store_okay:
-            self.log_container.append(record)
+            if record.levelno >= self.level:
+                self.log_container.append(record)
