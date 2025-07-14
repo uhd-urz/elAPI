@@ -30,7 +30,7 @@ if get_mail_is_early_validation_allowed() is True:
 )
 def test():
     email_test_case = _validated_email_cases.test_case
-    if not email_test_case:
+    if not _validated_email_cases.validated_once:
         validated_cases = get_validated_real_email_cases()
         if validated_cases:
             _, email_test_case = validated_cases

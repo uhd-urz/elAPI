@@ -32,9 +32,12 @@ mail_config_sp_keys = MailConfigCaseSpecialKeys()
 class _ValidatedEmailCases:
     real_cases: dict
     test_case: dict
+    validated_once: bool
 
 
-_validated_email_cases = _ValidatedEmailCases(real_cases=dict(), test_case=dict())
+_validated_email_cases = _ValidatedEmailCases(
+    real_cases=dict(), test_case=dict(), validated_once=False
+)
 
 
 def get_mail_config() -> dict:
@@ -140,7 +143,10 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     f"value '{case_body}' is an invalid path value."
                 ) from e
             else:
-                if not case_body_path.kind == "file" or not case_body_path.expanded.exists():
+                if (
+                    not case_body_path.kind == "file"
+                    or not case_body_path.expanded.exists()
+                ):
                     raise ValidationError(
                         f"'{mail_config_keys.plugin_name}.{mail_config_case_keys.body}' "
                         f"value '{case_body_path}' is not a file path or "
@@ -257,7 +263,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
 
 
 def get_validated_real_email_cases() -> Optional[dict]:
-    if _validated_email_cases.real_cases:
+    if _validated_email_cases.validated_once:
         return _validated_email_cases.real_cases
     try:
         real_cases, test_case = get_structured_email_cases()
@@ -291,7 +297,9 @@ def get_validated_real_email_cases() -> Optional[dict]:
                     f"establish a connection. Exception details: {e}"
                 )
                 raise Exit(1)
-            mail_session.close()
-            _validated_email_cases.real_cases = real_cases
-            _validated_email_cases.test_case = test_case
-            return _validated_email_cases.real_cases
+            else:
+                mail_session.close()
+        _validated_email_cases.validated_once = True
+        _validated_email_cases.real_cases = real_cases
+        _validated_email_cases.test_case = test_case
+        return _validated_email_cases.real_cases

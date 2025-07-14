@@ -61,10 +61,16 @@ file_logger = FileLogger()
 pretty.install()
 patch_typer_flag_value()
 
-app = Typer(
-    result_callback=lambda _,
-    override_config: GlobalCLIResultCallback().call_callbacks()
-)
+
+def result_callback_wrapper(override_config):
+    logger.debug(
+        f"Calling {GlobalCLIResultCallback.__name__} (result callback with Typer)"
+    )
+    GlobalCLIResultCallback().call_callbacks()
+
+
+app = Typer(result_callback=result_callback_wrapper)
+
 
 SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
     "init",
@@ -140,6 +146,7 @@ def cli_startup(
     # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
     # However, PluginConfigurationValidator is always run
     # first when development_mode is enabled
+    logger.debug(f"Calling {GlobalCLICallback.__name__} (initial callback)")
     GlobalCLICallback().call_callbacks()
 
     def show_aggressive_log_message():
@@ -223,6 +230,9 @@ def cli_startup(
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
                 show_aggressive_log_message()
+                logger.debug(
+                    f"Calling {GlobalCLIGracefulCallback.__name__} (graceful callback)"
+                )
                 GlobalCLIGracefulCallback().call_callbacks()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
