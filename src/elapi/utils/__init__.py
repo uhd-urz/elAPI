@@ -1,6 +1,6 @@
 # noinspection PyProtectedMember
 from .._core_init._utils import (
-    GlobalCLICallback,
+    GlobalCLISuperStartupCallback,
     GlobalCLIResultCallback,
     GlobalCLIGracefulCallback,
     NoException,
@@ -30,7 +30,7 @@ __all__ = [
     "get_app_version",
     "NoException",
     "PatternNotFoundError",
-    "GlobalCLICallback",
+    "GlobalCLISuperStartupCallback",
     "GlobalCLIResultCallback",
     "GlobalCLIGracefulCallback",
 ]

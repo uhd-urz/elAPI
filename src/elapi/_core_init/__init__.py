@@ -10,7 +10,7 @@ __all__ = [
     "get_app_version",
     "NoException",
     "GlobalCLIResultCallback",
-    "GlobalCLICallback",
+    "GlobalCLISuperStartupCallback",
     "ResultCallbackHandler",
     "GlobalLogRecordContainer",
     "GlobalCLIGracefulCallback",
@@ -31,7 +31,7 @@ from ._loggers import (
     STDERRBaseHandler,
 )
 from ._utils import (
-    GlobalCLICallback,
+    GlobalCLISuperStartupCallback,
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
     NoException,

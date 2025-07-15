@@ -44,9 +44,9 @@ from ..styles import (
     stdout_console,
 )
 from ..utils import (
-    GlobalCLICallback,
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
+    GlobalCLISuperStartupCallback,
     PythonVersionCheckFailed,
     get_external_python_version,
 )
@@ -71,10 +71,13 @@ def result_callback_wrapper(_, override_config):
         ).invoked_subcommand
     ) not in SENSITIVE_PLUGIN_NAMES and ctx.command.name != calling_sub_command_name:
         if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
-            logger.debug(
-                f"Calling {GlobalCLIResultCallback.__name__} (result callback with Typer)"
-            )
-            if not (global_result_callback := GlobalCLIResultCallback()).in_a_call:
+            global_result_callback = GlobalCLIResultCallback()
+            if global_result_callback.get_callbacks():
+                logger.debug(
+                    f"Running {__package__} controlled callback with "
+                    f"Typer result callback: "
+                    f"{global_result_callback.singleton_subclass_name}"
+                )
                 global_result_callback.call_callbacks()
 
 
@@ -127,7 +130,7 @@ def cli_startup(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = "{}",
-) -> type(None):
+) -> None:
     from ..configuration import get_development_mode, reinitiate_config
     from ..configuration.config import (
         CONFIG_FILE_NAME,
@@ -151,8 +154,13 @@ def cli_startup(
     # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
     # However, PluginConfigurationValidator is always run
     # first when development_mode is enabled
-    logger.debug(f"Calling {GlobalCLICallback.__name__} (initial callback)")
-    GlobalCLICallback().call_callbacks()
+    global_init_callbacks = GlobalCLISuperStartupCallback()
+    if global_init_callbacks.get_callbacks():
+        logger.debug(
+            f"Running {__package__} controlled callback before anything else: "
+            f"{global_init_callbacks.singleton_subclass_name}"
+        )
+        global_init_callbacks.call_callbacks()
 
     def show_aggressive_log_message():
         messages = MessagesList()
@@ -235,10 +243,14 @@ def cli_startup(
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
                 show_aggressive_log_message()
-                logger.debug(
-                    f"Calling {GlobalCLIGracefulCallback.__name__} (graceful callback)"
-                )
-                GlobalCLIGracefulCallback().call_callbacks()
+                global_graceful_callbacks = GlobalCLIGracefulCallback()
+                if global_graceful_callbacks.get_callbacks():
+                    logger.debug(
+                        f"Running {__package__} controlled callback "
+                        f"after configuration validation: "
+                        f"{global_graceful_callbacks.singleton_subclass_name}"
+                    )
+                    global_graceful_callbacks.call_callbacks()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
@@ -290,7 +302,7 @@ def cli_startup_for_plugins(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = None,
-):
+) -> None:
     from ..styles import print_typer_error
     from ..validators import Exit
 
@@ -301,7 +313,12 @@ def cli_startup_for_plugins(
             f"the main program name '{APP_NAME}', and not after a plugin name."
         )
         raise Exit(1)
-    return cli_startup()
+    # Calling cli_startup again here would call cli_startup
+    # again before loading each plugin. This is necessary because
+    # whatever modifications/additions a plugin made,
+    # cli_startup would need to consider them again. E.g., adding a
+    # callback to GlobalGlobalCLIGracefulCallback.
+    cli_startup()
 
 
 def cli_cleanup_for_third_party_plugins(*args, override_config=None):

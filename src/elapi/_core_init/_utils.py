@@ -8,9 +8,10 @@ __all__ = [
     "get_app_version",
     "GlobalCLIResultCallback",
     "PatternNotFoundError",
-    "GlobalCLICallback",
+    "GlobalCLISuperStartupCallback",
     "GlobalCLIGracefulCallback",
 ]
+from ._loggers import Logger
 
 
 class NoException(Exception): ...
@@ -24,10 +25,9 @@ def get_app_version() -> str:
 
 
 class _Callback:
-    _callbacks: Optional[list[Callable]] = None
-
-    def __init__(self):
+    def __init__(self, singleton_subclass_name: str):
         self._callbacks: Optional[list[Callable]] = None
+        self.singleton_subclass_name = singleton_subclass_name
         self.in_a_call = False
 
     def _invalid_callback_type_exception(self):
@@ -56,19 +56,27 @@ class _Callback:
         raise self._invalid_callback_type_exception()
 
     def call_callbacks(self) -> None:
-        if self._callbacks is not None:
-            if not isinstance(self._callbacks, list):
-                raise self._invalid_callback_type_exception()
-            for func in self._callbacks:
-                if not isinstance(func, Callable):
-                    raise RuntimeError(
-                        f"result_callback function must be a callable! "
-                        f"But '{func}' is of type '{type(func)}' instead."
-                    )
-                self.in_a_call = True
-                func()
-            self._callbacks.clear()
-            self._callbacks = None
+        logger = Logger()
+
+        if not self.in_a_call:
+            if self._callbacks is not None:
+                if not isinstance(self._callbacks, list):
+                    raise self._invalid_callback_type_exception()
+                logger.debug(
+                    f"Calling {self.singleton_subclass_name} registered functions: "
+                    f"{', '.join(map(str, self._callbacks))}"
+                )
+                for func in self._callbacks:
+                    if not isinstance(func, Callable):
+                        raise RuntimeError(
+                            f"result_callback function must be a callable! "
+                            f"But '{func}' is of type '{type(func)}' instead."
+                        )
+                    self.in_a_call = True
+                    func()
+                self._callbacks.clear()
+                self._callbacks = None
+        return None
 
     def get_callbacks(self) -> Optional[list[Callable]]:
         return self._callbacks
@@ -79,16 +87,16 @@ class GlobalCLIResultCallback:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = _Callback()
+            cls._instance = _Callback(cls.__name__)
         return cls._instance
 
 
-class GlobalCLICallback:
+class GlobalCLISuperStartupCallback:
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = _Callback()
+            cls._instance = _Callback(cls.__name__)
         return cls._instance
 
 
@@ -97,5 +105,5 @@ class GlobalCLIGracefulCallback:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = _Callback()
+            cls._instance = _Callback(cls.__name__)
         return cls._instance
