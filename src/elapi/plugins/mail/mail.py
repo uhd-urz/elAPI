@@ -25,10 +25,12 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
         return None
     stored_logs: list[LogRecord] = GlobalLogRecordContainer().data
     for log_record in stored_logs:
-        for case_name, case_value in validated_cases:
-            target_log_levels: list[str] = case_value[mail_config_case_keys.on] or []
+        for case_name, case_value in validated_cases.items():
+            target_log_levels: list[str] = (
+                case_value.get(mail_config_case_keys.on) or []
+            )
             target_log_levels = [_.lower() for _ in target_log_levels]
-            target_pattern: str = case_value[mail_config_case_keys.pattern] or ""
+            target_pattern: str = case_value.get(mail_config_case_keys.pattern) or ""
             if target_log_levels and target_pattern:
                 if log_record.levelname.lower() in target_log_levels and re.search(
                     rf"{target_pattern}", log_record.message, re.IGNORECASE
