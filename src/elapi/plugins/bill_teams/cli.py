@@ -434,7 +434,7 @@ else:
         )
         logger.success(
             f"Both teams and owners information of {target_date.strftime('%B')} "
-            f"{target_month} have been stored successfully."
+            f"{target_month} has been stored successfully."
         )
 
     def _parse_cli_input_date(user_date: str, /, date_cli_arg: str):
