@@ -1,4 +1,5 @@
 import re
+from collections import UserDict
 from dataclasses import dataclass
 from smtplib import SMTPAuthenticationError, SMTPException
 from ssl import SSLError
@@ -25,6 +26,27 @@ from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
 logger = Logger()
 mail_config_keys = MailConfigKeys()
 mail_config_sp_keys = MailConfigCaseSpecialKeys()
+
+
+class MailBodyJinjaContext(UserDict):
+    def __init__(self):
+        self.reserved_keys = (
+            "all_logs",
+            "sender_full_name",
+            "unique_receiver_full_name",
+            "unique_receiver_first_name",
+            "unique_receiver_name",
+            "server_fqdn",
+        )
+        super().__init__({k: None for k in self.reserved_keys})
+
+    def __delitem__(self, key):
+        if key in self.reserved_keys:
+            raise ValueError(f"Key '{key}' is reserved and cannot be deleted.")
+        self.data.pop(key, None)
+
+
+mail_body_jinja_context = MailBodyJinjaContext()
 
 
 @dataclass
@@ -182,7 +204,8 @@ def get_structured_email_cases() -> tuple[dict, dict]:
         for unused_param in YagMailSMTPUnusedParams().__dict__.values():
             if case_val.get(unused_param) is not None:
                 raise ValidationError(
-                    f"'{case_name}.{unused_param}' cannot be used in this context."
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{unused_param}' cannot be used in this context."
                 )
         case_headers = case_val.get(mail_config_case_keys.headers, dict())
         case_headers_lower = {k.lower(): v for k, v in case_headers.items()}
@@ -216,18 +239,18 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                         from_email_address, domain = _parse_email_only(header_value)
                     except PatternNotFoundError as e:
                         raise ValidationError(
-                            f"{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}"
+                            f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
                             f"does not match the standard format. E.g., "
                             f"'Jane Doe <jane.doe@localhost.example>'"
                         ) from e
                     else:
                         st_cases[case_name]["from_email_address"] = from_email_address
-                        st_cases[case_name]["domain"] = domain
+                        st_cases[case_name]["sender_domain"] = domain
                         st_cases[case_name]["main_params"]["user"] = header_value
                 else:
-                    st_cases[case_name]["full_name"] = full_name
+                    st_cases[case_name]["sender_full_name"] = full_name
                     st_cases[case_name]["from_email_address"] = from_email_address
-                    st_cases[case_name]["domain"] = domain
+                    st_cases[case_name]["sender_domain"] = domain
                     st_cases[case_name]["main_params"]["user"] = {
                         from_email_address: full_name
                     }
@@ -238,7 +261,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                         header_value = [header_value]
                     for each_header_value in header_value:
                         try:
-                            _full_name, _to_email_address, _domain = (
+                            full_name, _to_email_address, _domain = (
                                 _parse_email_with_name(each_header_value)
                             )
                         except PatternNotFoundError:
@@ -248,13 +271,19 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                                 )
                             except PatternNotFoundError as e:
                                 raise ValidationError(
-                                    f"{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}"
+                                    f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
                                     f"does not match the standard format. E.g., "
                                     f"'Jane Doe <jane.doe@localhost.example>'"
                                 ) from e
                             else:
                                 st_cases[case_name]["to"].append(each_header_value)
                         else:
+                            try:
+                                st_cases[case_name]["receiver_full_name"]
+                            except KeyError:
+                                st_cases[case_name]["receiver_full_name"] = full_name
+                            else:
+                                st_cases[case_name].pop("receiver_full_name")
                             st_cases[case_name]["to"].append(each_header_value)
                 else:
                     raise ValidationError(

@@ -1,13 +1,20 @@
 import re
 from email.utils import make_msgid
 from logging import LogRecord
+from socket import getfqdn
 from typing import Optional
 
+import jinja2
 import yagmail
+from nameparser import HumanName
 
 from ...loggers import GlobalLogRecordContainer, Logger
 from ._yagmail import YagMailSendParams
-from .configuration import _validated_email_cases, populate_validated_email_cases
+from .configuration import (
+    _validated_email_cases,
+    mail_body_jinja_context,
+    populate_validated_email_cases,
+)
 from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
 
 mail_config_sp_keys = MailConfigCaseSpecialKeys()
@@ -15,6 +22,7 @@ mail_config_case_keys = MailConfigCaseKeys()
 mail_config_keys = MailConfigKeys()
 
 logger = Logger()
+jinja_environment = jinja2.Environment()
 
 
 def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
@@ -43,6 +51,30 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
     return None
 
 
+def _get_clean_logs(log_records: list[LogRecord]) -> str:
+    messages: list[str] = []
+    for record in log_records:
+        messages.append(f"{record.asctime}:{record.levelname}: {record.message}")
+    return "\n".join(messages)
+
+
+def _process_jinja_context(case_value: dict):
+    mail_body_jinja_context["all_logs"] = _get_clean_logs(
+        GlobalLogRecordContainer().data
+    )
+    mail_body_jinja_context["sender_full_name"] = case_value.get("sender_full_name", "")
+    mail_body_jinja_context["server_fqdn"] = getfqdn()
+    mail_body_jinja_context["unique_receiver_full_name"] = receiver_full_name = (
+        case_value.get("receiver_full_name", "")
+    )
+    mail_body_jinja_context["unique_receiver_first_name"] = receiver_first_name = (
+        HumanName(receiver_full_name).first
+    )
+    mail_body_jinja_context["unique_receiver_name"] = (
+        receiver_first_name or receiver_full_name
+    )
+
+
 def send_matching_case_mail() -> None:
     matching_case: Optional[tuple[str, dict, LogRecord]] = get_case_match()
     if matching_case is None:
@@ -52,24 +84,29 @@ def send_matching_case_mail() -> None:
         )
         return
     case_name, case_value, log_record = matching_case
+    _process_jinja_context(case_value)
     logger.info(
         f"A log was found that matches the case '{case_name}' defined in "
         f"{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
     )
-    _send_yagmail(case_name, case_value)
+    _send_yagmail(case_name, case_value, jinja_contex=mail_body_jinja_context)
     GlobalLogRecordContainer().data.clear()
     logger.debug(f"{GlobalLogRecordContainer} data has been cleared.")
 
 
-def _send_yagmail(case_name: str, case_value: dict) -> None:
+def _send_yagmail(
+    case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
+) -> None:
     mail_session = yagmail.SMTP(
         **case_value["main_params"], soft_email_validation=False
     )
+    email_body_template = jinja_environment.from_string(case_value["body"])
+    email_body: str = email_body_template.render(jinja_contex or dict())
     yagmail_send_params = YagMailSendParams(
         to=case_value["to"],
-        contents=case_value["body"],
+        contents=email_body,
         headers=case_value["headers"],
-        message_id=make_msgid(domain=case_value["domain"]),
+        message_id=make_msgid(domain=case_value["sender_domain"]),
     )
     logger.info(
         f"Attempting to send a '{case_name}' email to "
