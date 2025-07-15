@@ -24,7 +24,6 @@ else:
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
     from ...configuration import APP_NAME, get_active_export_dir
     from ...core_validators import Exit, RuntimeValidationError, ValidationError
-    from ...loggers import Logger
     from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
     from ...styles import Highlight, print_typer_error, stderr_console, stdout_console
@@ -33,6 +32,7 @@ else:
     from ..commons.cli_helpers import Typer
     from ._doc import __PARAMETERS__doc__ as docs
     from .configuration import get_root_dir
+    from .logger import BillingLogger
     from .registry import (
         _initialize_registry_file,
         _is_team_bill_generation_metadata_sane,
@@ -74,14 +74,23 @@ else:
     )
     app.add_typer(registry_app, rich_help_panel="Sub-plugins")
 
-    logger = Logger()
+    logger = BillingLogger()
 
     @app.command(name="teams-info")
     @tenacity.retry(
         retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
         stop=stop_after_attempt(6),  # including the very first attempt
         wait=wait_exponential(multiplier=60, min=5, max=4260),
-        retry_error_callback=lambda _: ...,
+        before_sleep=lambda retry_state: logger.info(
+            f"{APP_NAME} {PLUGIN_NAME} plugin will try again in "
+            f"{retry_state.upcoming_sleep} seconds. "
+            f"Total attempt(s) so far: {retry_state.attempt_number}. "
+        ),
+        retry_error_callback=lambda retry_state: logger.error(
+            f"Collecting teams data (teams-info) from the server has failed "
+            f"after {retry_state.attempt_number} attempts. "
+            f"No more re-attempts will be made."
+        ),
         # meant to suppress raising the final exception once all attempts have been made
     )
     def get_teams(
@@ -160,7 +169,6 @@ else:
                 tl = TeamsList(await users_info.items(), teams_info.items())
             except (RuntimeError, InterruptedError) as error:
                 global_session.close()
-                logger.info(f"{APP_NAME} will try again.")
                 raise InterruptedError from error
             else:
                 global_session.close()
@@ -423,6 +431,10 @@ else:
             skip_essential_validation=True,
             sort_json_format=True,
             export=str(store_location),
+        )
+        logger.success(
+            f"Both teams and owners information of {target_date.strftime('%B')} "
+            f"{target_month} have been stored successfully."
         )
 
     def _parse_cli_input_date(user_date: str, /, date_cli_arg: str):
