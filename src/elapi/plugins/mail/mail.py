@@ -7,9 +7,7 @@ import yagmail
 
 from ...loggers import GlobalLogRecordContainer, Logger
 from ._yagmail import YagMailSendParams
-from .configuration import (
-    get_validated_real_email_cases,
-)
+from .configuration import _validated_email_cases, populate_validated_email_cases
 from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
 
 mail_config_sp_keys = MailConfigCaseSpecialKeys()
@@ -20,12 +18,12 @@ logger = Logger()
 
 
 def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
-    validated_cases = get_validated_real_email_cases()
-    if not validated_cases:
-        return None
+    if not _validated_email_cases.successfully_validated:
+        populate_validated_email_cases()
+    validated_real_cases = _validated_email_cases.real_cases
     stored_logs: list[LogRecord] = GlobalLogRecordContainer().data
     for log_record in stored_logs:
-        for case_name, case_value in validated_cases.items():
+        for case_name, case_value in validated_real_cases.items():
             target_log_levels: list[str] = (
                 case_value.get(mail_config_case_keys.on) or []
             )
@@ -48,8 +46,8 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
 def send_matching_case_mail() -> None:
     matching_case: Optional[tuple[str, dict, LogRecord]] = get_case_match()
     if matching_case is None:
-        logger.info(
-            f"No log found that matches any case defined in "
+        logger.debug(
+            f"No log was found that matches any case defined in "
             f"{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
         )
         return

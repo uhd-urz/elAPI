@@ -5,7 +5,7 @@ from ...utils import GlobalCLIGracefulCallback, GlobalCLIResultCallback
 from .configuration import (
     _validated_email_cases,
     get_mail_is_early_validation_allowed,
-    get_validated_real_email_cases,
+    populate_validated_email_cases,
 )
 from .mail import _send_yagmail, send_matching_case_mail
 from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
@@ -21,7 +21,7 @@ GlobalCLIResultCallback().add_callback(send_matching_case_mail)
 
 
 if get_mail_is_early_validation_allowed() is True:
-    GlobalCLIGracefulCallback().add_callback(get_validated_real_email_cases)
+    GlobalCLIGracefulCallback().add_callback(populate_validated_email_cases)
 
 
 @app.command(
@@ -29,11 +29,9 @@ if get_mail_is_early_validation_allowed() is True:
     help=f"Send a test email ({mail_config_sp_keys.case_test})",
 )
 def test():
+    if not _validated_email_cases.successfully_validated:
+        populate_validated_email_cases()
     email_test_case = _validated_email_cases.test_case
-    if not _validated_email_cases.validated_once:
-        validated_cases = get_validated_real_email_cases()
-        if validated_cases:
-            _, email_test_case = validated_cases
     if not email_test_case:
         logger.error(
             f"No non-empty '{mail_config_sp_keys.case_test}' "

@@ -2,7 +2,6 @@ import re
 from dataclasses import dataclass
 from smtplib import SMTPAuthenticationError, SMTPException
 from ssl import SSLError
-from typing import Optional
 
 import yagmail
 from yagmail import YagAddressError
@@ -32,11 +31,11 @@ mail_config_sp_keys = MailConfigCaseSpecialKeys()
 class _ValidatedEmailCases:
     real_cases: dict
     test_case: dict
-    validated_once: bool
+    successfully_validated: bool
 
 
 _validated_email_cases = _ValidatedEmailCases(
-    real_cases=dict(), test_case=dict(), validated_once=False
+    real_cases=dict(), test_case=dict(), successfully_validated=False
 )
 
 
@@ -105,13 +104,15 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 raise ValidationError(
                     f"Either '{mail_config_case_keys.on}' or "
                     f"'{mail_config_case_keys.pattern}' "
-                    f"or both must be provided for case {case_name}."
+                    f"or both must be provided for case {mail_config_keys.plugin_name}."
+                    f"{mail_config_keys.cases}.{case_name}."
                 )
         if case_on is not None:
             if case_name == mail_config_sp_keys.case_test:
                 logger.info(
                     f"Email case '{case_name}' is special, and "
-                    f"'{case_name}.{mail_config_case_keys.on}' will be ignored."
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.on}' will be ignored."
                 )
             elif not isinstance(case_on, list):
                 raise ValidationError(
@@ -122,11 +123,13 @@ def get_structured_email_cases() -> tuple[dict, dict]:
             if case_name == mail_config_sp_keys.case_test:
                 logger.info(
                     f"Email case '{case_name}' is special, and "
-                    f"'{case_name}.{mail_config_case_keys.pattern}' will be ignored."
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.pattern}' will be ignored."
                 )
             elif not isinstance(case_pattern, str):
                 raise ValidationError(
-                    f"'{case_name}.{mail_config_case_keys.pattern}' must be a string of "
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.pattern}' must be a string of "
                     f"Python regex pattern."
                 )
             st_cases[case_name][mail_config_case_keys.pattern] = case_pattern
@@ -139,7 +142,8 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 case_body_path = ProperPath(case_body)
             except ValueError as e:
                 raise ValidationError(
-                    f"'{mail_config_keys.plugin_name}.{mail_config_case_keys.body}' "
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.body}' "
                     f"value '{case_body}' is an invalid path value."
                 ) from e
             else:
@@ -148,7 +152,8 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     or not case_body_path.expanded.exists()
                 ):
                     raise ValidationError(
-                        f"'{mail_config_keys.plugin_name}.{mail_config_case_keys.body}' "
+                        f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                        f"{case_name}.{mail_config_case_keys.body}' "
                         f"value '{case_body_path}' is not a file path or "
                         f"does not exist."
                     )
@@ -161,7 +166,8 @@ def get_structured_email_cases() -> tuple[dict, dict]:
             ) or global_email_setting.get(required_param)
             if required_param_value is None:
                 raise ValidationError(
-                    f"'{case_name}.{required_param}' "
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{required_param}' "
                     f"value cannot be null and must be provided!"
                 )
             st_cases[case_name]["main_params"][required_param] = required_param_value
@@ -262,21 +268,25 @@ def get_structured_email_cases() -> tuple[dict, dict]:
     return st_cases, st_test_case
 
 
-def get_validated_real_email_cases() -> Optional[dict]:
-    if _validated_email_cases.validated_once:
-        return _validated_email_cases.real_cases
+def populate_validated_email_cases() -> None:
+    if _validated_email_cases.successfully_validated:
+        return None
     try:
         real_cases, test_case = get_structured_email_cases()
     except ValidationError as e:
         logger.error(e)
         raise Exit(1)
     else:
-        if not real_cases:
+        if not real_cases or not test_case:
+            logger.debug(
+                "No real email cases or test case were found. "
+                "No email case validation will be done."
+            )
             return None
         all_cases = {**real_cases, **{mail_config_sp_keys.case_test: test_case}}
         logger.debug(
             f"The following email cases are to be "
-            f"validated: {', '.join(all_cases.keys())}"
+            f"validated: {', '.join(all_cases.keys())}."
         )
         for case_name, case_val in all_cases.items():
             try:
@@ -296,10 +306,12 @@ def get_validated_real_email_cases() -> Optional[dict]:
                     f"because it failed to "
                     f"establish a connection. Exception details: {e}"
                 )
+                # _validated_email_cases.successfully_validated is
+                # not set to True as we want to give the validation
+                # another chance.
                 raise Exit(1)
             else:
                 mail_session.close()
-        _validated_email_cases.validated_once = True
+        _validated_email_cases.successfully_validated = True
         _validated_email_cases.real_cases = real_cases
         _validated_email_cases.test_case = test_case
-        return _validated_email_cases.real_cases
