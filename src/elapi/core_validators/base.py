@@ -25,7 +25,8 @@ class Exit(BaseExit):
         SYSTEM_EXIT: bool = True
 
     def __new__(cls, *args, **kwargs) -> Union[SystemExit, Self]:
-        GlobalCLIResultCallback().call_callbacks()
+        if not (global_result_callback := GlobalCLIResultCallback()).in_a_call:
+            global_result_callback.call_callbacks()
         if cls.SYSTEM_EXIT:
             return SystemExit(*args)
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError

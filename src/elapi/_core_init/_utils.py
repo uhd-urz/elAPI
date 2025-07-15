@@ -25,10 +25,10 @@ def get_app_version() -> str:
 
 class _Callback:
     _callbacks: Optional[list[Callable]] = None
-    in_a_call: bool = False
 
     def __init__(self):
         self._callbacks: Optional[list[Callable]] = None
+        self.in_a_call = False
 
     def _invalid_callback_type_exception(self):
         ValueError(
@@ -56,8 +56,6 @@ class _Callback:
         raise self._invalid_callback_type_exception()
 
     def call_callbacks(self) -> None:
-        if _Callback.in_a_call is True:
-            return
         if self._callbacks is not None:
             if not isinstance(self._callbacks, list):
                 raise self._invalid_callback_type_exception()
@@ -67,7 +65,7 @@ class _Callback:
                         f"result_callback function must be a callable! "
                         f"But '{func}' is of type '{type(func)}' instead."
                     )
-                _Callback.in_a_call = True
+                self.in_a_call = True
                 func()
             self._callbacks.clear()
             self._callbacks = None

@@ -66,19 +66,16 @@ patch_typer_flag_value()
 
 def result_callback_wrapper(_, override_config):
     if (
-        (
-            calling_sub_command_name := (
-                ctx := click.get_current_context()
-            ).invoked_subcommand
-        )
-        not in COMMANDS_TO_SKIP_CLI_STARTUP
-        and ctx.command.name != calling_sub_command_name
-    ):
+        calling_sub_command_name := (
+            ctx := click.get_current_context()
+        ).invoked_subcommand
+    ) not in SENSITIVE_PLUGIN_NAMES and ctx.command.name != calling_sub_command_name:
         if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
             logger.debug(
                 f"Calling {GlobalCLIResultCallback.__name__} (result callback with Typer)"
             )
-            GlobalCLIResultCallback().call_callbacks()
+            if not (global_result_callback := GlobalCLIResultCallback()).in_a_call:
+                global_result_callback.call_callbacks()
 
 
 app = Typer(result_callback=result_callback_wrapper)
