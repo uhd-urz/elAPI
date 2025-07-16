@@ -41,7 +41,8 @@ class SessionDefaults:
         default_factory=lambda: Limits(
             max_connections=100,
             max_keepalive_connections=20,
-            # The same as HTTPX default. The previous value "30" can be too much for the server when uvloop is used
+            # The same as HTTPX default. The previous value "30"
+            # can be too much for the server when uvloop is used
             keepalive_expiry=5,
         )
     )

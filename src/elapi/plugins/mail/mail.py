@@ -1,8 +1,10 @@
 import re
+from dataclasses import asdict, dataclass
 from email.utils import make_msgid
+from functools import partial
 from logging import LogRecord
 from socket import getfqdn
-from typing import Optional
+from typing import Iterable, Optional
 
 import jinja2
 import yagmail
@@ -28,71 +30,127 @@ logger = Logger()
 jinja_environment = jinja2.Environment()
 
 
+@dataclass
+class _IteratingCase:
+    target_command: str
+    target_log_levels: Iterable[str]
+    target_pattern: Optional[str]
+
+
 def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
     if not _validated_email_cases.successfully_validated:
         populate_validated_email_cases()
     validated_real_cases = _validated_email_cases.real_cases
-    stored_logs: list[LogRecord] = GlobalLogRecordContainer().data
-    logger.debug(f"Detected {APP_NAME} command: '{detected_click_feedback.commands}'.")
-    for log_record in stored_logs:
-        for case_name, case_value in validated_real_cases.items():
-            target_log_levels: list[str] = (
-                case_value.get(mail_config_case_keys.on) or []
-            )
-            target_log_levels = [_.lower() for _ in target_log_levels]
-            target_pattern: str = case_value.get(mail_config_case_keys.pattern, "")
-            target_command: str = case_value.get(
-                mail_config_case_keys.limited_to_command, ""
-            )
-            target_command = re.sub(
-                rf"^{APP_NAME} ?", "", target_command, re.IGNORECASE
-            )
-            # TODO: Refactor to structural pattern matching
-            if target_command:
-                if target_log_levels and target_pattern:
-                    if (
-                        log_record.levelname.lower() in target_log_levels
-                        and re.search(
-                            rf"{target_pattern}", log_record.message, re.IGNORECASE
+
+    def _debug_matching_case(
+        case_name_: str,
+        message: str,
+        level_name: str,
+        target_command_: str,
+        target_log_levels: list[str],
+        target_pattern: Optional[str],
+    ):
+        logger.debug(
+            f"The log '{message}' with level '{level_name}' matched case "
+            f"'{case_name_}' with target levels {target_log_levels}, "
+            f"pattern '{target_pattern}', and target command "
+            f"'{target_command_}'."
+        )
+
+    def _search_match(
+        stored_logs: list[LogRecord], cases: dict
+    ) -> Optional[tuple[str, dict, LogRecord]]:
+        for log_record in stored_logs:
+            for case_name_, case_value_ in cases.items():
+                iterating_case = _IteratingCase(
+                    target_command=case_value.get(mail_config_case_keys.target_command),
+                    target_log_levels=list(
+                        map(
+                            lambda s: s.lower(),
+                            case_value_.get(mail_config_case_keys.on, []),
                         )
-                        and re.match(
-                            rf"{target_command}",
-                            detected_click_feedback.commands,
-                            re.IGNORECASE,
+                    ),
+                    target_pattern=case_value_.get(mail_config_case_keys.pattern),
+                )
+                target_pattern_search = (
+                    partial(
+                        re.search,
+                        pattern=rf"{iterating_case.target_pattern}",
+                        flags=re.IGNORECASE,
+                    )
+                    if iterating_case.target_pattern is not None
+                    else lambda string: None
+                )
+                iterating_log_info = (
+                    log_record.levelname.lower(),
+                    log_record.message,
+                    detected_click_feedback.commands,
+                )
+                match iterating_log_info:
+                    case (
+                        level,
+                        message,
+                        iterating_case.target_command,
+                    ) if (
+                        level in iterating_case.target_log_levels
+                        and target_pattern_search(string=message)
+                    ):
+                        _debug_matching_case(
+                            case_name,
+                            log_record.message,
+                            log_record.levelname,
+                            *asdict(iterating_case).values(),
                         )
-                    ):
-                        return case_name, case_value, log_record
-                elif target_log_levels:
-                    if log_record.levelname.lower() in target_log_levels and re.match(
-                        rf"{target_command}",
-                        detected_click_feedback.commands,
-                        re.IGNORECASE,
-                    ):
-                        return case_name, case_value, log_record
-                elif target_pattern:
-                    if re.search(
-                        rf"{target_pattern}", log_record.message, re.IGNORECASE
-                    ) and re.match(
-                        rf"{target_command}",
-                        detected_click_feedback.commands,
-                        re.IGNORECASE,
-                    ):
-                        return case_name, case_value, log_record
-            else:
-                if target_log_levels and target_pattern:
-                    if log_record.levelname.lower() in target_log_levels and re.search(
-                        rf"{target_pattern}", log_record.message, re.IGNORECASE
-                    ):
-                        return case_name, case_value, log_record
-                elif target_log_levels:
-                    if log_record.levelname.lower() in target_log_levels:
-                        return case_name, case_value, log_record
-                elif target_pattern:
-                    if re.search(
-                        rf"{target_pattern}", log_record.message, re.IGNORECASE
-                    ):
-                        return case_name, case_value, log_record
-    return None
+                        return case_name_, case_value_, log_record
+                    case (
+                        level,
+                        _,
+                        iterating_case.target_command,
+                    ) if level in iterating_case.target_log_levels:
+                        _debug_matching_case(
+                            case_name,
+                            log_record.message,
+                            log_record.levelname,
+                            *asdict(iterating_case).values(),
+                        )
+                        return case_name_, case_value_, log_record
+                    case (
+                        _,
+                        message,
+                        iterating_case.target_command,
+                    ) if target_pattern_search(string=message):
+                        _debug_matching_case(
+                            case_name,
+                            log_record.message,
+                            log_record.levelname,
+                            *asdict(iterating_case).values(),
+                        )
+                        return case_name_, case_value_, log_record
+        return None
+
+    logger.debug(
+        f"Detected running {APP_NAME} command/plugin: "
+        f"'{detected_click_feedback.commands}'."
+    )
+    target_command_case_group: dict[str, dict] = {}
+    for case_name, case_value in validated_real_cases.items():
+        target_command: str = re.sub(
+            rf"^{APP_NAME} ?",
+            "",
+            case_value.get(mail_config_case_keys.target_command),
+            re.IGNORECASE,
+        ).strip()
+        match target_command:
+            case detected_click_feedback.commands:
+                target_command_case_group[case_name] = case_value
+            case None:
+                case_value[mail_config_case_keys.target_command] = (
+                    detected_click_feedback.commands
+                )
+    return _search_match(
+        GlobalLogRecordContainer().data,
+        target_command_case_group or validated_real_cases,
+    )
 
 
 def _get_clean_logs(log_records: list[LogRecord]) -> str:
@@ -124,7 +182,7 @@ def send_matching_case_mail() -> None:
     if matching_case is None:
         logger.debug(
             f"No log was found that matches any case defined in "
-            f"{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+            f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}'."
         )
         return
     case_name, case_value, log_record = matching_case

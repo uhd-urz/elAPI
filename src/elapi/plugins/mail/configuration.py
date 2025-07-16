@@ -122,7 +122,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
         st_cases[case_name] = {}
         case_on = case_val.get(mail_config_case_keys.on)
         case_pattern = case_val.get(mail_config_case_keys.pattern)
-        case_limited_to_command = case_val.get(mail_config_case_keys.limited_to_command)
+        case_limited_to_command = case_val.get(mail_config_case_keys.target_command)
         if case_on is None and case_pattern is None:
             if case_name != mail_config_sp_keys.case_test:
                 raise ValidationError(
@@ -162,16 +162,16 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 logger.info(
                     f"Email case '{case_name}' is special, and "
                     f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
-                    f"{case_name}.{mail_config_case_keys.limited_to_command}' will be ignored."
+                    f"{case_name}.{mail_config_case_keys.target_command}' will be ignored."
                 )
             elif not isinstance(case_limited_to_command, str):
                 raise ValidationError(
                     f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
-                    f"{case_name}.{mail_config_case_keys.limited_to_command}' must be a string of "
+                    f"{case_name}.{mail_config_case_keys.target_command}' must be a string of "
                     f"explicit {APP_NAME} command. E.g., 'experiments get', "
                     f"'bill-teams registry include'."
                 )
-            st_cases[case_name][mail_config_case_keys.limited_to_command] = (
+            st_cases[case_name][mail_config_case_keys.target_command] = (
                 case_limited_to_command
             )
         case_body = case_val.get(mail_config_case_keys.body)

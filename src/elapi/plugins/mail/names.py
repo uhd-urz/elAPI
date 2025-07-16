@@ -22,7 +22,7 @@ class MailConfigCaseKeys:
     body: str = "body"
     headers: str = "headers"
     pattern: str = "pattern"
-    limited_to_command: str = "limited_to_command"
+    target_command: str = "target_command"
     enforce_plaintext_email: str = "enforce_plaintext_email"
 
 
