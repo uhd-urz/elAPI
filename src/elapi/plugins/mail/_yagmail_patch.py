@@ -142,11 +142,11 @@ def prepare_enforced_plaintext_message(
                     if not content_object["is_marked_up"]:
                         content_string = content_string.replace("\n", "\r\r\n")
                     try:
-                        htmlstr += content_string
+                        htmlstr = content_string
                         if PY3 and prettify_html:
-                            ...
+                            htmlstr = htmlstr
                     except UnicodeEncodeError:
-                        htmlstr += content_string
+                        htmlstr = content_string
                     altstr.append(content_string)
 
     msg_related.get_payload()[0] = MIMEText(htmlstr, "plain", _charset=encoding)

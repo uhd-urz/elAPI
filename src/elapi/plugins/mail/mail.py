@@ -152,9 +152,14 @@ def _send_yagmail(
         headers=case_value["headers"],
         message_id=make_msgid(domain=case_value["sender_domain"]),
     )
-    if case_value["enforce_plaintext_email"]:
+    if case_value[mail_config_case_keys.enforce_plaintext_email] is True:
+        logger.debug(
+            f"'{mail_config_case_keys.enforce_plaintext_email}' "
+            f"is enabled for mail case '{case_name}'."
+        )
         yagmail.message.prepare_message = prepare_enforced_plaintext_message
         yagmail.sender.prepare_message = prepare_enforced_plaintext_message
+        yagmail_send_params.prettify_html = False
     logger.info(
         f"Attempting to send a '{case_name}' email to "
         f"'{', '.join(case_value['to'])}',\n"
