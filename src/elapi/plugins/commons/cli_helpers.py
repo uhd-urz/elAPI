@@ -1,9 +1,12 @@
 from collections.abc import Iterable
-from typing import Literal, Optional, Type, Union
+from dataclasses import dataclass
+from functools import wraps
+from typing import Callable, Literal, Optional, Type, Union
 
+import click
 import typer
-from click import Context
 from typer.core import TyperGroup
+from typer.models import CommandFunctionType
 
 from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...core_validators import Exit
@@ -12,6 +15,17 @@ from ...path import ProperPath
 from ...utils import check_reserved_keyword
 
 logger = Logger()
+
+
+@dataclass
+class _DetectedClickFeedback:
+    context: Optional[typer.Context]
+    commands: Optional[str]
+
+
+detected_click_feedback: _DetectedClickFeedback = _DetectedClickFeedback(
+    context=None, commands=None
+)
 
 
 class CLIExport:
@@ -92,7 +106,7 @@ class OrderedCommands(TyperGroup):
     See: https://github.com/tiangolo/typer/issues/428#issuecomment-1238866548
     """
 
-    def list_commands(self, ctx: Context) -> Iterable[str]:
+    def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.commands.keys()
 
 
@@ -118,3 +132,29 @@ class Typer(typer.Typer):
                 against=f"{typer.Typer.__name__} class",
             )
             raise e
+
+    @staticmethod
+    def _preload_ctx_feedback(ctx: typer.Context) -> None:
+        commands: list[str] = []
+        if ctx.command.name:
+            while ctx.parent:
+                commands.insert(0, ctx.command.name)
+                ctx = ctx.parent
+        detected_click_feedback.commands = " ".join(commands)
+        detected_click_feedback.context = ctx
+
+    def command(
+        self, *args, **kwargs
+    ) -> Callable[[CommandFunctionType], CommandFunctionType]:
+        original_decorator = super().command(*args, **kwargs)
+
+        def custom_decorator(func):
+            @wraps(func)
+            def wrapper(*wrapper_args, **wrapper_kwargs):
+                ctx = click.get_current_context()
+                self._preload_ctx_feedback(ctx)
+                return func(*wrapper_args, **wrapper_kwargs)
+
+            return original_decorator(wrapper)
+
+        return custom_decorator

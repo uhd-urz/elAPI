@@ -8,6 +8,7 @@ import yagmail
 from yagmail import YagAddressError
 from yagmail.validate import DOMAIN, LOCAL_PART
 
+from ... import APP_NAME
 from ...configuration import (
     get_active_plugin_configs,
 )
@@ -121,13 +122,14 @@ def get_structured_email_cases() -> tuple[dict, dict]:
         st_cases[case_name] = {}
         case_on = case_val.get(mail_config_case_keys.on)
         case_pattern = case_val.get(mail_config_case_keys.pattern)
+        case_limited_to_command = case_val.get(mail_config_case_keys.limited_to_command)
         if case_on is None and case_pattern is None:
             if case_name != mail_config_sp_keys.case_test:
                 raise ValidationError(
                     f"Either '{mail_config_case_keys.on}' or "
                     f"'{mail_config_case_keys.pattern}' "
-                    f"or both must be provided for case {mail_config_keys.plugin_name}."
-                    f"{mail_config_keys.cases}.{case_name}."
+                    f"or both must be provided for case '{mail_config_keys.plugin_name}."
+                    f"{mail_config_keys.cases}.{case_name}'."
                 )
         if case_on is not None:
             if case_name == mail_config_sp_keys.case_test:
@@ -155,6 +157,23 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     f"Python regex pattern."
                 )
             st_cases[case_name][mail_config_case_keys.pattern] = case_pattern
+        if case_limited_to_command is not None:
+            if case_name == mail_config_sp_keys.case_test:
+                logger.info(
+                    f"Email case '{case_name}' is special, and "
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.limited_to_command}' will be ignored."
+                )
+            elif not isinstance(case_limited_to_command, str):
+                raise ValidationError(
+                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                    f"{case_name}.{mail_config_case_keys.limited_to_command}' must be a string of "
+                    f"explicit {APP_NAME} command. E.g., 'experiments get', "
+                    f"'bill-teams registry include'."
+                )
+            st_cases[case_name][mail_config_case_keys.limited_to_command] = (
+                case_limited_to_command
+            )
         case_body = case_val.get(mail_config_case_keys.body)
         if case_body is None:
             case_body: str = ""

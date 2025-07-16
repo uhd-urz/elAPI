@@ -8,7 +8,9 @@ import jinja2
 import yagmail
 from nameparser import HumanName
 
+from ... import APP_NAME
 from ...loggers import GlobalLogRecordContainer, Logger
+from ..commons.cli_helpers import detected_click_feedback
 from ._yagmail import YagMailSendParams
 from .configuration import (
     _validated_email_cases,
@@ -30,24 +32,65 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
         populate_validated_email_cases()
     validated_real_cases = _validated_email_cases.real_cases
     stored_logs: list[LogRecord] = GlobalLogRecordContainer().data
+    logger.debug(f"Detected {APP_NAME} command: '{detected_click_feedback.commands}'.")
     for log_record in stored_logs:
         for case_name, case_value in validated_real_cases.items():
             target_log_levels: list[str] = (
                 case_value.get(mail_config_case_keys.on) or []
             )
             target_log_levels = [_.lower() for _ in target_log_levels]
-            target_pattern: str = case_value.get(mail_config_case_keys.pattern) or ""
-            if target_log_levels and target_pattern:
-                if log_record.levelname.lower() in target_log_levels and re.search(
-                    rf"{target_pattern}", log_record.message, re.IGNORECASE
-                ):
-                    return case_name, case_value, log_record
-            elif target_log_levels:
-                if log_record.levelname.lower() in target_log_levels:
-                    return case_name, case_value, log_record
-            elif target_pattern:
-                if re.search(rf"{target_pattern}", log_record.message, re.IGNORECASE):
-                    return case_name, case_value, log_record
+            target_pattern: str = case_value.get(mail_config_case_keys.pattern, "")
+            target_command: str = case_value.get(
+                mail_config_case_keys.limited_to_command, ""
+            )
+            target_command = re.sub(
+                rf"^{APP_NAME} ?", "", target_command, re.IGNORECASE
+            )
+            # TODO: Refactor to structural pattern matching
+            if target_command:
+                if target_log_levels and target_pattern:
+                    if (
+                        log_record.levelname.lower() in target_log_levels
+                        and re.search(
+                            rf"{target_pattern}", log_record.message, re.IGNORECASE
+                        )
+                        and re.match(
+                            rf"{target_command}",
+                            detected_click_feedback.commands,
+                            re.IGNORECASE,
+                        )
+                    ):
+                        return case_name, case_value, log_record
+                elif target_log_levels:
+                    if log_record.levelname.lower() in target_log_levels and re.match(
+                        rf"{target_command}",
+                        detected_click_feedback.commands,
+                        re.IGNORECASE,
+                    ):
+                        return case_name, case_value, log_record
+                elif target_pattern:
+                    if re.search(
+                        rf"{target_pattern}", log_record.message, re.IGNORECASE
+                    ) and re.match(
+                        rf"{target_command}",
+                        detected_click_feedback.commands,
+                        re.IGNORECASE,
+                    ):
+                        return case_name, case_value, log_record
+            else:
+                if target_log_levels and target_pattern:
+                    if log_record.levelname.lower() in target_log_levels and re.search(
+                        rf"{target_pattern}", log_record.message, re.IGNORECASE
+                    ):
+                        return case_name, case_value, log_record
+                elif target_log_levels:
+                    if log_record.levelname.lower() in target_log_levels:
+                        return case_name, case_value, log_record
+                elif target_pattern:
+                    if re.search(
+                        rf"{target_pattern}", log_record.message, re.IGNORECASE
+                    ):
+                        return case_name, case_value, log_record
     return None
 
 
