@@ -26,6 +26,7 @@ from typing_extensions import Annotated
 
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
+from ..core_validators import Exit
 from ..loggers import (
     DefaultLogLevels,
     FileLogger,
@@ -142,7 +143,6 @@ def cli_startup(
         minimal_active_configuration,
         settings,
     )
-    from ..core_validators import Exit
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
     from ..styles import print_typer_error
     from ..utils import MessagesList
@@ -304,7 +304,6 @@ def cli_startup_for_plugins(
     ] = None,
 ) -> None:
     from ..styles import print_typer_error
-    from ..validators import Exit
 
     cli_switch_venv_state(True)
     if override_config is not None:
@@ -366,8 +365,6 @@ def disable_plugin(
         help=help_message,
     )
     def name_conflict_error():
-        from ..core_validators import Exit
-
         logger.error(err_msg)
         raise Exit(1)
 
@@ -517,7 +514,7 @@ def init(
                 f"Please make sure you have write and read access to '{LOCAL_CONFIG_LOC}'. "
                 "Configuration initialization has failed!"
             )
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             path = ProperPath(LOCAL_CONFIG_LOC)
             try:
@@ -529,7 +526,7 @@ def init(
                             f"It's ambiguous what to do in this situation."
                         )
                         logger.error("Configuration initialization has failed!")
-                        raise typer.Exit(1)
+                        raise Exit(1)
             except path.PathException as e:
                 if isinstance(e, FileNotFoundError):
                     path.create()
@@ -537,7 +534,7 @@ def init(
                     status.stop()
                     logger.error(e)
                     logger.error("Configuration initialization has failed!")
-                    raise typer.Exit(1)
+                    raise Exit(1)
             try:
                 with path.open(mode="w") as f:
                     _configuration_yaml_text = f"""host: {host_url}
@@ -552,7 +549,7 @@ timeout: 90
             except path.PathException as e:
                 logger.error(e)
                 logger.error("Configuration initialization has failed!")
-                raise typer.Exit(1)
+                raise Exit(1)
             else:
                 stdout_console.print(
                     "Configuration file has been successfully created! "
@@ -643,7 +640,7 @@ def get(
     from ..api import ElabFTWURLError, GETRequest, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
     from ..configuration import get_active_host
-    from ..core_validators import Exit, Validate
+    from ..core_validators import Validate
     from ..plugins.commons import Export, get_structured_data
     from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ..styles import Highlight, NoteText, print_typer_error
@@ -864,7 +861,7 @@ def post(
     from ..api import ElabFTWURLError, GlobalSharedSession, POSTRequest
     from ..api.validators import HostIdentityValidator
     from ..configuration import get_active_host
-    from ..core_validators import Exit, Validate
+    from ..core_validators import Validate
     from ..path import ProperPath
     from ..plugins.commons import get_location_from_headers, get_structured_data
     from ..styles import Format, Highlight, NoteText, print_typer_error
@@ -916,7 +913,7 @@ def post(
                     f"Error: Given value with --file doesn't follow the expected pattern. "
                     f"See '{APP_NAME} post --help' for more on exactly how to use --file."
                 )
-                raise typer.Exit(1)
+                raise Exit(1)
             else:
                 _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(
                     mode="rb"
@@ -980,10 +977,10 @@ def post(
                     logger.error(
                         "Request was successful but no location for resource was found!"
                     )
-                    raise typer.Exit(1)
+                    raise Exit(1)
                 else:
                     typer.echo(f"{_id},{_url}")
-                    raise typer.Exit()
+                    raise Exit()
             stdout_console.print("Success: Resource created!", style="green")
             return None
         else:
@@ -997,7 +994,7 @@ def post(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
@@ -1084,7 +1081,7 @@ def patch(
     from ..api import ElabFTWURLError, GlobalSharedSession, PATCHRequest
     from ..api.validators import HostIdentityValidator
     from ..configuration import get_active_host
-    from ..core_validators import Exit, Validate
+    from ..core_validators import Validate
     from ..plugins.commons import get_structured_data
     from ..styles import Format, Highlight, NoteText, print_typer_error
 
@@ -1161,7 +1158,7 @@ def patch(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
@@ -1248,7 +1245,7 @@ def delete(
     from ..api import DELETERequest, ElabFTWURLError, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
     from ..configuration import get_active_host
-    from ..core_validators import Exit, Validate
+    from ..core_validators import Validate
     from ..plugins.commons import get_structured_data
     from ..styles import Format, Highlight, NoteText, print_typer_error
 
@@ -1320,7 +1317,7 @@ def delete(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
