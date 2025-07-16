@@ -413,7 +413,8 @@ else:
         if owners_info_only is True:
             if owners_data_path is None:
                 print_typer_error(
-                    "When '--owners-info-only' is passed '--meta-source' must be provided as well!"
+                    "When '--owners-info-only' is passed '--meta-source' "
+                    "must be provided as well!"
                 )
                 raise Exit(1)
             get_owners(
@@ -434,7 +435,7 @@ else:
         )
         logger.success(
             f"Both teams and owners information of {target_date.strftime('%B')} "
-            f"{target_month} has been stored successfully."
+            f"{target_year} has been stored successfully."
         )
 
     def _parse_cli_input_date(user_date: str, /, date_cli_arg: str):
