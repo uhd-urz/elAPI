@@ -30,6 +30,7 @@ class YagMailSendParams:
     headers: dict[str, str]
     message_id: str
     group_messages: bool = True
+    prettify_html: bool = False
 
 
 def get_accepted_yagmail_smtp_class_params() -> list[str]:
