@@ -134,12 +134,13 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
     )
     target_command_case_group: dict[str, dict] = {}
     for case_name, case_value in validated_real_cases.items():
-        target_command: str = re.sub(
-            rf"^{APP_NAME} ?",
-            "",
-            case_value.get(mail_config_case_keys.target_command),
-            re.IGNORECASE,
-        ).strip()
+        if (
+            target_command := case_value.get(mail_config_case_keys.target_command)
+            is not None
+        ):
+            target_command: str = re.sub(
+                rf"^{APP_NAME} ?", "", target_command, re.IGNORECASE
+            ).strip()
         match target_command:
             case detected_click_feedback.commands:
                 target_command_case_group[case_name] = case_value
