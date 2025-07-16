@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Optional, Literal, Type, Union
+from typing import Literal, Optional, Type, Union
 
 import typer
 from click import Context
@@ -22,6 +22,7 @@ class CLIExport:
         can_overwrite: bool = False,
     ):
         from collections import namedtuple
+
         from ...core_validators import Validate
         from .export import ExportPathValidator
 
@@ -96,14 +97,14 @@ class OrderedCommands(TyperGroup):
 
 
 class Typer(typer.Typer):
-    def __new__(
-        cls,
+    def __init__(
+        self,
         rich_markup_mode: Literal["markdown", "rich"] = "markdown",
         cls_: Optional[Type[TyperGroup]] = OrderedCommands,
         **kwargs,
     ):
         try:
-            return typer.Typer(
+            super().__init__(
                 pretty_exceptions_show_locals=False,
                 no_args_is_help=True,
                 rich_markup_mode=rich_markup_mode,
