@@ -96,7 +96,7 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
                         and target_pattern_search(string=message)
                     ):
                         _debug_matching_case(
-                            case_name,
+                            case_name_,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
@@ -108,7 +108,7 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
                         iterating_case.target_command,
                     ) if level in iterating_case.target_log_levels:
                         _debug_matching_case(
-                            case_name,
+                            case_name_,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
@@ -120,7 +120,7 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
                         iterating_case.target_command,
                     ) if target_pattern_search(string=message):
                         _debug_matching_case(
-                            case_name,
+                            case_name_,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
@@ -133,14 +133,13 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
         f"'{detected_click_feedback.commands}'."
     )
     target_command_case_group: dict[str, dict] = {}
+    none_command_case_group: dict[str, dict] = {}
     for case_name, case_value in validated_real_cases.items():
-        if (
-            target_command := case_value.get(mail_config_case_keys.target_command)
-            is not None
-        ):
-            target_command: str = re.sub(
-                rf"^{APP_NAME} ?", "", target_command, re.IGNORECASE
-            ).strip()
+        match target_command := case_value.get(mail_config_case_keys.target_command):
+            case str():
+                target_command: str = re.sub(
+                    rf"^{APP_NAME} ?", "", target_command, re.IGNORECASE
+                ).strip()
         match target_command:
             case detected_click_feedback.commands:
                 target_command_case_group[case_name] = case_value
@@ -148,9 +147,16 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
                 case_value[mail_config_case_keys.target_command] = (
                     detected_click_feedback.commands
                 )
+                none_command_case_group[case_name] = case_value
+
+    if target_command_case_group:
+        return _search_match(
+            GlobalLogRecordContainer().data,
+            {**target_command_case_group, **none_command_case_group},
+        )
     return _search_match(
         GlobalLogRecordContainer().data,
-        target_command_case_group or validated_real_cases,
+        none_command_case_group,
     )
 
 
@@ -224,7 +230,7 @@ def _send_yagmail(
         f"'{', '.join(case_value['to'])}',\n"
         f"from '{''.join(case_value['main_params']['user'].keys())}',"
         f"\nwith the "
-        f"following headers: {case_value['headers']}."
+        f"following additional headers: {case_value['headers']}."
     )
     mail_session.send(**yagmail_send_params.__dict__)
     mail_session.close()
