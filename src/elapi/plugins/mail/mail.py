@@ -12,6 +12,7 @@ from ... import APP_NAME
 from ...loggers import GlobalLogRecordContainer, Logger
 from ..commons.cli_helpers import detected_click_feedback
 from ._yagmail import YagMailSendParams
+from ._yagmail_patch import prepare_enforced_plaintext_message
 from .configuration import (
     _validated_email_cases,
     mail_body_jinja_context,
@@ -151,6 +152,9 @@ def _send_yagmail(
         headers=case_value["headers"],
         message_id=make_msgid(domain=case_value["sender_domain"]),
     )
+    if case_value["enforce_plaintext_email"]:
+        yagmail.message.prepare_message = prepare_enforced_plaintext_message
+        yagmail.sender.prepare_message = prepare_enforced_plaintext_message
     logger.info(
         f"Attempting to send a '{case_name}' email to "
         f"'{', '.join(case_value['to'])}',\n"

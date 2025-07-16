@@ -212,6 +212,20 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     f"value cannot be null and must be provided!"
                 )
             st_cases[case_name]["main_params"][required_param] = required_param_value
+        case_enforce_plaintext_email = case_val.get(
+            mail_config_case_keys.enforce_plaintext_email, False
+        ) or global_email_setting.get(
+            mail_config_case_keys.enforce_plaintext_email, False
+        )
+        if not isinstance(case_enforce_plaintext_email, bool):
+            raise ValidationError(
+                f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                f"{case_name}.{mail_config_case_keys.enforce_plaintext_email}' "
+                f"value must be boolean."
+            )
+        st_cases[case_name][mail_config_case_keys.enforce_plaintext_email] = (
+            case_enforce_plaintext_email
+        )
         for additional_param in get_additional_yagmail_smtp_class_params():
             additional_param_value = case_val.get(
                 additional_param
