@@ -203,6 +203,28 @@ def send_matching_case_mail() -> None:
     logger.debug(f"{GlobalLogRecordContainer} data has been cleared.")
 
 
+def _patch_yagmail_fix(
+    case_name: str,
+    yagmail_send_params: YagMailSendParams,
+    enforce_plaintext: bool = False,
+):
+    if enforce_plaintext is True:
+        logger.debug(
+            f"'{mail_config_case_keys.enforce_plaintext_email}' "
+            f"is enabled for mail case '{case_name}'."
+        )
+        yagmail.message.prepare_message = prepare_enforced_plaintext_message
+        yagmail.sender.prepare_message = prepare_enforced_plaintext_message
+        yagmail_send_params.prettify_html = False
+    else:
+        yagmail.message.prepare_message = partial(
+            prepare_enforced_plaintext_message, enforce_plaintext=False
+        )
+        yagmail.sender.prepare_message = partial(
+            prepare_enforced_plaintext_message, enforce_plaintext=False
+        )
+
+
 def _send_yagmail(
     case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
 ) -> None:
@@ -217,14 +239,11 @@ def _send_yagmail(
         headers=case_value["headers"],
         message_id=make_msgid(domain=case_value["sender_domain"]),
     )
-    if case_value[mail_config_case_keys.enforce_plaintext_email] is True:
-        logger.debug(
-            f"'{mail_config_case_keys.enforce_plaintext_email}' "
-            f"is enabled for mail case '{case_name}'."
-        )
-        yagmail.message.prepare_message = prepare_enforced_plaintext_message
-        yagmail.sender.prepare_message = prepare_enforced_plaintext_message
-        yagmail_send_params.prettify_html = False
+    _patch_yagmail_fix(
+        case_name,
+        yagmail_send_params,
+        enforce_plaintext=case_value[mail_config_case_keys.enforce_plaintext_email],
+    )
     logger.info(
         f"Attempting to send a '{case_name}' email to "
         f"'{', '.join(case_value['to'])}',\n"

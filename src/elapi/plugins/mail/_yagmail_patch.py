@@ -52,6 +52,7 @@ def prepare_enforced_plaintext_message(
     message_id=None,
     group_messages=True,
     dkim=None,
+    enforce_plaintext=True,
 ):
     # check if closed!!!!!! XXX
     """Prepare a MIME message"""
@@ -82,8 +83,7 @@ def prepare_enforced_plaintext_message(
         # Strangely, msg does not have an update method, so then manually.
         for k, v in headers.items():
             msg[k] = v
-    if headers is None or "Date" not in headers:
-        msg["Date"] = formatdate(localtime=True)
+    msg["Date"] = formatdate(localtime=True)
 
     msg_alternative = MIMEMultipart("alternative")
     msg_related = MIMEMultipart("related")
@@ -140,16 +140,32 @@ def prepare_enforced_plaintext_message(
                     msg.attach(content_object["mime_object"])
                 else:
                     if not content_object["is_marked_up"]:
-                        content_string = content_string.replace("\n", "\r\r\n")
+                        if enforce_plaintext:
+                            content_string = content_string.replace("\n", "\r\r\n")
+                        else:
+                            content_string = content_string.replace("\n", "<br>")
                     try:
-                        htmlstr = content_string
+                        if enforce_plaintext:
+                            htmlstr = content_string
+                        else:
+                            htmlstr += "<div>{0}</div>".format(content_string)
                         if PY3 and prettify_html:
-                            htmlstr = htmlstr
+                            if enforce_plaintext:
+                                htmlstr = htmlstr
+                            else:
+                                import premailer
+
+                                htmlstr = premailer.transform(htmlstr)
                     except UnicodeEncodeError:
-                        htmlstr = content_string
+                        if enforce_plaintext:
+                            htmlstr = content_string
+                        else:
+                            htmlstr += "<div>{0}</div>".format(content_string)
                     altstr.append(content_string)
 
-    msg_related.get_payload()[0] = MIMEText(htmlstr, "plain", _charset=encoding)
+    msg_related.get_payload()[0] = MIMEText(
+        htmlstr, "plain" if enforce_plaintext else "html", _charset=encoding
+    )
     msg_alternative.attach(MIMEText("\n".join(altstr), _charset=encoding))
     msg_alternative.attach(msg_related)
 
