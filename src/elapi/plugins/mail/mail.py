@@ -44,16 +44,16 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
 
     def _debug_matching_case(
         case_name_: str,
-        message: str,
-        level_name: str,
+        message_: str,
+        level_name_: str,
         target_command_: str,
-        target_log_levels: list[str],
-        target_pattern: Optional[str],
+        target_log_levels_: list[str],
+        target_pattern_: Optional[str],
     ):
         logger.debug(
-            f"The log '{message}' with level '{level_name}' matched case "
-            f"'{case_name_}' with target levels {target_log_levels}, "
-            f"pattern '{target_pattern}', and target command "
+            f"The log '{message_}' with level '{level_name_}' matched case "
+            f"'{case_name_}' with target levels {target_log_levels_}, "
+            f"pattern '{target_pattern_}', and target command "
             f"'{target_command_}'."
         )
 
@@ -61,16 +61,18 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
         stored_logs: list[LogRecord], cases: dict
     ) -> Optional[tuple[str, dict, LogRecord]]:
         for log_record in stored_logs:
-            for case_name_, case_value_ in cases.items():
+            for case_name__, case_value__ in cases.items():
                 iterating_case = _IteratingCase(
-                    target_command=case_value.get(mail_config_case_keys.target_command),
+                    target_command=case_value__.get(
+                        mail_config_case_keys.target_command
+                    ),
                     target_log_levels=list(
                         map(
                             lambda s: s.lower(),
-                            case_value_.get(mail_config_case_keys.on, []),
+                            case_value__.get(mail_config_case_keys.on, []),
                         )
                     ),
-                    target_pattern=case_value_.get(mail_config_case_keys.pattern),
+                    target_pattern=case_value__.get(mail_config_case_keys.pattern),
                 )
                 target_pattern_search = (
                     partial(
@@ -96,36 +98,36 @@ def get_case_match() -> Optional[tuple[str, dict, LogRecord]]:
                         and target_pattern_search(string=message)
                     ):
                         _debug_matching_case(
-                            case_name_,
+                            case_name__,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
                         )
-                        return case_name_, case_value_, log_record
+                        return case_name__, case_value__, log_record
                     case (
                         level,
                         _,
                         iterating_case.target_command,
                     ) if level in iterating_case.target_log_levels:
                         _debug_matching_case(
-                            case_name_,
+                            case_name__,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
                         )
-                        return case_name_, case_value_, log_record
+                        return case_name__, case_value__, log_record
                     case (
                         _,
                         message,
                         iterating_case.target_command,
                     ) if target_pattern_search(string=message):
                         _debug_matching_case(
-                            case_name_,
+                            case_name__,
                             log_record.message,
                             log_record.levelname,
                             *asdict(iterating_case).values(),
                         )
-                        return case_name_, case_value_, log_record
+                        return case_name__, case_value__, log_record
         return None
 
     logger.debug(
