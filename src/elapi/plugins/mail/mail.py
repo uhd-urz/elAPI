@@ -1,4 +1,3 @@
-import email
 import re
 from dataclasses import asdict, dataclass
 from email.utils import make_msgid
@@ -218,8 +217,6 @@ def _send_yagmail(
         headers=case_value["headers"],
         message_id=make_msgid(domain=case_value["sender_domain"]),
     )
-    email.utils.formatdate = partial(email.utils.formatdate, localtime=True)
-    yagmail.message.format_date = partial(email.utils.formatdate, localtime=True)
     if case_value[mail_config_case_keys.enforce_plaintext_email] is True:
         logger.debug(
             f"'{mail_config_case_keys.enforce_plaintext_email}' "

@@ -83,7 +83,7 @@ def prepare_enforced_plaintext_message(
         for k, v in headers.items():
             msg[k] = v
     if headers is None or "Date" not in headers:
-        msg["Date"] = formatdate()
+        msg["Date"] = formatdate(localtime=True)
 
     msg_alternative = MIMEMultipart("alternative")
     msg_related = MIMEMultipart("related")
