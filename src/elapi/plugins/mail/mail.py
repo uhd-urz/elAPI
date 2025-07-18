@@ -169,7 +169,7 @@ def _get_clean_logs(log_records: list[LogRecord]) -> str:
     return "\n".join(messages)
 
 
-def _process_jinja_context(case_value: dict):
+def process_jinja_context(case_value: dict) -> None:
     mail_body_jinja_context["all_logs"] = _get_clean_logs(
         GlobalLogRecordContainer().data
     )
@@ -195,12 +195,12 @@ def send_matching_case_mail() -> None:
         )
         return
     case_name, case_value, log_record = matching_case
-    _process_jinja_context(case_value)
+    process_jinja_context(case_value)
     logger.info(
         f"A log was found that matches the case '{case_name}' defined in "
         f"{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
     )
-    _send_yagmail(case_name, case_value, jinja_contex=mail_body_jinja_context)
+    send_mail(case_name, case_value, jinja_contex=mail_body_jinja_context)
     GlobalLogRecordContainer().data.clear()
     logger.debug(f"{GlobalLogRecordContainer} data has been cleared.")
 
@@ -227,7 +227,7 @@ def _patch_yagmail_fix(
         )
 
 
-def _send_yagmail(
+def send_mail(
     case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
 ) -> None:
     mail_session = yagmail.SMTP(

@@ -13,7 +13,7 @@ else:
         mail_body_jinja_context,
         populate_validated_email_cases,
     )
-    from .mail import _process_jinja_context, _send_yagmail, send_matching_case_mail
+    from .mail import process_jinja_context, send_mail, send_matching_case_mail
     from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
 
     app = Typer(name="mail", help="Manage mail.")
@@ -42,8 +42,8 @@ else:
                 f"email case found in the configuration file."
             )
             raise Exit(1)
-        _process_jinja_context(email_test_case)
-        _send_yagmail(
+        process_jinja_context(email_test_case)
+        send_mail(
             case_name=mail_config_sp_keys.case_test,
             case_value=email_test_case,
             jinja_contex=mail_body_jinja_context,
