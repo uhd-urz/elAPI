@@ -544,6 +544,8 @@ unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
 timeout: 90
+async_rate_limit: null
+development_mode: false
 """
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
