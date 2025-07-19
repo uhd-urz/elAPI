@@ -21,7 +21,6 @@ class YagMailSMTPUnusedParams:
     user: str = "user"
     kwargs: str = "kwargs"
     soft_email_validation: str = "soft_email_validation"
-    smtp_set_debuglevel: str = "smtp_set_debuglevel"
 
 
 @dataclass

@@ -232,10 +232,14 @@ def _patch_yagmail_fix(
 def send_mail(
     case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
 ) -> None:
+    smtp_set_debuglevel = case_value["main_params"].get(
+        "smtp_set_debuglevel", int(get_development_mode())
+    )
+    case_value["main_params"].pop("smtp_set_debuglevel", None)
     mail_session = yagmail.SMTP(
         **case_value["main_params"],
         soft_email_validation=False,
-        smtp_set_debuglevel=int(get_development_mode()),
+        smtp_set_debuglevel=smtp_set_debuglevel,
     )
     mail_session.log = logger
     email_body_template = jinja_environment.from_string(case_value["body"])

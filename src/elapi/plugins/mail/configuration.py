@@ -247,7 +247,11 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     additional_param_value
                 )
         for unused_param in YagMailSMTPUnusedParams().__dict__.values():
-            if case_val.get(unused_param) is not None:
+            unused_param_value = _get_preferred_case_value(
+                case_val.get(unused_param),
+                global_email_setting.get(unused_param),
+            )
+            if unused_param_value is not None:
                 raise ValidationError(
                     f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
                     f"{case_name}.{unused_param}' cannot be used in this context."
