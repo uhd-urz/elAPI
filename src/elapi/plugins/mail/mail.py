@@ -11,6 +11,7 @@ import yagmail
 from nameparser import HumanName
 
 from ... import APP_NAME
+from ...configuration import get_development_mode
 from ...loggers import GlobalLogRecordContainer, Logger
 from ..commons.cli_helpers import detected_click_feedback
 from ._yagmail import YagMailSendParams
@@ -25,6 +26,7 @@ from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
 mail_config_sp_keys = MailConfigCaseSpecialKeys()
 mail_config_case_keys = MailConfigCaseKeys()
 mail_config_keys = MailConfigKeys()
+
 
 logger = Logger()
 jinja_environment = jinja2.Environment()
@@ -231,8 +233,11 @@ def send_mail(
     case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
 ) -> None:
     mail_session = yagmail.SMTP(
-        **case_value["main_params"], soft_email_validation=False
+        **case_value["main_params"],
+        soft_email_validation=False,
+        smtp_set_debuglevel=int(get_development_mode()),
     )
+    mail_session.log = logger
     email_body_template = jinja_environment.from_string(case_value["body"])
     email_body: str = email_body_template.render(jinja_contex or dict())
     yagmail_send_params = YagMailSendParams(

@@ -21,6 +21,7 @@ class YagMailSMTPUnusedParams:
     user: str = "user"
     kwargs: str = "kwargs"
     soft_email_validation: str = "soft_email_validation"
+    smtp_set_debuglevel: str = "smtp_set_debuglevel"
 
 
 @dataclass
@@ -51,4 +52,3 @@ def get_additional_yagmail_smtp_class_params() -> list[str]:
         ):
             additional_yagmail_smtp_class_params.append(param)
     return additional_yagmail_smtp_class_params
-
