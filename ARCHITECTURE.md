@@ -70,6 +70,12 @@ plugins inherit the same formatting style for JSON output.
 _elAPI/elapi_, configuration keys, log file path, etc. Having a single source of truth of constants makes it
 quite easy to fork and re-use elAPI's SMA implementation for any other software.
 
+**`_core_init`**: `_core_init` is a private layer where the most basic methods of elAPI are defined. Plugins should not
+import from this layer, but from the layers above it. These basic methods help initialize certain functionalities for
+some upper layers. E.g., the layer above `loggers` must also be able to log its own errors, so a simple logger class
+`STDERRLogger` is placed in `_core_init`. In fact, for the most part, elAPI's plugin developers don't even need to know
+`_core_init` exists, as its methods are also imported in upper layers.
+
 **`loggers`**: The `loggers` layer provides custom methods for logging to all other layers and plugins; hence it sits
 quite at the bottom. This custom method doesn't reinvent logging APIs, but rather simply extends upon Python's built-in
 logging APIs via composition. E.g., the `STDERR` handler is a [`RichHandler`](https://ludwig.guru/) that enables colored
@@ -86,7 +92,7 @@ logger.error("An error")
 elAPI `Logger` object is a singleton object.
 
 **`utils`**: As the layer name suggests, this layer mainly hosts utility/helper methods. A few custom exceptions,
-special data containers like `MessagesList`, monkey patched fixes for third-party library bugs, etc. are placed here.
+special data containers like `MessagesList`, monkey-patched fixes for third-party library bugs, etc. are placed here.
 `utils` mainly import and expose core utility methods from `core_init/` layer: `get_app_version`, and app-wide callback
 methods.
 
@@ -123,10 +129,9 @@ call result callbacks (if any) before exiting.
 third-party library [Dynaconf](https://dynaconf.com/) to search and parse user configuration from YAML files.
 `configuration` layer also provides
 validators for certain configuration key-value pairs found within the configuration file. `configuration` layer also
-offers configuration overloading–with which any configuration value defined in a file can be overwritten on the CLI
+offers configuration overloading — with which any configuration value defined in a file can be overwritten on the CLI
 itself (this CLI option is called `--OC` or `--override-config`). To make this possible, `configuration` layer
-implements a
-dataclass `ConfigHistory` to store Dynaconf-parsed configuration, a `InspectConfigHistory` class to
+implements a dataclass `ConfigHistory` to store Dynaconf-parsed configuration, a `InspectConfigHistory` class to
 allow history inspection, and finally a special configuration value container `MinimalActiveConfiguration`
 that stores original and overridden configuration values.
 
@@ -134,7 +139,6 @@ that stores original and overridden configuration values.
 butter of elAPI. It offers a power abstract class `APIRequest` that all other main HTTP requests classes are
 made out of. `APIRequest` defines and simplifies connection opening/closing, HTTP client sharing across
 multiple calls, and separating asynchronous and synchronous methods.
-
 
 [^1]: This page has been adapted from an [E-Science-Tage 2025](https://e-science-tage.de/en/downloads) conference paper.
 [^2]: https://csse6400.uqcloud.net/handouts/microkernel.pdf
