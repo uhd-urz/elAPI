@@ -1,6 +1,6 @@
 # Architecture and design[^1]
 
-We draw our inspiration from the microkernel architecture[^2] for the overall
+We drew our inspiration from the microkernel architecture[^2] for the overall
 architecture principle[^3] and layered architecture for architecture partitioning. There was no strong rationale for
 choosing a microkernel architecture over alternatives such as a microservice architecture, other than the desire to
 start with something simple that still allows for extensibility. We intend elAPI to serve as the foundation for all
@@ -16,8 +16,9 @@ enough to be useful for any software design.
 SMA follows most of the principles found in microkernel architecture guidelines with a few additions.
 
 **1. A core system must provide basic functionalities:** The core system principle is adopted straight from the
-textbook microkernel architecture principles. In SMA, the core system must provide the basic features. Here, features
-that would be considered as basic would depend on the software domain. At a minimum, the core system must enable the
+textbook microkernel architecture principles[^3]. In SMA, the core system must provide the basic features. Here,
+features that would be considered as basic would depend on the software domain. At a minimum, the core system must
+enable the
 plugin system. The core system in elAPI offers interface style guides, logging functionality, helper functions, OS path
 handlers, basic validation abstractions, configuration manager, extended HTTPX API interfaces to communicate with
 eLabFTW endpoints, and plugin handlers that enable the entire plugin system. elAPI's core system can be extracted out
@@ -25,8 +26,9 @@ and used as the foundation for the SMA implementation for any standalone program
 
 **2. Interfaces can be flexible across internal plugins:** Typically, a microkernel architecture separates plugins
 from the core system entirely. SMA modifies this approach by introducing internal plugins, which reside inside the core
-codebase, and external plugins, which can exist anywhere. Both types of plugins can share the same plugin
-_interface_. This is also the default with elAPI's SMA implementation. Depending on flexibility preference,
+codebase, and external plugins (a.k.a. "third-party plugins"), which can exist anywhere. Both types of plugins can share
+the same plugin _interface_. This is also the default with elAPI's SMA implementation. Depending on flexibility
+preference,
 however, having a unique interface or distinct interfaces for internal plugins is also allowed where a unique interface
 is enforced upon external plugins.
 
@@ -54,19 +56,19 @@ elAPI CLI. Styles being the independent layer indicates that all dependent layer
 architecture imposes that plugins must be independent, and for good reasons, i.e., to avoid “Big Ball of Mud”[^4]. SMA
 still lets the developer decide the rules internal and external plugins should follow.
 For example, external plugins can depend on internal plugins (as they are part of the core system). An external plugin
-vendor is free to decide that their plugin would depend on another external plugin.
+vendor is free to decide whether their plugin would depend on another external plugin.
 
 ## elAPI SMA layers
 
 We have previously briefly touched on the basic functionality layers elAPI has to offer. In this section, We will peel
 back the layers of elAPI and explain the responsibilities of each layer.
 
-**`styles`:** The `styles` layer, an independent layer, is created out of the philosophy that elAPI's CLI UI should be
+**`styles`**: The `styles` layer, an independent layer, is created out of the philosophy that elAPI's CLI UI should be
 user-customizable. At the moment though, customization is not available as a feature, but the layer offers UI guidelines
 to all layers above. E.g., how a JSON output is formatted and syntax highlighted is defined in this layer. All internal
 plugins inherit the same formatting style for JSON output.
 
-**`names`:** Almost every critical constant is defined in this layer. This includes the name of the app itself
+**`names`**: Almost every critical constant is defined in this layer. This includes the name of the app itself
 _elAPI/elapi_, configuration keys, log file path, etc. Having a single source of truth of constants makes it
 quite easy to fork and re-use elAPI's SMA implementation for any other software.
 
@@ -103,7 +105,7 @@ its most notable instance methods are: `kind`, `create`, `remove` and `PathExcep
 instantiated OS path is a file or a directory. There are some tricky
 cases with special files like `/dev/null` which `kind` treats carefully. Based on the file
 `kind`, instance methods `create` and `remove` can effectively create and remove any file
-or directory. respectively. This avoids boilerplate code needed with `pathlib.Path` to first determine if a
+or directory, respectively. This avoids boilerplate code needed with `pathlib.Path` to first determine if a
 path is a file or a directory. If a `ProperPath` path encounters an exception during an I/O operation (e.g.,
 insufficient permission for file creation), the exception is first stored in `PathException` attribute before
 being raised. Why? `PathException` offers a fallback mechanism for I/O failures. If writing to a file fails,
@@ -135,8 +137,8 @@ implements a dataclass `ConfigHistory` to store Dynaconf-parsed configuration, a
 allow history inspection, and finally a special configuration value container `MinimalActiveConfiguration`
 that stores original and overridden configuration values.
 
-**`api`**: elAPI adopts and extends HTTPX APIs to simplify HTTP requests to eLabFTW. This layer is the bread and
-butter of elAPI. It offers a power abstract class `APIRequest` that all other main HTTP requests classes are
+**`api`**: elAPI adopted and extended HTTPX APIs to simplify HTTP requests to eLabFTW. This layer is the bread and
+butter of elAPI as a client. It offers a power abstract class `APIRequest` that all other main HTTP requests classes are
 made out of. `APIRequest` defines and simplifies connection opening/closing, HTTP client sharing across
 multiple calls, and separating asynchronous and synchronous methods.
 
