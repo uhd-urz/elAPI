@@ -16,6 +16,7 @@ from ...configuration import (
 from ...core_validators import Exit, ValidationError
 from ...loggers import Logger
 from ...path import ProperPath
+from ...styles import Missing
 from ...utils import PatternNotFoundError
 from ._yagmail import (
     RequiredEmailHeadersParams,
@@ -64,6 +65,9 @@ _validated_email_cases = _ValidatedEmailCases(
 
 
 def get_mail_config() -> dict:
+    plugin_configs = get_active_plugin_configs(skip_validation=True)
+    if plugin_configs == Missing():
+        return dict()
     return get_active_plugin_configs().get(
         mail_config_keys.plugin_name,
         dict(),
