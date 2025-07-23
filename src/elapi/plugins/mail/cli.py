@@ -1,6 +1,6 @@
 from importlib.util import find_spec
 
-if not (find_spec("yagmail") and find_spec("jinja2")):
+if not (find_spec("yagmail") and find_spec("jinja2") and find_spec("nameparser")):
     ...
 else:
     from ...core_validators import Exit
