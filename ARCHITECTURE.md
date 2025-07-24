@@ -3,17 +3,17 @@
 We drew our inspiration from the microkernel architecture[^2] for the overall
 architecture principle[^3] and layered architecture for architecture partitioning. There was no strong rationale for
 choosing a microkernel architecture over alternatives such as a microservice architecture, other than the desire to
-start with something simple that still allows for extensibility. We intend elAPI to serve as the foundation for all
+start with something simple that still allows for extensibility. We wanted elAPI to serve as the foundation for all
 eLabFTW automation solutions. In other words, eLabFTW users should be able to package their automation scripts as
 plugins, thereby extending elAPI’s functionality. We refer to this architecture as the "simple microkernel
-architecture" (SMA). In the very beginning, SMA was designed for elAPI only. Later we have improved and generalized it
+architecture (SMA)". In the very beginning, SMA was designed for elAPI only. Later we have improved and generalized it
 enough to be useful for any software design.
 
 <img src="https://heibox.uni-heidelberg.de/f/32f04718692e4adaa1ff/?dl=1" alt="elAPI simple microkernel architecture" />
 
 ## SMA principles
 
-SMA follows most of the principles found in microkernel architecture guidelines with a few additions.
+SMA follows most of the principles found in microkernel architecture guidelines with a few extra additions.
 
 **1. A core system must provide basic functionalities:** The core system principle is adopted straight from the
 textbook microkernel architecture principles[^3]. In SMA, the core system must provide the basic features. Here,
@@ -60,12 +60,13 @@ vendor is free to decide whether their plugin would depend on another external p
 
 ## elAPI SMA layers
 
-We have previously briefly touched on the basic functionality layers elAPI has to offer. In this section, We will peel
-back the layers of elAPI and explain the responsibilities of each layer.
+We have previously briefly touched on the basic functionality layers elAPI has to offer. In this section, we will take
+a look at the responsibilities of each layer.
 
 **`styles`**: The `styles` layer, an independent layer, is created out of the philosophy that elAPI's CLI UI should be
-user-customizable. At the moment though, customization is not available as a feature, but the layer offers UI guidelines
-to all layers above. E.g., how a JSON output is formatted and syntax highlighted is defined in this layer. All internal
+user-customizable. At the moment, though, customization is not available as a feature, but the layer offers UI
+guidelines to all layers above. E.g., how a JSON output is formatted and syntax highlighted is defined in this layer.
+All internal
 plugins inherit the same formatting style for JSON output.
 
 **`names`**: Almost every critical constant is defined in this layer. This includes the name of the app itself
@@ -133,7 +134,7 @@ third-party library [Dynaconf](https://dynaconf.com/) to search and parse user c
 validators for certain configuration key-value pairs found within the configuration file. `configuration` layer also
 offers configuration overloading — with which any configuration value defined in a file can be overwritten on the CLI
 itself (this CLI option is called `--OC` or `--override-config`). To make this possible, `configuration` layer
-implements a dataclass `ConfigHistory` to store Dynaconf-parsed configuration, a `InspectConfigHistory` class to
+implements a `ConfigHistory` class to store Dynaconf-parsed configuration, a `InspectConfigHistory` class to
 allow history inspection, and finally a special configuration value container `MinimalActiveConfiguration`
 that stores original and overridden configuration values.
 
@@ -141,6 +142,10 @@ that stores original and overridden configuration values.
 butter of elAPI as a client. It offers a power abstract class `APIRequest` that all other main HTTP requests classes are
 made out of. `APIRequest` defines and simplifies connection opening/closing, HTTP client sharing across
 multiple calls, and separating asynchronous and synchronous methods.
+
+
+> [!NOTE]
+> This section is yet to be completed.
 
 [^1]: This page has been adapted from an [E-Science-Tage 2025](https://e-science-tage.de/en/downloads) conference paper.
 [^2]: https://csse6400.uqcloud.net/handouts/microkernel.pdf
