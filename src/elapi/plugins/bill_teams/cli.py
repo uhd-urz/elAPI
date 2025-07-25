@@ -385,10 +385,12 @@ else:
         # Not strictly necessary, as Export already crates the paren directories
         # but mainly for the log.
         if target_date is None:
-            target_date = datetime.now()
+            target_date: datetime = datetime.now()
         else:
             try:
-                target_date = parser.isoparse(user_target_date := target_date.strip())
+                target_date: datetime = parser.isoparse(
+                    user_target_date := target_date.strip()
+                )
             except ValueError as e:
                 print_typer_error(
                     f"'--target-date' is given an invalid ISO 8601 date '{target_date}'."
@@ -434,7 +436,7 @@ else:
             export=str(store_location),
         )
         logger.success(
-            f"Both teams and owners information of {target_date.strftime('%B')} "
+            f"Both the teams' and owners' information for {target_date.strftime('%B')} "
             f"{target_year} has been stored successfully."
         )
 
