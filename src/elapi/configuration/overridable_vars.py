@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from ..styles import Missing
 from ._overload_history import reinitiate_config
@@ -78,7 +78,7 @@ def get_active_timeout(*, skip_validation: bool = False) -> float:
     return MinimalActiveConfiguration().get_value(KEY_TIMEOUT)
 
 
-def get_active_async_rate_limit(*, skip_validation: bool = False) -> float:
+def get_active_async_rate_limit(*, skip_validation: bool = False) -> Optional[int]:
     if not skip_validation:
         _development_mode_validation_switch()
     return MinimalActiveConfiguration().get_value(KEY_ASYNC_RATE_LIMIT)

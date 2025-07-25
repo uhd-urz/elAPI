@@ -10,6 +10,9 @@ import httpx._client as httpx_private_client_module
 from httpx import AsyncBaseTransport, AsyncClient, Client, Limits, Response
 
 # noinspection PyProtectedMember
+from httpx._client import BaseClient
+
+# noinspection PyProtectedMember
 from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
 from httpx_limiter import AsyncRateLimitedTransport, Rate
@@ -54,7 +57,7 @@ session_defaults = SessionDefaults()
 class _CustomHeaderApiKey(HeaderApiKey): ...
 
 
-class SimpleClient(httpx_private_client_module.BaseClient):
+class SimpleClient(BaseClient):
     def __new__(
         cls,
         *,
@@ -79,10 +82,10 @@ class SimpleClient(httpx_private_client_module.BaseClient):
 
         host: str = get_active_host()
         api_token: str = get_active_api_token().token
-        enable_http2 = get_active_enable_http2()
-        verify_ssl = get_active_verify_ssl()
-        timeout = get_active_timeout()
-        active_async_rate_limit = get_active_async_rate_limit()
+        enable_http2: bool = get_active_enable_http2()
+        verify_ssl: bool = get_active_verify_ssl()
+        timeout: float = get_active_timeout()
+        active_async_rate_limit: Optional[int] = get_active_async_rate_limit()
 
         if isinstance(auth, _CustomHeaderApiKey):
             auth.api_key = api_token
