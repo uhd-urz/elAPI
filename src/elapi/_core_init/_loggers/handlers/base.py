@@ -55,7 +55,7 @@ class LogItemList(UserList):
         self.data.insert(index, self._last_item)
 
 
-class GlobalLogRecordContainer:
+class GlobalLogRecordContainer(LogItemList):
     _instance = None
 
     def __new__(cls) -> LogItemList:

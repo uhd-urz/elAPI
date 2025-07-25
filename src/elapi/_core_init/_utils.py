@@ -42,7 +42,7 @@ class _Callback:
             self._callbacks = []
         if not isinstance(self._callbacks, list):
             raise self._invalid_callback_type_exception()
-        if isinstance(func, Callable):
+        if callable(func):
             if func not in self._callbacks:
                 self._callbacks.append(func)
                 return
@@ -67,7 +67,7 @@ class _Callback:
                     f"{', '.join(map(str, self._callbacks))}"
                 )
                 for func in self._callbacks:
-                    if not isinstance(func, Callable):
+                    if not callable(func):
                         raise RuntimeError(
                             f"result_callback function must be a callable! "
                             f"But '{func}' is of type '{type(func)}' instead."
@@ -82,28 +82,35 @@ class _Callback:
         return self._callbacks
 
 
-class GlobalCLIResultCallback:
+# Inheriting _Callback is not necessary for GlobalCLI* singletons to work as intended.
+# But the inheritance is added to make type checker mypy happy about
+# class methods' availability.
+# Also, super(GlobalCLI*, cls).__new__(cls) cannot be used because
+# if a class has custom __new__ in its MRO, calling object.__new__()
+# with more than 1 argument raises TypeError: object.__new__() takes exactly one
+# argument (the type to instantiate). See details: https://stackoverflow.com/a/65862579/7696241
+class GlobalCLIResultCallback(_Callback):
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = _Callback(cls.__name__)
         return cls._instance
 
 
-class GlobalCLISuperStartupCallback:
+class GlobalCLISuperStartupCallback(_Callback):
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = _Callback(cls.__name__)
         return cls._instance
 
 
-class GlobalCLIGracefulCallback:
+class GlobalCLIGracefulCallback(_Callback):
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = _Callback(cls.__name__)
         return cls._instance
