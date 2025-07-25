@@ -14,14 +14,11 @@ else:
         populate_validated_email_cases,
     )
     from .mail import process_jinja_context, send_mail, send_matching_case_mail
-    from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
+    from .names import mail_config_sp_keys
 
     app = Typer(name="mail", help="Manage mail.")
     ResultCallbackHandler.enable_store_okay()
     logger = Logger()
-    mail_config_sp_keys = MailConfigCaseSpecialKeys()
-    mail_config_case_keys = MailConfigCaseKeys()
-    mail_config_keys = MailConfigKeys()
 
     GlobalCLIResultCallback().add_callback(send_matching_case_mail)
 

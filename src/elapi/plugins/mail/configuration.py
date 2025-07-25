@@ -1,12 +1,8 @@
 import re
 from collections import UserDict
 from dataclasses import dataclass
-from smtplib import SMTPAuthenticationError, SMTPException
-from ssl import SSLError
 from typing import Any
 
-import yagmail
-from yagmail import YagAddressError
 from yagmail.validate import DOMAIN, LOCAL_PART
 
 from ... import APP_NAME
@@ -19,16 +15,19 @@ from ...path import ProperPath
 from ...styles import Missing
 from ...utils import PatternNotFoundError
 from ._yagmail import (
-    RequiredEmailHeadersParams,
-    RequiredEmailSettingParams,
-    YagMailSMTPUnusedParams,
     get_additional_yagmail_smtp_class_params,
+    required_email_headers_params,
+    required_email_setting_params,
+    yagmail_smtp_unused_params,
 )
-from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
+from .names import (
+    mail_config_case_keys,
+    mail_config_default_values,
+    mail_config_keys,
+    mail_config_sp_keys,
+)
 
 logger = Logger()
-mail_config_keys = MailConfigKeys()
-mail_config_sp_keys = MailConfigCaseSpecialKeys()
 
 
 class MailBodyJinjaContext(UserDict):
@@ -67,38 +66,38 @@ _validated_email_cases = _ValidatedEmailCases(
 def get_mail_config() -> dict:
     plugin_configs = get_active_plugin_configs(skip_validation=True)
     if plugin_configs == Missing():
-        return dict()
+        return mail_config_default_values.plugin_name
     return get_active_plugin_configs().get(
         mail_config_keys.plugin_name,
-        dict(),
+        mail_config_default_values.plugin_name,
     )
 
 
 def get_mail_is_early_validation_allowed() -> bool:
     return get_mail_config().get(
-        mail_config_keys.validate_early,
-        True,
+        mail_config_keys.validate_config_early,
+        mail_config_default_values.validate_config_early,
     )
 
 
 def get_global_email_setting() -> dict:
     return get_mail_config().get(
         mail_config_keys.global_email_setting,
-        dict(),
+        mail_config_default_values.global_email_setting,
     )
 
 
 def get_global_email_headers() -> dict:
     return get_mail_config().get(
         mail_config_keys.global_email_headers,
-        dict(),
+        mail_config_default_values.global_email_headers,
     )
 
 
 def get_email_cases() -> dict:
     return get_mail_config().get(
         mail_config_keys.cases,
-        dict(),
+        mail_config_default_values.cases,
     )
 
 
@@ -131,7 +130,6 @@ def get_structured_email_cases() -> tuple[dict, dict]:
 
     global_email_setting: dict = get_global_email_setting()
     st_cases: dict = {}
-    mail_config_case_keys = MailConfigCaseKeys()
     for case_name, case_val in get_email_cases().items():
         st_cases[case_name] = {}
         case_on = case_val.get(mail_config_case_keys.on)
@@ -215,7 +213,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 case_body: str = case_body_path.expanded.read_text()
                 st_cases[case_name][mail_config_case_keys.body] = case_body
         st_cases[case_name]["main_params"] = {}
-        for required_param in RequiredEmailSettingParams().__dict__.values():
+        for required_param in required_email_setting_params.__dict__.values():
             required_param_value = _get_preferred_case_value(
                 case_val.get(required_param), global_email_setting.get(required_param)
             )
@@ -250,7 +248,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 st_cases[case_name]["main_params"][additional_param] = (
                     additional_param_value
                 )
-        for unused_param in YagMailSMTPUnusedParams().__dict__.values():
+        for unused_param in yagmail_smtp_unused_params.__dict__.values():
             unused_param_value = _get_preferred_case_value(
                 case_val.get(unused_param),
                 global_email_setting.get(unused_param),
@@ -265,20 +263,23 @@ def get_structured_email_cases() -> tuple[dict, dict]:
         global_email_headers_lower = {
             k.lower(): v for k, v in get_global_email_headers().items()
         }
-        required_headers_names = RequiredEmailHeadersParams()
         st_cases[case_name]["headers"] = {}
-        for header_name, header_value in case_headers_lower.items():
-            header_name: str = header_name.lower()
+        unique_header_names: set[str] = {
+            *case_headers_lower.keys(),
+            *global_email_headers_lower.keys(),
+        }
+        for header_name in unique_header_names:
             header_value = _get_preferred_case_value(
-                header_value, global_email_headers_lower.get(header_name)
+                case_headers_lower.get(header_name),
+                global_email_headers_lower.get(header_name),
             )
-            if header_name in required_headers_names.__dict__.values():
+            if header_name in required_email_headers_params.__dict__.values():
                 if header_value is None:
                     raise ValidationError(
                         f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
                         f"header must must be provided!"
                     )
-            if header_name == required_headers_names.from_:
+            if header_name == required_email_headers_params.from_:
                 if not isinstance(header_value, str):
                     raise ValidationError(
                         f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
@@ -309,9 +310,9 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     st_cases[case_name]["main_params"]["user"] = {
                         from_email_address: full_name
                     }
-            elif header_name == required_headers_names.to:
+            elif header_name == required_email_headers_params.to:
                 if isinstance(header_value, str) or isinstance(header_value, list):
-                    st_cases[case_name][required_headers_names.to] = []
+                    st_cases[case_name][required_email_headers_params.to] = []
                     if isinstance(header_value, str):
                         header_value = [header_value]
                     for each_header_value in header_value:
@@ -331,9 +332,9 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                                     f"'Jane Doe <jane.doe@localhost.example>'"
                                 ) from e
                             else:
-                                st_cases[case_name][required_headers_names.to].append(
-                                    each_header_value
-                                )
+                                st_cases[case_name][
+                                    required_email_headers_params.to
+                                ].append(each_header_value)
                         else:
                             try:
                                 st_cases[case_name]["receiver_full_name"]
@@ -341,9 +342,9 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                                 st_cases[case_name]["receiver_full_name"] = full_name
                             else:
                                 st_cases[case_name].pop("receiver_full_name")
-                            st_cases[case_name][required_headers_names.to].append(
-                                each_header_value
-                            )
+                            st_cases[case_name][
+                                required_email_headers_params.to
+                            ].append(each_header_value)
                 else:
                     raise ValidationError(
                         f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
@@ -360,6 +361,7 @@ def populate_validated_email_cases() -> None:
     if _validated_email_cases.successfully_validated:
         return None
     try:
+        logger.debug("Email cases are to be validated.")
         real_cases, test_case = get_structured_email_cases()
     except ValidationError as e:
         logger.error(e)
@@ -367,39 +369,9 @@ def populate_validated_email_cases() -> None:
     else:
         if not real_cases or not test_case:
             logger.debug(
-                "No real email cases or test case were found. "
-                "No email case validation will be done."
+                "No real email cases or test case were found. Nothing to validate."
             )
             return None
-        all_cases = {**real_cases, **{mail_config_sp_keys.case_test: test_case}}
-        logger.debug(
-            f"The following email cases are to be "
-            f"validated: {', '.join(all_cases.keys())}."
-        )
-        for case_name, case_val in all_cases.items():
-            try:
-                mail_session = yagmail.SMTP(
-                    **case_val["main_params"], soft_email_validation=False
-                )
-            except (
-                SMTPException,
-                SMTPAuthenticationError,
-                YagAddressError,
-                ConnectionError,
-                SSLError,
-                NameError,
-            ) as e:
-                logger.error(
-                    f"Email case '{case_name}' could not be validated "
-                    f"because it failed to "
-                    f"establish a connection. Exception details: {e}"
-                )
-                # _validated_email_cases.successfully_validated is
-                # not set to True as we want to give the validation
-                # another chance.
-                raise Exit(1)
-            else:
-                mail_session.close()
         _validated_email_cases.successfully_validated = True
         _validated_email_cases.real_cases = real_cases
         _validated_email_cases.test_case = test_case

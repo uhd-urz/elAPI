@@ -3,15 +3,19 @@ from dataclasses import asdict, dataclass
 from email.utils import make_msgid
 from functools import partial
 from logging import LogRecord
+from smtplib import SMTPAuthenticationError, SMTPException
 from socket import getfqdn
-from typing import Iterable, Optional
+from ssl import SSLError
+from typing import Iterable, Optional, Union
 
 import jinja2
 import yagmail
 from nameparser import HumanName
+from yagmail import YagAddressError
 
 from ... import APP_NAME
 from ...configuration import get_development_mode
+from ...core_validators import Exit
 from ...loggers import GlobalLogRecordContainer, Logger
 from ..commons.cli_helpers import detected_click_feedback
 from ._yagmail import YagMailSendParams
@@ -21,12 +25,7 @@ from .configuration import (
     mail_body_jinja_context,
     populate_validated_email_cases,
 )
-from .names import MailConfigCaseKeys, MailConfigCaseSpecialKeys, MailConfigKeys
-
-mail_config_sp_keys = MailConfigCaseSpecialKeys()
-mail_config_case_keys = MailConfigCaseKeys()
-mail_config_keys = MailConfigKeys()
-
+from .names import mail_config_case_keys, mail_config_keys
 
 logger = Logger()
 jinja_environment = jinja2.Environment()
@@ -255,12 +254,30 @@ def send_mail(
         yagmail_send_params,
         enforce_plaintext=case_value[mail_config_case_keys.enforce_plaintext_email],
     )
+    recipient_names: Union[str, dict[str, str]] = case_value["main_params"]["user"]
+    if isinstance(recipient_names, dict):
+        recipient_names: str = "".join(case_value["main_params"]["user"].keys())
     logger.info(
         f"Attempting to send a '{case_name}' email to "
         f"'{', '.join(case_value['to'])}',\n"
-        f"from '{''.join(case_value['main_params']['user'].keys())}',"
+        f"from '{recipient_names}',"
         f"\nwith the "
         f"following additional headers: {case_value['headers']}."
     )
-    mail_session.send(**yagmail_send_params.__dict__)
-    mail_session.close()
+    try:
+        mail_session.send(**yagmail_send_params.__dict__)
+    except (
+        SMTPException,
+        SMTPAuthenticationError,
+        YagAddressError,
+        ConnectionError,
+        SSLError,
+        NameError,
+        ConnectionRefusedError,
+    ) as e:
+        logger.error(
+            f"Sending email for case '{case_name}' has failed. Exception details: {e!r}."
+        )
+        raise Exit(1) from e
+    finally:
+        mail_session.close()
