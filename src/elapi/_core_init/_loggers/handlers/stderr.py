@@ -39,7 +39,7 @@ class STDERRBaseHandler(BaseHandler):
         self._formatter = value
 
     @property
-    def rich_level_colors(self) -> dict[str:str]:
+    def rich_level_colors(self) -> dict[str, str]:
         return self._rich_level_colors
 
     @rich_level_colors.setter

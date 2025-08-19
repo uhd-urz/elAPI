@@ -1,17 +1,18 @@
 import re
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Any, Union, Optional
+from typing import Any, Optional, Self, Union
 
-from .base import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 from .. import APP_NAME
+from .base import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
 
 class BaseFormat(ABC):
-    _registry: dict[str:Any, ...] = {styles_package_identifier: {}}
-    _names: dict[str : list[str], ...] = {styles_package_identifier: []}
-    _conventions: dict[str:str, ...] = {styles_package_identifier: []}
+    _registry: dict[str, dict[str, type[Self]]] = {styles_package_identifier: {}}
+    _names: dict[str, list[str]] = {styles_package_identifier: []}
+    _conventions: dict[str, list[str]] = {styles_package_identifier: []}
 
+    # noinspection PyTypeChecker
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if cls.package_identifier not in cls._registry:
@@ -31,7 +32,8 @@ class BaseFormat(ABC):
             if cls.package_identifier == styles_package_identifier:
                 raise ValueError(
                     f"Attribute 'name' cannot be None for when package_identifier "
-                    f"is {styles_package_identifier} as it will remove {APP_NAME} built-in formats."
+                    f"is {styles_package_identifier} as it will "
+                    f"remove {APP_NAME} built-in formats."
                 )
             existing_cls = cls._registry[cls.package_identifier].pop(cls.pattern())
             try:
@@ -39,7 +41,8 @@ class BaseFormat(ABC):
                 cls._conventions[cls.package_identifier].remove(existing_cls.convention)
             except ValueError as e:
                 raise KeyError(
-                    f"Attribute 'name' is None, which will remove {cls!r} as a formatter, "
+                    f"Attribute 'name' is None, which will remove "
+                    f"{cls!r} as a formatter, "
                     f"but class {cls!r} was never registered before!"
                 ) from e
         else:
@@ -51,11 +54,11 @@ class BaseFormat(ABC):
 
     @property
     @abstractmethod
-    def name(self): ...
+    def name(self) -> Optional[str]: ...
 
     @property
     @abstractmethod
-    def convention(self) -> Union[str, Iterable[str]]:
+    def convention(self) -> Union[str, Iterable[str], None]:
         return self.name
 
     @convention.setter
@@ -68,7 +71,7 @@ class BaseFormat(ABC):
     @classmethod
     def supported_formatters(
         cls, package_identifier: Optional[str] = None
-    ) -> dict[str:"BaseFormat", ...]:
+    ) -> dict[str, dict[str, type[Self]]] | dict[str, type[Self]]:
         if package_identifier is None:
             return cls._registry
         return cls._registry[package_identifier]
@@ -76,7 +79,7 @@ class BaseFormat(ABC):
     @classmethod
     def supported_formatter_names(
         cls, package_identifier: Optional[str] = None
-    ) -> dict[str : list[str], ...]:
+    ) -> dict[str, list[str]] | list[str]:
         if package_identifier is None:
             return cls._names
         return cls._names[package_identifier]
@@ -138,7 +141,7 @@ class CSVFormat(BaseFormat):
         from io import StringIO
 
         with StringIO() as csv_buffer:
-            writer = DictWriter(csv_buffer, fieldnames=[])
+            writer: DictWriter = DictWriter(csv_buffer, fieldnames=[])
             if isinstance(data, dict):
                 writer.fieldnames = data.keys()
                 writer.writeheader()
@@ -212,7 +215,7 @@ class RegisterFormattingLanguage:
             if re.match(rf"{pattern}", value, flags=re.IGNORECASE):
                 self.name: str = formatter.name
                 self.convention: Union[str, Iterable[str]] = formatter.convention
-                self.formatter: type(BaseFormat) = formatter
+                self.formatter: type[BaseFormat] = formatter
                 return
         raise FormatError(
             f"'{value}' isn't a supported language format! "

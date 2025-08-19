@@ -2,22 +2,23 @@ import datetime
 import json
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Optional, Callable, Union, Iterable
+from types import NoneType
+from typing import Callable, Iterable, Optional, Union
 
 from dateutil import parser
 
-from .specification import (
-    OwnersDataSpecification,
-    REGISTRY_KEY_TEAMS_INFO_DATE,
-    REGISTRY_KEY_OWNERS_INFO_DATE,
-    BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
-    BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
-)
 from ..._names import ELAB_BRAND_NAME
-from ...core_validators import Validator, ValidationError
+from ...core_validators import ValidationError, Validator
 from ...loggers import Logger
 from ...path import ProperPath
 from ...styles import FormatError
+from .specification import (
+    BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
+    BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
+    REGISTRY_KEY_OWNERS_INFO_DATE,
+    REGISTRY_KEY_TEAMS_INFO_DATE,
+    OwnersDataSpecification,
+)
 
 logger = Logger()
 
@@ -61,13 +62,13 @@ class OwnersInformationModifier:
         self,
         team_id: Union[str, int],
         column_name: str,
-        value: Union[str, int, float, type(None)],
+        value: Union[str, int, float, None],
     ) -> None:
         try:
             self.owners.get(team_id, column_name)
         except KeyError as e:
             raise e
-        if not isinstance(value, (str, int, float, type(None))):
+        if not isinstance(value, (str, int, float, NoneType)):
             raise ValueError(
                 "value must be an string or an integer or a float or NoneType!"
             )
@@ -75,7 +76,7 @@ class OwnersInformationModifier:
 
     @staticmethod
     def _sanitize(
-        value: Union[str, int, float, type(None)],
+        value: Union[str, int, float, None],
         reference: str,
         allow_null: bool = True,
         stringent: bool = False,
@@ -271,13 +272,15 @@ class BillingInformationPathValidator(Validator):
 
     def validate(self) -> tuple[Path, dict, dict]:
         import re
-        from dateutil import parser
         from collections import namedtuple
+
+        from dateutil import parser
+
         from .specification import (
-            BILLING_INFO_OUTPUT_EXTENSION,
-            BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
-            BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
             BILLING_INFO_OUTPUT_DATETIME_PARSE_SIMPLE_REGEX_PATTERN,
+            BILLING_INFO_OUTPUT_EXTENSION,
+            BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB,
+            BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB,
         )
 
         if not isinstance(root := self.root_dir, ProperPath):

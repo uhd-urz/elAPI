@@ -1,6 +1,7 @@
 import string
 from pathlib import Path
 from random import choices
+from types import NoneType
 from typing import Iterable, Optional, Union
 
 from .._core_init import Logger
@@ -41,7 +42,7 @@ class PathValidator(Validator):
 
     @path.setter
     def path(self, value):
-        if not isinstance(value, (str, type(None), ProperPath, Path, Iterable)):
+        if not isinstance(value, (str, NoneType, ProperPath, Path, Iterable)):
             raise ValueError(
                 f"{value} must be an instance (or iterable of instances) of str, ProperPath, Path"
             )

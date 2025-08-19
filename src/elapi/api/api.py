@@ -3,6 +3,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import cached_property
+from types import NoneType, NotImplementedType
 from typing import Literal, Optional, Tuple, Union
 
 # noinspection PyProtectedMember
@@ -102,9 +103,10 @@ class SimpleClient(BaseClient):
                 if transport is None and active_async_rate_limit is not None:
                     transport = AsyncRateLimitedTransport.create(
                         rate=Rate.create(magnitude=active_async_rate_limit),
-                        http2=enable_http2,
+                        http2=enable_http2,  # type: ignore
+                        # See: https://github.com/Midnighter/httpx-limiter/issues/7#issuecomment-3197487921
                         # http2 needs to be passed here if AsyncRateLimitedTransport is used
-                        verify=verify_ssl,
+                        verify=verify_ssl,  # type: ignore
                     )
                 elif transport is not None and active_async_rate_limit is not None:
                     logger.warning(
@@ -223,7 +225,7 @@ class GlobalSharedSession:
         limited_to: Literal["sync", "async", "all"] = "all",
         suppress_override_warning: bool = False,
         **kwargs,
-    ):
+    ) -> _GlobalSharedSession:
         if cls._instance is None:
             cls.suppress_override_warning = suppress_override_warning
             cls._instance = cls._GlobalSharedSession(limited_to=limited_to, **kwargs)
@@ -292,7 +294,7 @@ class APIRequest(ABC):
 
     @shared_client.setter
     def shared_client(self, value: Union[Client, AsyncClient, None] = None):
-        if not isinstance(value, (Client, AsyncClient, type(None))):
+        if not isinstance(value, (Client, AsyncClient, NoneType)):
             raise TypeError(
                 f"shared_client must be an instance of "
                 f"httpx.{Client.__name__} or httpx.{AsyncClient.__name__} or {None}."
@@ -330,7 +332,7 @@ class APIRequest(ABC):
     def _make(self, *args, **kwargs): ...
 
     @abstractmethod
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         if self.is_global_shared_session_user is True:
             return NotImplemented
         if not self.client.is_closed:
@@ -338,7 +340,7 @@ class APIRequest(ABC):
         return None
 
     @abstractmethod
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         if self.is_global_shared_session_user is True:
             return NotImplemented
         if not self.client.is_closed:
@@ -367,7 +369,7 @@ class ElabFTWURLError(Exception): ...
 
 
 class ElabFTWURL:
-    VALID_ENDPOINTS: dict[str : Tuple[str]] = {
+    VALID_ENDPOINTS: dict[str, Tuple[str, ...]] = {
         "apikeys": (),
         "config": (),
         "experiments": (
@@ -551,7 +553,7 @@ class GETRequest(APIRequest):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -616,7 +618,7 @@ class POSTRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -673,7 +675,7 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -721,7 +723,7 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -779,7 +781,7 @@ class PATCHRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -834,7 +836,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -884,7 +886,7 @@ class DELETERequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -934,7 +936,7 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[bool]:
         return await super().aclose()
 
     def close(self):

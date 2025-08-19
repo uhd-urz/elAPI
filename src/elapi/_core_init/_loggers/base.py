@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from functools import update_wrapper
+from types import NoneType
 from typing import Optional
 
 from .handlers.stderr import STDERRBaseHandler
@@ -45,7 +46,7 @@ class LogMessageTuple:
 
     @logger.setter
     def logger(self, value):
-        if not isinstance(value, (logging.Logger, type(None))):
+        if not isinstance(value, (logging.Logger, NoneType)):
             raise TypeError(f"logger must be an instance of {logging.Logger.__name__}.")
         self._logger = value
 

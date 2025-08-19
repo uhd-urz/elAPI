@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import NoneType
 from typing import Iterable, Optional, Union
 
 from ..core_validators import CriticalValidationError, Validator
@@ -214,7 +215,7 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
 
         if isinstance(
             config_export_dir := self.active_configuration.get_value(KEY_EXPORT_DIR),
-            (Missing, type(None)),
+            (Missing, NoneType),
         ):
             return get_validated_fallback()
         else:

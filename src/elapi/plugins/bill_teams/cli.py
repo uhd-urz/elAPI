@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import partial
 from importlib.util import find_spec
 from pathlib import Path
+from types import NoneType
 
 import typer
 
@@ -464,13 +465,13 @@ else:
     ) -> Tuple[datetime, datetime]:
         base_date = BILLING_BASE_DATE
 
-        if not isinstance(user_start_date, (str, type(None))):
+        if not isinstance(user_start_date, (str, NoneType)):
             raise ValueError(
                 "'--start-date' received a value of unsupported type. "
                 f"Calling method isn't meant to be evoked from outside the CLI."
                 f"{APP_NAME} plugin {PLUGIN_NAME} will abort."
             )
-        if not isinstance(user_end_date, (str, type(None))):
+        if not isinstance(user_end_date, (str, NoneType)):
             raise ValueError(
                 "'--end-date' received a value of unsupported type. "
                 "Calling method isn't meant to be evoked from outside the CLI. "
