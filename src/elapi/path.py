@@ -65,13 +65,13 @@ class ProperPath:
 
     # noinspection PyPep8Naming
     @property
-    def PathException(self) -> type:
+    def PathException(self) -> Union[type[Exception], type[BaseException]]:
         return self._PathException
 
     # noinspection PyPep8Naming
     # noinspection PyAttributeOutsideInit
     @PathException.setter
-    def PathException(self, value: type) -> None:
+    def PathException(self, value) -> None:
         if not issubclass(value, (Exception, BaseException)):
             raise ValueError(
                 "Only an instance of Exception or BaseException can be "
@@ -191,6 +191,7 @@ class ProperPath:
             file.unlink()
         except FileNotFoundError as e:
             # unlink() throws FileNotFoundError when a directory is passed as it expects files only
+
             self.PathException = exception = ValueError
             raise exception(f"{file} doesn't exist or isn't a valid file!") from e
         except (exception := PermissionError) as e:

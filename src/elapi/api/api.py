@@ -348,14 +348,14 @@ class APIRequest(ABC):
         return None
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Response:
         response = self._make(*args, **kwargs)
         if self.shared_client is None:
             self.close()
         return response
 
     @abstractmethod
-    async def __acall__(self, *args, **kwargs):
+    async def __acall__(self, *args, **kwargs) -> Response:
         response = await self._make(
             *args,
             **kwargs,
@@ -464,7 +464,7 @@ class ElabFTWURL:
         return self._sub_endpoint_name
 
     @sub_endpoint_name.setter
-    def sub_endpoint_name(self, value: str):
+    def sub_endpoint_name(self, value: Optional[str]):
         if value is not None:
             if value.lower() not in (
                 valid_sub_endpoint_name := ElabFTWURL.VALID_ENDPOINTS[
@@ -525,7 +525,7 @@ class ElabFTWURL:
         return self._query
 
     @query.setter
-    def query(self, value: dict):
+    def query(self, value: Optional[dict]):
         self._query = "&".join([f"{k}={v}" for k, v in (value or dict()).items()])
 
     def get(self) -> str:
