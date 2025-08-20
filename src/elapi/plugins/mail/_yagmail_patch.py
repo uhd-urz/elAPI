@@ -150,9 +150,7 @@ def prepare_enforced_plaintext_message(
                         else:
                             htmlstr += "<div>{0}</div>".format(content_string)
                         if PY3 and prettify_html:
-                            if enforce_plaintext:
-                                htmlstr = htmlstr
-                            else:
+                            if not enforce_plaintext:
                                 import premailer
 
                                 htmlstr = premailer.transform(htmlstr)
@@ -162,12 +160,12 @@ def prepare_enforced_plaintext_message(
                         else:
                             htmlstr += "<div>{0}</div>".format(content_string)
                     altstr.append(content_string)
-
-    msg_related.get_payload()[0] = MIMEText(
-        htmlstr, "plain" if enforce_plaintext else "html", _charset=encoding
-    )
-    msg_alternative.attach(MIMEText("\n".join(altstr), _charset=encoding))
-    msg_alternative.attach(msg_related)
+    if enforce_plaintext:
+        msg_alternative.attach(MIMEText("\n".join(altstr), "plain", _charset=encoding))
+    else:
+        msg_related.get_payload()[0] = MIMEText(htmlstr, "html", _charset=encoding)
+        msg_alternative.attach(MIMEText("\n".join(altstr), _charset=encoding))
+        msg_alternative.attach(msg_related)
 
     if dkim is not None:
         add_dkim_sig_to_message(msg, dkim)
