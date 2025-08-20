@@ -140,7 +140,8 @@ def prepare_enforced_plaintext_message(
                     msg.attach(content_object["mime_object"])
                 else:
                     if not content_object["is_marked_up"]:
-                        content_string = content_string.replace("\n", "<br>")
+                        if not enforce_plaintext:
+                            content_string = content_string.replace("\n", "<br>")
                     try:
                         if enforce_plaintext:
                             htmlstr = content_string
@@ -156,7 +157,7 @@ def prepare_enforced_plaintext_message(
                             htmlstr = content_string
                         else:
                             htmlstr += "<div>{0}</div>".format(content_string)
-                    altstr.append(content_string)
+                    altstr.append(content_string.replace("<br>", "\n"))
     if enforce_plaintext:
         msg_alternative.attach(MIMEText("\n".join(altstr), "plain", _charset=encoding))
     else:
