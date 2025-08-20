@@ -158,6 +158,7 @@ def prepare_enforced_plaintext_message(
                         else:
                             htmlstr += "<div>{0}</div>".format(content_string)
                     altstr.append(content_string.replace("<br>", "\n"))
+                    # Since this is the fallback (plaintext content in multipart), <br> doesn't make sense.
     if enforce_plaintext:
         msg_alternative.attach(MIMEText("\n".join(altstr), "plain", _charset=encoding))
     else:
