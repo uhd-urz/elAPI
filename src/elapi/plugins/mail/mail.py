@@ -1,4 +1,5 @@
 import re
+from collections import UserDict
 from dataclasses import asdict, dataclass
 from email.utils import make_msgid
 from functools import partial
@@ -18,7 +19,6 @@ from ...configuration import get_development_mode
 from ...core_validators import Exit
 from ...loggers import GlobalLogRecordContainer, Logger
 from ..commons.cli_helpers import detected_click_feedback
-from ._yagmail import YagMailSendParams
 from ._yagmail_patch import prepare_enforced_plaintext_message
 from .configuration import (
     _validated_email_cases,
@@ -26,6 +26,7 @@ from .configuration import (
     populate_validated_email_cases,
 )
 from .names import mail_config_case_keys, mail_config_keys
+from .yagmail_configuration import YagMailSendParams
 
 logger = Logger()
 jinja_environment = jinja2.Environment()
@@ -229,7 +230,7 @@ def _patch_yagmail_fix(
 
 
 def send_mail(
-    case_name: str, case_value: dict, jinja_contex: Optional[dict] = None
+    case_name: str, case_value: dict, jinja_contex: Union[dict, UserDict, None] = None
 ) -> None:
     smtp_set_debuglevel = case_value["main_params"].get(
         "smtp_set_debuglevel", int(get_development_mode())
@@ -258,11 +259,9 @@ def send_mail(
     if isinstance(recipient_names, dict):
         recipient_names: str = "".join(case_value["main_params"]["user"].keys())
     logger.info(
-        f"Attempting to send a '{case_name}' email to "
-        f"'{', '.join(case_value['to'])}',\n"
-        f"from '{recipient_names}',"
-        f"\nwith the "
-        f"following additional headers: {case_value['headers']}."
+        f"Attempting to send a '{case_name}' email to '{', '.join(case_value['to'])}', "
+        f"host '{case_value['main_params']['host']}', port {case_value['main_params']['port']}, "
+        f"from '{recipient_names}', with the following additional headers: {case_value['headers']}."
     )
     try:
         mail_session.send(**yagmail_send_params.__dict__)

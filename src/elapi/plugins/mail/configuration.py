@@ -1,6 +1,6 @@
 import re
 from collections import UserDict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from yagmail.validate import DOMAIN, LOCAL_PART
@@ -14,17 +14,20 @@ from ...loggers import Logger
 from ...path import ProperPath
 from ...styles import Missing
 from ...utils import PatternNotFoundError
-from ._yagmail import (
-    get_additional_yagmail_smtp_class_params,
-    required_email_headers_params,
-    required_email_setting_params,
-    yagmail_smtp_unused_params,
-)
 from .names import (
     mail_config_case_keys,
     mail_config_default_values,
     mail_config_keys,
     mail_config_sp_keys,
+)
+from .yagmail_configuration import (
+    _get_formatted_fallback_from_email_address,
+    get_additional_yagmail_smtp_class_params,
+    main_email_setting_fallback_values,
+    main_email_setting_params,
+    required_email_headers_fallback_params,
+    required_email_headers_params,
+    yagmail_smtp_unused_params,
 )
 
 logger = Logger()
@@ -67,9 +70,12 @@ def get_mail_config() -> dict:
     plugin_configs = get_active_plugin_configs(skip_validation=True)
     if plugin_configs == Missing():
         return mail_config_default_values.plugin_name
-    return get_active_plugin_configs().get(
-        mail_config_keys.plugin_name,
-        mail_config_default_values.plugin_name,
+    return (
+        get_active_plugin_configs().get(
+            mail_config_keys.plugin_name,
+            mail_config_default_values.plugin_name,
+        )
+        or dict()
     )
 
 
@@ -81,23 +87,32 @@ def get_mail_is_early_validation_allowed() -> bool:
 
 
 def get_global_email_setting() -> dict:
-    return get_mail_config().get(
-        mail_config_keys.global_email_setting,
-        mail_config_default_values.global_email_setting,
+    return (
+        get_mail_config().get(
+            mail_config_keys.global_email_setting,
+            mail_config_default_values.global_email_setting,
+        )
+        or dict()
     )
 
 
 def get_global_email_headers() -> dict:
-    return get_mail_config().get(
-        mail_config_keys.global_email_headers,
-        mail_config_default_values.global_email_headers,
+    return (
+        get_mail_config().get(
+            mail_config_keys.global_email_headers,
+            mail_config_default_values.global_email_headers,
+        )
+        or dict()
     )
 
 
 def get_email_cases() -> dict:
-    return get_mail_config().get(
-        mail_config_keys.cases,
-        mail_config_default_values.cases,
+    return (
+        get_mail_config().get(
+            mail_config_keys.cases,
+            mail_config_default_values.cases,
+        )
+        or dict()
     )
 
 
@@ -126,7 +141,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
             return local_value
         if global_value is not None:
             return global_value
-        return None
+        return default_value
 
     global_email_setting: dict = get_global_email_setting()
     st_cases: dict = {}
@@ -213,17 +228,32 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                 case_body: str = case_body_path.expanded.read_text()
                 st_cases[case_name][mail_config_case_keys.body] = case_body
         st_cases[case_name]["main_params"] = {}
-        for required_param in required_email_setting_params.__dict__.values():
+        for required_param in main_email_setting_params.__dict__.values():
             required_param_value = _get_preferred_case_value(
                 case_val.get(required_param), global_email_setting.get(required_param)
             )
             if required_param_value is None:
-                raise ValidationError(
-                    f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
-                    f"{case_name}.{required_param}' "
-                    f"value cannot be null and must be provided!"
+                if (
+                    required_param
+                    in (
+                        default_email_setting_params_dict := asdict(
+                            main_email_setting_fallback_values
+                        )
+                    ).keys()
+                ):
+                    logger.debug(
+                        f"'{mail_config_keys.plugin_name}.{mail_config_keys.cases}."
+                        f"{case_name}.{required_param}' value is not set (or null), "
+                        f"the default (fallback) value "
+                        f"'{default_email_setting_params_dict[required_param]}' will be used."
+                    )
+                    st_cases[case_name]["main_params"][required_param] = (
+                        default_email_setting_params_dict[required_param]
+                    )
+            else:
+                st_cases[case_name]["main_params"][required_param] = (
+                    required_param_value
                 )
-            st_cases[case_name]["main_params"][required_param] = required_param_value
 
         case_enforce_plaintext_email = _get_preferred_case_value(
             case_val.get(mail_config_case_keys.enforce_plaintext_email),
@@ -268,18 +298,37 @@ def get_structured_email_cases() -> tuple[dict, dict]:
             *case_headers_lower.keys(),
             *global_email_headers_lower.keys(),
         }
-        for header_name in unique_header_names:
+        for header_name in (
+            unique_header_names
+            | set(asdict(required_email_headers_params).values())
+            | set(asdict(required_email_headers_fallback_params).values())
+        ):
             header_value = _get_preferred_case_value(
                 case_headers_lower.get(header_name),
                 global_email_headers_lower.get(header_name),
             )
-            if header_name in required_email_headers_params.__dict__.values():
-                if header_value is None:
+            if header_value is None:
+                if header_name in asdict(required_email_headers_params).values():
                     raise ValidationError(
-                        f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
-                        f"header must must be provided!"
+                        f"'{case_name}.{mail_config_case_keys.headers}."
+                        f"{header_name.capitalize()}' header must be provided."
                     )
-            if header_name == required_email_headers_params.from_:
+            if header_name == required_email_headers_fallback_params.From:
+                if header_value is None:
+                    if (
+                        header_value := _get_formatted_fallback_from_email_address()
+                    ) is None:
+                        raise ValidationError(
+                            f"A fallback value for '{case_name}.{mail_config_case_keys.headers}."
+                            f"{header_name.capitalize()}' header could not be used, "
+                            f"so a valid header value must must be provided in configuration file!"
+                        )
+                    else:
+                        logger.debug(
+                            f"'{case_name}.{mail_config_case_keys.headers}."
+                            f"{header_name.capitalize()}' header value is empty or null. A fallback value "
+                            f"'{header_value}' will be used."
+                        )
                 if not isinstance(header_value, str):
                     raise ValidationError(
                         f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
@@ -295,9 +344,9 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                         from_email_address, domain = _parse_email_only(header_value)
                     except PatternNotFoundError as e:
                         raise ValidationError(
-                            f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' "
-                            f"does not match the standard format. E.g., "
-                            f"'Jane Doe <jane.doe@localhost.example>'"
+                            f"'{case_name}.{mail_config_case_keys.headers}.{header_name.capitalize()}' value "
+                            f"'{header_value}' does not match the standard format. E.g., "
+                            f"'Jane Doe <jane.doe@localhost.example>'."
                         ) from e
                     else:
                         st_cases[case_name]["from_email_address"] = from_email_address
@@ -310,9 +359,9 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                     st_cases[case_name]["main_params"]["user"] = {
                         from_email_address: full_name
                     }
-            elif header_name == required_email_headers_params.to:
+            elif header_name == required_email_headers_params.To:
                 if isinstance(header_value, str) or isinstance(header_value, list):
-                    st_cases[case_name][required_email_headers_params.to] = []
+                    st_cases[case_name][required_email_headers_params.To] = []
                     if isinstance(header_value, str):
                         header_value = [header_value]
                     for each_header_value in header_value:
@@ -333,7 +382,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                                 ) from e
                             else:
                                 st_cases[case_name][
-                                    required_email_headers_params.to
+                                    required_email_headers_params.To
                                 ].append(each_header_value)
                         else:
                             try:
@@ -343,7 +392,7 @@ def get_structured_email_cases() -> tuple[dict, dict]:
                             else:
                                 st_cases[case_name].pop("receiver_full_name")
                             st_cases[case_name][
-                                required_email_headers_params.to
+                                required_email_headers_params.To
                             ].append(each_header_value)
                 else:
                     raise ValidationError(

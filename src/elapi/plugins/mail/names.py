@@ -32,6 +32,12 @@ class MailConfigCaseSpecialKeys:
 
 
 @dataclass(frozen=True)
+class HostDefaults:
+    localhost: str = "localhost"
+    port: int = 25
+
+
+@dataclass(frozen=True)
 class MailConfigDefaultValues:
     plugin_name: dict = field(default_factory=lambda: dict())
     validate_config_early: bool = False
@@ -44,3 +50,4 @@ mail_config_keys = MailConfigKeys()
 mail_config_case_keys = MailConfigCaseKeys()
 mail_config_sp_keys = MailConfigCaseSpecialKeys()
 mail_config_default_values = MailConfigDefaultValues()
+host_defaults = HostDefaults()
