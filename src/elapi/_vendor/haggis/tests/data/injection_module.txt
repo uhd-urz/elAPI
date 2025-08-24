@@ -1,3 +1,0 @@
-a = injected.x
-
-__include_files__ = ['nested_injection_module.txt']

@@ -1,3 +1,0 @@
-b = 2
-
-__include_files__ = ['bfs_module_3.txt']

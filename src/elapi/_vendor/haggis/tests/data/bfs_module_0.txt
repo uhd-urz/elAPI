@@ -1,3 +1,0 @@
-a = 1
-
-__include_files__ = ['bfs_module_1.txt', 'bfs_module_2.txt']
