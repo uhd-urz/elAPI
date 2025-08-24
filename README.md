@@ -7,23 +7,24 @@
 <img alt="Package version" src="https://badge.fury.io/py/elapi.svg/?branch=main" />
    </a>
 <a href="#compatibility">
-   <img alt="Static Badge" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-%230d7dbe">
+   <img alt="Static Badge" src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-%230d7dbe">
    <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-4.5%2B%20%7C%205.0%20%7C%205.1-%2323b3be">
 </a>
 </p>
 
 elAPI is a powerful, extensible API client for [eLabFTW](https://www.elabftw.net/) developed at
-the [University Computing Centre](https://www.urz.uni-heidelberg.de/en)
-(URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division) of
-[University of Heidelberg](https://www.uni-heidelberg.de/en). It supports serving all kinds of requests documented in
-[eLabFTW API documentation](https://doc.elabftw.net/api/v2/) with ease. elAPI provides a simple interface via its CLI
-executable, and numerous advanced APIs when it is used directly as a Python package.
+the [University Computing Centre](https://www.urz.uni-heidelberg.de/en) (
+URZ, [FIRE](https://www.urz.uni-heidelberg.de/en/node/64/organisation/future-it-research-education) division)
+of [University of Heidelberg](https://www.uni-heidelberg.de/en). elAPI has complete support
+for [eLabFTW REST APIv2](https://doc.elabftw.net/api/v2/). elAPI executable comes with a simple CLI interface for
+performing fast and quick API tasks. elAPI Python package brings a suite of convenience APIs to help streamline advanced
+API automation tasks. Check out our [examples](#examples-and-usage).
 
 <img src="https://heibox.uni-heidelberg.de/f/7714c7eeb0f54a3ba318/?dl=1" alt="elAPI features in a nutshell" />
 
 **Example:**
 
-From [the documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
+From [the API documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
 > GET /users/{id}
 
 With elAPI you can do the following:
@@ -57,8 +58,8 @@ the terminal. You can move on to ["Getting started"](#getting-started).
 
 elAPI can be used both as a CLI tool and as a Python library. If you are interested in simply using elAPI's
 off-the-shelf features from the command-line, install elAPI as a CLI tool (see ["Installation"](#installation)). If you
-intend to write automation script for eLabFTW, you should install elAPI as a library inside a virtual environment. Of
-course, if you're interested in both, you can have elAPI installed in both ways.
+intend to write an automation script for eLabFTW, you should install elAPI as a library inside a virtual environment. Of
+course, if you need both, you can have elAPI installed in both ways.
 
 > [!NOTE]
 > Support for installing Python packages with `pip install --user` has been deprecated with the adoption
@@ -68,9 +69,9 @@ course, if you're interested in both, you can have elAPI installed in both ways.
 ### Installing elAPI as a library
 
 It is recommended to install elAPI inside a Python virtual environment with your preferred package manager (`pip`,
-`poetry`, `pipenv`, `rye`, `uv`, etc.) for use of its rich APIs for
-working with eLabFTW. From inside a virtual environment, elAPI CLI can be invoked with `python -m elapi.cli`.
-At the moment, though, the documentation about using elAPI as a library is severely lacking.
+`poetry`, `pipenv`, `rye`, `uv`, etc.). With `uv`, for example, run `uv add elapi`. From inside a virtual environment,
+elAPI CLI can be invoked with `python -m elapi.cli`. At the moment, though, the documentation about using elAPI as a
+library is severely lacking.
 
 ## Getting started
 
@@ -88,20 +89,19 @@ That's all! Run [`elapi show-config`](#show-config) to view your configuration d
 
 ## Compatibility
 
-elAPI is compatible with the following Python versions: `3.9`, `3.10`, `3.11`, `3.12`. elAPI supports
+elAPI is compatible with the following Python versions: `3.11`, `3.12`. elAPI supports
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`.
+versions: `4.5`, `4.6`, `4.7`, `4.8`, `4.9`, `4.10`, `5.0`, `5.1`, `5.2`, and above.
 
 ## Configuration
 
 elAPI needs to be configured first before you can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
-server's API URL and your API key (or token) for access. See quick configuration method
+server's API URL and your API key (or token) for access. See a quick configuration method
 in "[Getting started](#getting-started)" before you dive into the advanced settings.
 
 ### Advanced configuration
 
-elAPI supports a YAML configuration file in
-the following locations.
+elAPI supports a YAML configuration file in the following locations.
 
 - Current directory: `./elapi.yml`
 - User directory: `$HOME/.config/elapi.yml`
@@ -109,11 +109,10 @@ the following locations.
 
 elAPI supports configuration overloading. I.e., a keyword set in root configuration file `/etc/elapi.yml` can be
 overridden by setting a different value in user configuration file `$HOME/.config/elapi.yml`. In terms of precedence,
-configuration file present in the currently active directory has the highest priority, and configuration in root
-directory has the lowest.
+a configuration file present in the currently active directory has the highest priority, and a configuration file in the
+root directory has the lowest.
 
-The following parameters are currently configurable, with `host` and `api_token` being the required fields. For testing
-purposes, it would be safe to store everything in `$HOME/.config/elapi.yml`.
+The following parameters are currently configurable, with `host` and `api_token` being the required fields.
 
 ```yaml
 # elAPI configuration
@@ -129,6 +128,8 @@ unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
 timeout: 90
+async_rate_limit: 100
+development_mode: false
 ```
 
 - `export_dir` is where elAPI will export response content to if no path is explicitly provided to `--export/-E`.
@@ -142,14 +143,20 @@ timeout: 90
   trying out a development server that doesn't provide a valid SSL certificate.
 - `timeout` can be modified to your needs. E.g., a poor internet connection might benefit from a higher timeout number.
   The default timeout is `90` seconds.
+- `async_rate_limit` controls the maximum number of requests per second (i.e., throughput) you want to make to the
+  server. Default `async_rate_limit` is `null` which is to say no limit. An eLab server might be configured to limit
+  a high number of requests to prevent spam, `async_rate_limit` can then be set to the maximum number of requests
+  allowed by the server.
+- `development_mode` can be set to `True` to show debug logs, Python traceback on the CLI instead of a clean exit, etc. This mode
+  should not be turned on for production-ready scripts.
 
 ### `show-config`
 
 You can get an overview of detected configuration with `elapi show-config`. `show-config` makes it easier to verify
-which configuration values are actually used by elAPI, if you are working with multiple configuration files.
+which configuration values are actually used by elAPI – especially if you are working with multiple configuration files.
 
 ```shell
-$ elapi show-config  # system username: "culdesac" 
+$ elapi show-config  # host username: "culdesac" 
 ```
 
 ![elAPI show-config output](https://heibox.uni-heidelberg.de/f/00a8dabbf2124087aae4/?dl=1)
@@ -189,7 +196,7 @@ $ elapi get experiments --export ~/Downoads/experiments.json
 ```
 
 Enable built-in syntax highlighting with `--highlight` or `-H`. Here, the following command will fetch team information
-of team with team ID 1.
+of the team with team ID 1.
 
 ```shell
 $ elapi get -H teams --id 1
@@ -226,7 +233,7 @@ $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow 
 
 ### `DELETE` requests
 
-Delete all the tags associated to an experiment:
+Delete all the tags associated with an experiment:
 
 ```shell
 $ elapi delete experiments -i <experiment ID> --sub tags
@@ -247,7 +254,7 @@ to `~/Downloads` directory.
 $ elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
 ```
 
-Append text in markdown to an existing experiment by its ID:
+Append text in Markdown to an existing experiment by its ID:
 
 ```shell
 $ elapi experiments append --id <experiment ID> -M -t "**New content.**"
@@ -261,10 +268,10 @@ $ elapi experiments upload-attachment --id <experiment ID> --path <path to attac
 
 ## Creating a plugin
 
-elAPI has seamless support with tight-integration for third-party plugins. A simple third-party plugin can be created in
+elAPI has seamless support with tight integration for third-party plugins. A simple third-party plugin can be created in
 a few easy steps:
 
-1. Create a new subfolder under `~/.local/share/elapi/plugins` with the name for your new plugin (e.g, a folder named
+1. Create a new subfolder under `~/.local/share/elapi/plugins` with the name for your new plugin (e.g., a folder named
    "test")
 2. Create a `cli.py` in the subfolder with the following snippet:
 
@@ -278,8 +285,7 @@ app = Typer(name="test", help="Test plugin.")
 3. Run `elapi` again to see your plugin name under `Third-party plugins` list
 
 Plugins are integrated in a way such that a plugin will **not** fail elAPI. So, even if one erroneous plugin is loaded,
-all
-other plugins and elAPI itself will remain unaffected. elAPI will show the error message on the "Message" panel.
+all other plugins and elAPI itself will remain unaffected. elAPI will show the error message on the "Message" panel.
 
 If you try to import a package that is not a dependency of elAPI inside `cli.py`, your plugin will fail. In that case,
 you want to create a plugin metadata file `elapi_plugin_metadata.yml` (notice only `.yml` extension is allowed), and
@@ -307,7 +313,7 @@ def wiki_status():
     print(r)
 ```
 
-And the path to virtual environment will be defined in the metadata file:
+And, the path to the virtual environment will be defined in the metadata file:
 
 ```yaml
 # elapi_plugin_metadata.yml
