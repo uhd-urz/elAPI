@@ -17,6 +17,9 @@ __all__ = [
     "LogItemList",
     "PatternNotFoundError",
 ]
+import logging
+
+from .._vendor import haggis
 from .._vendor.haggis.logs import add_logging_level
 from ._loggers import (
     BaseHandler,
@@ -31,10 +34,22 @@ from ._loggers import (
     STDERRBaseHandler,
 )
 from ._utils import (
-    GlobalCLISuperStartupCallback,
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
+    GlobalCLISuperStartupCallback,
     NoException,
     PatternNotFoundError,
     get_app_version,
 )
+
+haggis.logs.logging = logging
+
+try:
+    # Python 3.13 deprecated _acquireLock, _releaseLock
+    # Based on https://github.com/celery/billiard/issues/403, commit 81cc942
+    logging._acquireLock, logging._releaseLock = (
+        logging._prepareFork,
+        logging._afterFork,
+    )
+except AttributeError:
+    ...
