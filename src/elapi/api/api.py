@@ -102,7 +102,9 @@ class SimpleClient(BaseClient):
             if is_async_client is True:
                 if transport is None and active_async_rate_limit is not None:
                     transport = AsyncRateLimitedTransport.create(
-                        rate=Rate.create(magnitude=active_async_rate_limit),
+                        Rate.create(magnitude=active_async_rate_limit, duration=1),
+                        # see more: https://midnighter.github.io/httpx-limiter/latest/tutorial/#single-rate-limit
+                        # In our case, magnitude=1, duration=1/active_async_rate_limit doesn't yield better results.
                         http2=enable_http2,  # type: ignore
                         # See: https://github.com/Midnighter/httpx-limiter/issues/7#issuecomment-3197487921
                         # http2 needs to be passed here if AsyncRateLimitedTransport is used
