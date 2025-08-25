@@ -14,7 +14,7 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: AnyIO",
-    "Framework   :: AsyncIO",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Natural Language :: English",
