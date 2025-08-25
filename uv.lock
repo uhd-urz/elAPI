@@ -3,6 +3,15 @@ revision = 3
 requires-python = ">=3.11.0, <4"
 
 [[package]]
+name = "aiolimiter"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/23/b52debf471f7a1e42e362d959a3982bdcb4fe13a5d46e63d28868807a79c/aiolimiter-1.2.1.tar.gz", hash = "sha256:e02a37ea1a855d9e832252a105420ad4d15011505512a1a1d814647451b5cca9", size = 7185, upload-time = "2024-12-08T15:31:51.496Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/ba/df6e8e1045aebc4778d19b8a3a9bc1808adb1619ba94ca354d9ba17d86c3/aiolimiter-1.2.1-py3-none-any.whl", hash = "sha256:d3f249e9059a20badcb56b61601a83556133655c11d1eb3dd3e04ff069e5f3c7", size = 6711, upload-time = "2024-12-08T15:31:49.874Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -27,11 +36,11 @@ wheels = [
 
 [[package]]
 name = "cachetools"
-version = "6.1.0"
+version = "6.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8a/89/817ad5d0411f136c484d535952aef74af9b25e0d99e90cdffbe121e6d628/cachetools-6.1.0.tar.gz", hash = "sha256:b4c4f404392848db3ce7aac34950d17be4d864da4b8b66911008e430bc544587", size = 30714, upload-time = "2025-06-16T18:51:03.07Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/61/e4fad8155db4a04bfb4734c7c8ff0882f078f24294d42798b3568eb63bff/cachetools-6.2.0.tar.gz", hash = "sha256:38b328c0889450f05f5e120f56ab68c8abaf424e1275522b138ffc93253f7e32", size = 30988, upload-time = "2025-08-25T18:57:30.924Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/f0/2ef431fe4141f5e334759d73e81120492b23b2824336883a91ac04ba710b/cachetools-6.1.0-py3-none-any.whl", hash = "sha256:1c7bb3cf9193deaf3508b7c5f2a79986c13ea38965c5adcff1f84519cf39163e", size = 11189, upload-time = "2025-06-16T18:51:01.514Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/56/3124f61d37a7a4e7cc96afc5492c78ba0cb551151e530b54669ddd1436ef/cachetools-6.2.0-py3-none-any.whl", hash = "sha256:1c76a8960c0041fcc21097e357f882197c79da0dbff766e7317890a65d7d8ba6", size = 11276, upload-time = "2025-08-25T18:57:29.684Z" },
 ]
 
 [[package]]
@@ -149,7 +158,7 @@ wheels = [
 
 [[package]]
 name = "elapi"
-version = "2.3.4"
+version = "2.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -188,7 +197,7 @@ requires-dist = [
     { name = "dynaconf", specifier = ">=3.2.0,<4" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1,<0.29" },
     { name = "httpx-auth", specifier = ">=0.23.1,<0.24" },
-    { name = "httpx-limiter", specifier = ">=0.4.0,<0.5" },
+    { name = "httpx-limiter", specifier = ">=0.3.0,<0.4.0" },
     { name = "jinja2", marker = "extra == 'mail'", specifier = ">=3.1.6,<3.2" },
     { name = "mistune", specifier = "==3.1.3" },
     { name = "nameparser", marker = "extra == 'mail'", specifier = ">=1.1.3" },
@@ -287,15 +296,15 @@ wheels = [
 
 [[package]]
 name = "httpx-limiter"
-version = "0.4.0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "aiolimiter" },
     { name = "httpx" },
-    { name = "pyrate-limiter" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/8d/77c18a5d147e0e8ddc6fe124d9e48ea43e52ba9f7c91a5ab49e4909550f5/httpx_limiter-0.4.0.tar.gz", hash = "sha256:b1c6a39f4bad7654fdd934da1e0119cd91e9bd2ad61b9adad623cd7081c1a3b7", size = 13603, upload-time = "2025-08-22T10:11:23.731Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/72/b8ef470dca30babce55fd9e59756b682999c757417adaf0ee99d846e5705/httpx_limiter-0.3.0.tar.gz", hash = "sha256:4d0c422edc40d41f882e94718466cbe91d3877097afe67bd3f55a9c0df3ea321", size = 11852, upload-time = "2025-05-10T21:19:11.745Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/23/94/b2d08aaadd219313d4ec8c843a53643779815c2ef06e8982f79acc57f1d2/httpx_limiter-0.4.0-py3-none-any.whl", hash = "sha256:33d914c442bce14fc1d8f28e0a954c87d9f5f5a82b51a6778f1f1a3506d9e6ac", size = 15954, upload-time = "2025-08-22T10:11:22.348Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/f6/a71ea5bef3aa9bb34ef6e3b017b40616ceccb60621b234112be39d6fbc79/httpx_limiter-0.3.0-py3-none-any.whl", hash = "sha256:69f6e350456d2fe6eea5a36508098a925df16ef15e3d96d4abddd73fa0017625", size = 12667, upload-time = "2025-05-10T21:19:10.006Z" },
 ]
 
 [[package]]
@@ -589,15 +598,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyrate-limiter"
-version = "3.9.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ec/da/f682c5c5f9f0a5414363eb4397e6b07d84a02cde69c4ceadcbf32c85537c/pyrate_limiter-3.9.0.tar.gz", hash = "sha256:6b882e2c77cda07a241d3730975daea4258344b39c878f1dd8849df73f70b0ce", size = 289308, upload-time = "2025-07-30T14:36:58.659Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/af/d8bf0959ece9bc4679bd203908c31019556a421d76d8143b0c6871c7f614/pyrate_limiter-3.9.0-py3-none-any.whl", hash = "sha256:77357840c8cf97a36d67005d4e090787043f54000c12c2b414ff65657653e378", size = 33628, upload-time = "2025-07-30T14:36:57.71Z" },
-]
-
-[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -739,11 +739,11 @@ all = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.14.1"
+version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/98/5a/da40306b885cc8c09109dc2e1abd358d5684b1425678151cdaed4731c822/typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36", size = 107673, upload-time = "2025-07-04T13:28:34.16Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac84269196e94cf00f187f7ed21c242792a923cdb1c61f/typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466", size = 109391, upload-time = "2025-08-25T13:49:26.313Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/00/d631e67a838026495268c2f6884f3711a15a9a2a96cd244fdaea53b823fb/typing_extensions-4.14.1-py3-none-any.whl", hash = "sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76", size = 43906, upload-time = "2025-07-04T13:28:32.743Z" },
+    { url = "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548", size = 44614, upload-time = "2025-08-25T13:49:24.86Z" },
 ]
 
 [[package]]
