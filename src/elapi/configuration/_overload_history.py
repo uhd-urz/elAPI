@@ -1,9 +1,12 @@
-from typing import Iterable, Optional, Tuple, Any
+from typing import Any, Iterable, Optional, Tuple
 
-from ._config_history import FieldValueWithKey, AppliedConfigIdentity
-from .config import history, FALLBACK_SOURCE_NAME
+from ..core_validators import Exit, Validate, ValidationError
+from ..loggers import Logger
+from ._config_history import AppliedConfigIdentity, FieldValueWithKey
+from .config import FALLBACK_SOURCE_NAME, history
 from .validators import MainConfigurationValidator
-from ..core_validators import Validate, ValidationError, Exit
+
+logger = Logger()
 
 
 class ApplyConfigHistory:
@@ -45,25 +48,23 @@ class ApplyConfigHistory:
             )
 
     def apply(self) -> None:
-        from ..loggers import Logger
         from .config import (
-            KEY_API_TOKEN,
-            KEY_EXPORT_DIR,
-            KEY_UNSAFE_TOKEN_WARNING,
-            KEY_ENABLE_HTTP2,
-            KEY_VERIFY_SSL,
-            KEY_TIMEOUT,
-            KEY_DEVELOPMENT_MODE,
-            KEY_PLUGIN_KEY_NAME,
             _XDG_DOWNLOAD_DIR,
-            PROJECT_CONFIG_LOC,
+            CONFIG_FILE_NAME,
             ENV_XDG_DOWNLOAD_DIR,
             FALLBACK_EXPORT_DIR,
             FALLBACK_SOURCE_NAME,
-            CONFIG_FILE_NAME,
+            KEY_API_TOKEN,
+            KEY_ASYNC_RATE_LIMIT,
+            KEY_DEVELOPMENT_MODE,
+            KEY_ENABLE_HTTP2,
+            KEY_EXPORT_DIR,
+            KEY_PLUGIN_KEY_NAME,
+            KEY_TIMEOUT,
+            KEY_UNSAFE_TOKEN_WARNING,
+            KEY_VERIFY_SSL,
+            PROJECT_CONFIG_LOC,
         )
-
-        logger = Logger()
 
         for key_name, value in self.configuration_fields:
             if key_name == KEY_EXPORT_DIR:
@@ -104,6 +105,7 @@ class ApplyConfigHistory:
                 KEY_ENABLE_HTTP2,
                 KEY_VERIFY_SSL,
                 KEY_TIMEOUT,
+                KEY_ASYNC_RATE_LIMIT,
                 KEY_DEVELOPMENT_MODE,
                 KEY_PLUGIN_KEY_NAME,
             ]:
@@ -126,11 +128,11 @@ def validate_configuration(limited_to: Optional[list]) -> None:
 
 
 def reinitiate_config(
-    ignore_essential_validation: bool = False, ignore_already_validated: bool = False
+    ignore_essential_validation: bool = False, ignore_already_validated: bool = True
 ) -> None:
     limited_to: Optional[list] = []
     if not ignore_essential_validation:
-        if not ignore_already_validated:
+        if ignore_already_validated:
             for validator in MainConfigurationValidator.ALL_VALIDATORS:
                 if validator.ALREADY_VALIDATED is False:
                     limited_to.append(validator)
@@ -138,7 +140,7 @@ def reinitiate_config(
             limited_to = None
         validate_configuration(limited_to)
     else:
-        if not ignore_already_validated:
+        if ignore_already_validated:
             for validator in MainConfigurationValidator.NON_ESSENTIAL_VALIDATORS:
                 if validator.ALREADY_VALIDATED is False:
                     limited_to.append(validator)
@@ -150,7 +152,7 @@ def reinitiate_config(
 def preventive_missing_warning(field: Tuple[str, Any], /) -> None:
     from .._names import KEY_DEVELOPMENT_MODE
     from ..styles import Missing
-    from ..utils import get_sub_package_name, PreventiveWarning
+    from ..utils import PreventiveWarning, get_sub_package_name
 
     configuration_sub_package_name = get_sub_package_name(__package__)
     if not isinstance(field, Iterable) and not isinstance(field, str):

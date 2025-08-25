@@ -5,9 +5,9 @@ from dynaconf import Dynaconf
 from dynaconf.utils import inspect
 
 from .._names import (
-    SYSTEM_CONFIG_LOC,
     LOCAL_CONFIG_LOC,
     PROJECT_CONFIG_LOC,
+    SYSTEM_CONFIG_LOC,
 )
 from ..loggers import Logger
 
@@ -149,15 +149,17 @@ class MinimalActiveConfiguration:
         return cls._container[_ConfigRules.get_valid_key(item)]
 
     @classmethod
-    def __setitem__(cls, key: str, value):
+    def __setitem__(cls, key: str, value: AppliedConfigIdentity):
         cls._container[_ConfigRules.get_valid_key(key)] = value
 
     @classmethod
     def update(cls, value: dict):
-        if not isinstance(value, AppliedConfigIdentity):
-            raise ValueError(
-                f"Value must be an instance of {AppliedConfigIdentity.__name__}."
-            )
+        for k, v in value.items():
+            if not isinstance(v, AppliedConfigIdentity):
+                raise ValueError(
+                    f"Value '{v}' for key '{k}' must be an "
+                    f"instance of {AppliedConfigIdentity.__name__}."
+                )
         cls._container.update(value)
 
     @classmethod

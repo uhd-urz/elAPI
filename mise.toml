@@ -1,0 +1,27 @@
+[tasks.apply-vendors]
+description = "Downloads and adds vendor packages defined in pyproject.toml via vendy"
+run = """
+printf "\n"
+printf "Installing uv dev dependencies..."
+printf "\n"
+printf "_________________________________"
+printf "\n\n"
+uv sync --group dev --all-extras
+printf "\n"
+printf "Downloading vendor packages with vendy..."
+printf "\n"
+printf "_________________________________________"
+printf "\n\n"
+/Users/culdesac/Workshop/elapi/.venv/bin/python -m vendy
+printf "\n"
+printf "Removing unnecessary haggis files/folder..."
+printf "\n"
+printf "___________________________________________"
+printf "\n\n"
+find src/elapi/_vendor/haggis ! \\( -name 'logs.py' -or -name 'LICENSE' -or -name '__init__.py' \\
+-or -name 'version.py' \\) -type f -exec rm -f {} +
+rm -rvf src/elapi/_vendor/haggis/files src/elapi/_vendor/haggis/gui src/elapi/_vendor/haggis/tests
+rm src/elapi/_vendor/README.md src/elapi/_vendor/LICENSE src/elapi/_vendor/CHANGELOG
+printf "\n"
+printf "Vendor installation is successful."
+"""

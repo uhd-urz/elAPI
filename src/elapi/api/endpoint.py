@@ -1,19 +1,20 @@
 from functools import cached_property
-from typing import Union, Iterable, Optional, Generator, Awaitable
+from types import NotImplementedType
+from typing import Awaitable, Generator, Iterable, Optional, Union
 
-from httpx import Response, AsyncClient, Client
+from httpx import AsyncClient, Client, Response
 
 from .api import (
-    SimpleClient,
-    GlobalSharedSession,
-    GETRequest,
-    POSTRequest,
-    PATCHRequest,
-    DELETERequest,
-    AsyncGETRequest,
-    AsyncPOSTRequest,
-    AsyncPATCHRequest,
     AsyncDELETERequest,
+    AsyncGETRequest,
+    AsyncPATCHRequest,
+    AsyncPOSTRequest,
+    DELETERequest,
+    GETRequest,
+    GlobalSharedSession,
+    PATCHRequest,
+    POSTRequest,
+    SimpleClient,
 )
 
 
@@ -110,7 +111,7 @@ class FixedAsyncEndpoint:
             query,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         if self._is_global_shared_instance_none is False:
             await self._client.aclose()
         return NotImplemented
@@ -209,7 +210,7 @@ class FixedEndpoint:
             query,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         if self._is_global_shared_instance_none is False:
             self._client.close()
         return NotImplemented

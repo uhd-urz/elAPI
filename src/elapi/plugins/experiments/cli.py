@@ -2,19 +2,19 @@ from typing import Annotated, Optional
 
 import typer
 
+from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
+from ...configuration import get_active_export_dir
+from ...core_validators import Exit, ValidationError
+from ...loggers import Logger
+from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, Typer
+from ...styles import stderr_console, stdout_console
+from ...utils.typer_patches import patch_typer_flag_value
 from ._doc import __PARAMETERS__doc__ as docs
 from .experiments import (
     ExperimentIDValidator,
     FixedExperimentEndpoint,
     append_to_experiment,
 )
-from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-from ...configuration import get_active_export_dir
-from ...core_validators import ValidationError
-from ...loggers import Logger
-from ...plugins.commons.cli_helpers import CLIExport, CLIFormat, Typer
-from ...styles import stdout_console, stderr_console
-from ...utils.typer_patches import patch_typer_flag_value
 
 logger = Logger()
 
@@ -63,13 +63,13 @@ def get(
     Read or download an experiment.
     """
     import sys
-    from ...core_validators import Validate
+
     from ...api import GlobalSharedSession
     from ...api.validators import HostIdentityValidator
-    from ..commons import Export
+    from ...core_validators import Exit, Validate
     from ...styles import Highlight
+    from ..commons import Export
     from .formats import BinaryFormat
-    from ...core_validators import Exit
 
     with GlobalSharedSession(limited_to="sync"):
         validate_config = Validate(HostIdentityValidator())
@@ -81,7 +81,7 @@ def get(
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
             logger.error(e)
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             data_format, export_dest, export_file_ext = CLIExport(
                 data_format, export, export_overwrite
@@ -162,9 +162,9 @@ def append(
     """
     Add new content to an existing experiment.
     """
-    from ...core_validators import Validate
     from ...api import GlobalSharedSession
     from ...api.validators import HostIdentityValidator
+    from ...core_validators import Validate
     from ...path import ProperPath
 
     with GlobalSharedSession(limited_to="sync"):
@@ -174,32 +174,32 @@ def append(
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
             logger.error(e)
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             if content_text and content_path:
                 logger.error(
                     "Either '--text/-t' or '--path/-P' can be defined, not both!"
                 )
-                raise typer.Exit(1)
+                raise Exit(1)
             if content_text is not None:
                 content: str = content_text
             elif content_path is not None:
                 if not (content_path := ProperPath(content_path)).kind == "file":
                     logger.error(f" Given path '{content_path}' must be a file!")
-                    raise typer.Exit(1)
+                    raise Exit(1)
                 with content_path.open() as f:
                     try:
                         content: str = f.read()
                     except UnicodeDecodeError:
                         logger.error("File in given path must be UTF-8 encoded!")
-                        raise typer.Exit(1)
+                        raise Exit(1)
             else:
                 content: str = ""
             if not content:
                 stdout_console.print(
                     "[yellow]Content is empty. Nothing was appended to experiment.[/yellow]"
                 )
-                raise typer.Exit()
+                raise Exit()
             append_to_experiment(experiment_id, content, markdown_to_html)
             stdout_console.print(
                 "[green]Successfully appended content to experiment.[/green]"
@@ -237,9 +237,9 @@ def upload_attachment(
     """
     Add a file to an existing experiment.
     """
-    from ...core_validators import Validate
-    from ...api.validators import HostIdentityValidator
     from ...api import GlobalSharedSession
+    from ...api.validators import HostIdentityValidator
+    from ...core_validators import Validate
     from .experiments import attach_to_experiment
 
     with GlobalSharedSession(limited_to="sync"):
@@ -249,7 +249,7 @@ def upload_attachment(
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
             logger.error(e)
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             with stdout_console.status(
                 "Uploading attachment...", refresh_per_second=15
@@ -298,9 +298,9 @@ def download_attachment(
     """
     Download an attachment from an experiment.
     """
-    from ...core_validators import Validate
-    from ...api.validators import HostIdentityValidator
     from ...api import GlobalSharedSession
+    from ...api.validators import HostIdentityValidator
+    from ...core_validators import Validate
     from ...plugins.commons import Export
     from .experiments import download_attachment
 
@@ -316,7 +316,7 @@ def download_attachment(
             experiment_id = Validate(ExperimentIDValidator(experiment_id)).get()
         except ValidationError as e:
             logger.error(e)
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             try:
                 with stdout_console.status(
@@ -332,7 +332,7 @@ def download_attachment(
                     ) = download_attachment(experiment_id, attachment_id)
             except ValueError as e:
                 logger.error(e)
-                raise typer.Exit(1)
+                raise Exit(1)
             else:
                 data_format, export_dest, export_file_ext = CLIExport(
                     attachment_extension, export, export_overwrite

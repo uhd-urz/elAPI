@@ -1,16 +1,17 @@
 from pathlib import Path
 
-from .names import CONFIG_PLUGIN_NAME, PLUGIN_LINK, CONFIG_KEY_ROOT_DIR
 from ...configuration import (
-    get_active_plugin_configs,
     CONFIG_FILE_NAME,
     ConfigurationValidation,
+    get_active_plugin_configs,
 )
-from ...core_validators import Validator, Validate, CriticalValidationError
+from ...core_validators import CriticalValidationError, Validate, Validator
 from ...loggers import Logger
 from ...path import ProperPath
+from .names import PLUGIN_LINK, BillingConfigKeys
 
 logger = Logger()
+billing_config_keys = BillingConfigKeys()
 
 
 class RootDirConfigurationValidator(ConfigurationValidation, Validator):
@@ -19,16 +20,16 @@ class RootDirConfigurationValidator(ConfigurationValidation, Validator):
 
     def __init__(self):
         bill_teams_plugin_config: dict = get_active_plugin_configs().get(
-            CONFIG_PLUGIN_NAME, dict()
+            billing_config_keys.plugin_name, dict()
         )
         super().__init__(bill_teams_plugin_config)
 
     def validate(self) -> Path:
         try:
-            root_dir = self.active_configuration[CONFIG_KEY_ROOT_DIR]
+            root_dir = self.active_configuration[billing_config_keys.root_dir]
         except KeyError as e:
             logger.error(
-                f"Key '{CONFIG_KEY_ROOT_DIR}' does not exist under "
+                f"Key '{billing_config_keys.root_dir}' does not exist under "
                 f"plugin configuration '{PLUGIN_LINK}' in configuration "
                 f"file {CONFIG_FILE_NAME}."
             )
@@ -38,14 +39,14 @@ class RootDirConfigurationValidator(ConfigurationValidation, Validator):
                 root_dir = ProperPath(root_dir)
             except ValueError as e:
                 logger.error(
-                    f"'{PLUGIN_LINK}.{CONFIG_KEY_ROOT_DIR}' value '{root_dir}' "
+                    f"'{PLUGIN_LINK}.{billing_config_keys.root_dir}' value '{root_dir}' "
                     f"found in configuration file is an invalid path value."
                 )
                 raise CriticalValidationError from e
             else:
                 if not root_dir.kind == "dir":
                     logger.error(
-                        f"'{PLUGIN_LINK}.{CONFIG_KEY_ROOT_DIR}' value '{root_dir}' "
+                        f"'{PLUGIN_LINK}.{billing_config_keys.root_dir}' value '{root_dir}' "
                         f"found in configuration file is not a directory path."
                     )
                     raise CriticalValidationError

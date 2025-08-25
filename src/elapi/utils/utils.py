@@ -3,7 +3,6 @@ import subprocess
 from pathlib import Path
 from typing import Tuple
 
-from .._names import VERSION_FILE_NAME
 from ..styles import Missing
 
 
@@ -26,7 +25,7 @@ def check_reserved_keyword(
         ).end()
         raise AttributeError(
             f"{what} reserves the keyword argument "
-            f"'{error_verbose[- _reserved_key_end + 1: - 1]}' "
+            f"'{error_verbose[-_reserved_key_end + 1 : -1]}' "
             f"for {against}."
         ) from error_instance
 
@@ -48,10 +47,6 @@ def update_kwargs_with_defaults(kwargs: dict, /, defaults: dict) -> None:
     for default_key, default_val in defaults.items():
         if kwargs.get(default_key, key_arg_missing) is key_arg_missing:
             kwargs.update({default_key: default_val})
-
-
-def get_app_version() -> str:
-    return Path(f"{__file__}/../../{VERSION_FILE_NAME}").resolve().read_text().strip()
 
 
 def _get_venv_relative_python_binary_path() -> Path:
@@ -93,6 +88,3 @@ def get_external_python_version(venv_dir: Path) -> Tuple[str, str, str]:
         raise PythonVersionCheckFailed(
             "Matching Python version not found in output string"
         )
-
-
-class NoException(Exception): ...

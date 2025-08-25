@@ -1,113 +1,71 @@
 import logging
-from typing import Optional
+from typing import Type, Union
 
-from .handlers.stderr import STDERRHandler
+from .._core_init import (
+    Logger,
+    LoggerUtil,
+    ResultCallbackHandler,
+    SimpleLogger,
+    STDERRBaseHandler,
+)
+from .handlers.file import FileBaseHandler
+from .log_file import LOG_FILE_PATH
 
-
-class LogMessageTuple:
-    def __init__(
-        self,
-        message: str,
-        level: int = logging.NOTSET,
-        logger: Optional[logging.Logger] = None,
-        is_aggressive: bool = False,
-    ):
-        self.message = message
-        self.level = level
-        self.logger = logger
-        self.is_aggressive = is_aggressive
-
-    @property
-    def message(self):
-        return self._message
-
-    @message.setter
-    def message(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Message must be a string.")
-        self._message = value
-
-    @property
-    def level(self):
-        return self._level
-
-    @level.setter
-    def level(self, value):
-        if not isinstance(value, int):
-            raise ValueError("Level must be a logging level in integer.")
-        self._level = value
-
-    @property
-    def logger(self):
-        return self._logger
-
-    @logger.setter
-    def logger(self, value):
-        if not isinstance(value, (logging.Logger, type(None))):
-            raise TypeError(f"logger must be an instance of {logging.Logger.__name__}.")
-        self._logger = value
-
-    @property
-    def is_aggressive(self):
-        return self._is_aggressive
-
-    @is_aggressive.setter
-    def is_aggressive(self, value):
-        if not isinstance(value, bool):
-            raise TypeError("is_aggressive must be a boolean.")
-        self._is_aggressive = value
-
-    def items(self) -> tuple[str, int, Optional[logging.Logger], bool]:
-        return self.message, self.level, self.logger, self.is_aggressive
+logger_util = LoggerUtil()
 
 
+@logger_util.register_wrapper_class()
 class MainLogger:
-    logger: Optional[logging.Logger] = None
     suppress: bool = False
     suppress_stderr: bool = False
+    suppress_result_callback: bool = False
 
     def __new__(cls):
-        from .handlers.file import FileHandler
-        from ..configuration.log_file import LOG_FILE_PATH
-
-        if cls.logger is None:
-            cls.logger = logging.Logger(cls.__name__)
+        logger = logger_util.get_registered_logger(cls.__name__)
+        if logger is None:
+            logger = logger_util.create_singleton_logger(name=cls.__name__)
             if not cls.suppress:
-                file_handler = FileHandler(LOG_FILE_PATH).handler
-                cls.logger.addHandler(file_handler)
-            stdout_handler = STDERRHandler(
-                suppress=cls.suppress or cls.suppress_stderr
-            ).handler
-            cls.logger.addHandler(stdout_handler)
-            cls.logger.setLevel(logging.DEBUG)
-        return cls.logger
+                file_handler = FileBaseHandler(LOG_FILE_PATH).handler
+                logger.addHandler(file_handler)
+            if not cls.suppress or not cls.suppress_stderr:
+                stdout_handler = STDERRBaseHandler().handler
+                logger.addHandler(stdout_handler)
+            if not cls.suppress or not cls.suppress_result_callback:
+                result_callback_handler = ResultCallbackHandler()
+                result_callback_handler.setLevel(logging.INFO)
+                logger.addHandler(result_callback_handler)
+        return logger
 
 
-class SimpleLogger:
-    logger: Optional[logging.Logger] = None
-    suppress: bool = False
-
-    def __new__(cls):
-        if cls.logger is None:
-            cls.logger = logging.Logger(cls.__name__)
-            stdout_handler = STDERRHandler(suppress=cls.suppress).handler
-            cls.logger.addHandler(stdout_handler)
-            cls.logger.setLevel(logging.DEBUG)
-        return cls.logger
-
-
+@logger_util.register_wrapper_class()
 class FileLogger:
-    logger: Optional[logging.Logger] = None
     suppress: bool = False
 
     def __new__(cls):
-        from .handlers.file import FileHandler
-        from ..configuration.log_file import LOG_FILE_PATH
-
-        if cls.logger is None:
-            cls.logger = logging.Logger(cls.__name__)
+        logger = logger_util.get_registered_logger(cls.__name__)
+        if logger is None:
             if not cls.suppress:
-                file_handler = FileHandler(LOG_FILE_PATH).handler
-                cls.logger.addHandler(file_handler)
-            cls.logger.setLevel(logging.DEBUG)
-        return cls.logger
+                logger = logger_util.create_singleton_logger(name=cls.__name__)
+                file_handler = FileBaseHandler(LOG_FILE_PATH).handler
+                logger.addHandler(file_handler)
+        return logger
+
+
+def update_logger_state(
+    logger_obj: Type[Union[Logger, MainLogger, FileLogger, SimpleLogger]],
+    /,
+    *,
+    suppress: bool = False,
+):
+    if not issubclass(logger_obj, (Logger, MainLogger, FileLogger, SimpleLogger)):
+        raise TypeError(
+            f"{update_logger_state.__name__} only supports "
+            f"{Logger.__name__}, {MainLogger.__name__}, "
+            f"{FileLogger.__name__}, and {SimpleLogger.__name__}."
+        )
+    if issubclass(logger_obj, Logger):
+        MainLogger.logger = None
+        Logger.suppress = MainLogger.suppress = suppress
+    else:
+        logger_obj.logger = None
+        logger_obj.suppress = suppress
