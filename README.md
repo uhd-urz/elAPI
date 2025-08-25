@@ -270,9 +270,8 @@ $ elapi experiments upload-attachment --id <experiment ID> --path <path to attac
 
 Sometimes when a script has finished, you and your team would want to receive an email about its success/failure. elAPI
 offers a no-code solution for this: the `mail` plugin. The `mail` plugin is not enabled by default. To enable it,
-install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. *
-*[See the wiki](https://github.com/uhd-urz/elAPI/wiki/mail-plugin)**
-to read more about how to configure the `mail` plugin with your mail server configuration and trigger conditions. In a
+install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. [__See the wiki__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin) to read more about how to configure the `mail` plugin with your
+mail server configuration and trigger conditions. In a
 nutshell, the `mail` plugin will scan the logs when a script/plugin is done to look for pre-configured trigger
 conditions, and if found, it will send an email. The trigger conditions can be atomic and scope-based, i.e., an email
 can be sent only when a specific plugin task/command is finished, and/or when a matching log state and/or a matching log
