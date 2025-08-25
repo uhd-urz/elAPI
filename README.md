@@ -147,8 +147,8 @@ development_mode: false
   server. Default `async_rate_limit` is `null` which is to say no limit. An eLab server might be configured to limit
   a high number of requests to prevent spam, `async_rate_limit` can then be set to the maximum number of requests
   allowed by the server.
-- `development_mode` can be set to `True` to show debug logs, Python traceback on the CLI instead of a clean exit, etc. This mode
-  should not be turned on for production-ready scripts.
+- `development_mode` can be set to `True` to show debug logs, Python traceback on the CLI instead of a clean exit, etc.
+  This mode should not be turned on for production-ready scripts.
 
 ### `show-config`
 
@@ -265,6 +265,20 @@ You can also upload an attachment to an experiment.
 ```shell
 $ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
 ```
+
+### `mail` built-in plugin
+
+Sometimes when a script has finished, you and your team would want to receive an email about its success/failure. elAPI
+offers a no-code solution for this: the `mail` plugin. The `mail` plugin is not enabled by default. To enable it,
+install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. *
+*[See the wiki](https://github.com/uhd-urz/elAPI/wiki/mail-plugin)**
+to read more about how to configure the `mail` plugin with your mail server configuration and trigger conditions. In a
+nutshell, the `mail` plugin will scan the logs when a script/plugin is done to look for pre-configured trigger
+conditions, and if found, it will send an email. The trigger conditions can be atomic and scope-based, i.e., an email
+can be sent only when a specific plugin task/command is finished, and/or when a matching log state and/or a matching log
+pattern is found.
+
+<img alt="elAPI email trigger screenshot" src="https://github.com/user-attachments/assets/2dc0df3e-0d91-41f3-af28-4040da641a70" />
 
 ## Creating a plugin
 
