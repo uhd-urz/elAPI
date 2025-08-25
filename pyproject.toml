@@ -1,6 +1,6 @@
 [project]
 name = "elapi"
-version = "2.4.0"
+version = "2.4.1"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [{ name = "Alexander Haller, Mahadi Xion", email = "elabftw@uni-heidelberg.de" }]
 requires-python = ">=3.11.0,<4"

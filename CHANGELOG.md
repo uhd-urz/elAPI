@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2025-10-26
+
+> [!NOTE]
+> This release deprecates support for Python versions 3.9 and 3.10.
+
+This is a hotfix release. See the [version 2.4.0 changelog](https://github.com/uhd-urz/elAPI/releases/tag/v2.4.0) for the new changes.
+
+### Fixed
+
+- Rollback [httpx-limiter](https://midnighter.github.io/httpx-limiter/) to version 0.3.0. The version 0.4.0 would break elAPI support on Pyodide (see GH #160)
+
+
 ## [2.4.0] - 2025-10-25
 
 > [!NOTE]
