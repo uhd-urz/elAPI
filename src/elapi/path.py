@@ -1,14 +1,12 @@
 import errno
 import logging
 import os
-import re
 from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import Union, TextIO, Generator, Optional
+from typing import IO, Generator, Optional, Self, Union
 
-from .loggers import SimpleLogger
-from .utils import NoException
+from ._core_init import Logger, NoException
 
 
 class ProperPath:
@@ -17,12 +15,12 @@ class ProperPath:
         name: Union[str, Path, None, "ProperPath"],
         env_var: bool = False,
         kind: Optional[str] = None,  # Here, None => Undefined/unknown
-        err_logger: logging.Logger = SimpleLogger(),
+        err_logger: Optional[logging.Logger] = None,
     ):
         self.name = name
         self.env_var = env_var
         self.kind = kind
-        self.err_logger = err_logger
+        self.err_logger = err_logger or Logger()
         self.PathException = NoException
 
     def __str__(self):
@@ -64,13 +62,15 @@ class ProperPath:
             raise ValueError("'err_logger' must be a logging.Logger instance!")
         self._err_logger = value
 
+    # noinspection PyPep8Naming
     @property
-    def PathException(self) -> type:
+    def PathException(self) -> Union[type[Exception], type[BaseException]]:
         return self._PathException
 
+    # noinspection PyPep8Naming
     # noinspection PyAttributeOutsideInit
     @PathException.setter
-    def PathException(self, value: type) -> None:
+    def PathException(self, value) -> None:
         if not issubclass(value, (Exception, BaseException)):
             raise ValueError(
                 "Only an instance of Exception or BaseException can be "
@@ -78,6 +78,7 @@ class ProperPath:
             )
         self._PathException = value
 
+    # noinspection PyPep8Naming
     @PathException.deleter
     def PathException(self):
         raise AttributeError("PathException cannot be deleted!")
@@ -118,16 +119,16 @@ class ProperPath:
                 else "dir"
             )
         else:
-            # TODO: Python pattern matching doesn't support regex matching yet.
-            if re.match(r"^file$", value, flags=re.IGNORECASE):
-                self._kind = "file"
-            elif re.match(r"^dir(ectory)?$|^folder$", value, flags=re.IGNORECASE):
-                self._kind = "dir"
-            else:
-                raise ValueError(
-                    "Invalid value for parameter 'kind'. The following values "
-                    "for 'kind' are allowed: file, dir."
-                )
+            match value.lower():
+                case "file":
+                    self._kind = "file"
+                case "dir" | "directory" | "folder":
+                    self._kind = "dir"
+                case _:
+                    raise ValueError(
+                        "Invalid value for parameter 'kind'. The following values "
+                        "for 'kind' are allowed: file, dir."
+                    )
 
     @staticmethod
     def _error_helper_compare_path_source(
@@ -142,22 +143,25 @@ class ProperPath:
     def create(self, verbose: bool = True) -> None:
         path = self.expanded.resolve(strict=False)
         try:
-            if self.kind == "file":
-                path_parent, path_file = path.parent, path.name
-                if not path_parent.exists() and verbose:
-                    self.err_logger.info(
-                        f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} could not be "
-                        f"found. An attempt to create directory {path_parent} will be made."
-                    )
-                path_parent.mkdir(parents=True, exist_ok=True)
-                (path_parent / path_file).touch(exist_ok=True)
-            elif self.kind == "dir":
-                if not path.exists() and verbose:
-                    self.err_logger.info(
-                        f"Directory {self._error_helper_compare_path_source(self.name, path)} could not be found. "
-                        f"An attempt to create directory {path} will be made."
-                    )
-                path.mkdir(parents=True, exist_ok=True)
+            match self.kind:
+                case "file":
+                    path_parent, path_file = path.parent, path.name
+                    if not path_parent.exists() and verbose:
+                        self.err_logger.info(
+                            f"Directory {self._error_helper_compare_path_source(self.name, path_parent)} "
+                            f"could not be found. An attempt to create directory "
+                            f"{path_parent} will be made."
+                        )
+                    path_parent.mkdir(parents=True, exist_ok=True)
+                    (path_parent / path_file).touch(exist_ok=True)
+                case "dir":
+                    if not path.exists() and verbose:
+                        self.err_logger.info(
+                            f"Directory {self._error_helper_compare_path_source(self.name, path)} "
+                            f"could not be found. An attempt to create directory "
+                            f"{path} will be made."
+                        )
+                    path.mkdir(parents=True, exist_ok=True)
         except (exception := PermissionError) as e:
             message = f"Permission to create {self._error_helper_compare_path_source(self.name, path)} is denied."
             self.err_logger.error(message)
@@ -177,22 +181,27 @@ class ProperPath:
             self.PathException = exception
             raise os_err
 
-    def _remove_file(self, _file: Optional[Path] = None, verbose: bool = False) -> None:
-        file = _file if _file else self.expanded
+    def _remove_file(
+        self, _file: Union[Path, Self, None] = None, verbose: bool = False
+    ) -> None:
+        file = _file or self.expanded
         if not isinstance(file, Path):
             raise ValueError(
                 f"PATH={file} is empty or isn't a valid pathlib.Path instance! "
                 f"Check instance attribute 'expanded'."
             )
-
         try:
             file.unlink()
-        except FileNotFoundError as e:
+        except (exception := FileNotFoundError) as e:
             # unlink() throws FileNotFoundError when a directory is passed as it expects files only
-            self.PathException = exception = ValueError
-            raise exception(f"{file} doesn't exist or isn't a valid file!") from e
+            self.err_logger.error(f"{e!r}")
+            self.PathException = exception
+            raise e
         except (exception := PermissionError) as e:
-            message = f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} is denied."
+            message = (
+                f"Permission to remove {self._error_helper_compare_path_source(self.name, file)} "
+                f"as a file is denied."
+            )
             self.err_logger.warning(message)
             self.PathException = exception
             raise e
@@ -211,18 +220,19 @@ class ProperPath:
                 else self.expanded.glob(r"*.*")
             )
             for ref in ls_ref:
-                try:
-                    self._remove_file(_file=ref, verbose=verbose)
-                except (ValueError, PermissionError):
-                    # Both ValueError and PermissionError occurring means that
-                    # most likely the file is a directory
-                    rmtree(ref)
-                    self.err_logger.info(
-                        f"Deleted directory (recursively): {ref}"
-                    ) if verbose else ...
-                    # rmtree deletes files and directories recursively.
-                    # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
-                    # traceback message. I.e., which file or directory exactly
+                match ProperPath(ref).kind:
+                    case "file":
+                        self._remove_file(_file=ref, verbose=verbose)
+                        # Either FileNotFoundError and PermissionError occurring can mean that
+                        # a dir path was passed when its kind is set as "file"
+                    case "dir":
+                        rmtree(ref)
+                        self.err_logger.info(
+                            f"Deleted directory (recursively): {ref}"
+                        ) if verbose else ...
+                        # rmtree deletes files and directories recursively.
+                        # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
+                        # traceback message. I.e., which file or directory exactly
 
     @contextmanager
     def open(
@@ -230,13 +240,13 @@ class ProperPath:
         mode="r",
         encoding: Union[str, None] = None,
         **kwargs,
-    ) -> Generator[TextIO, None, None]:
+    ) -> Generator[IO, None, None]:
         path = self.expanded.resolve()
-        file: Union[TextIO, None] = None
+        file: Union[IO, None] = None
         try:
             # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
             # before the file is opened. E.g., FileNotFoundError
-            file: TextIO = path.open(mode=mode, encoding=encoding, **kwargs)
+            file: IO = path.open(mode=mode, encoding=encoding, **kwargs)
         except (exception := FileNotFoundError) as e:
             message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
             self.err_logger.warning(message)

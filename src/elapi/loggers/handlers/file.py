@@ -1,13 +1,13 @@
 import logging
 from hashlib import md5
 from pathlib import Path
-from typing import Union, TextIO
+from typing import TextIO, Union
 
-from . import Handler
 from ...path import ProperPath
+from ..._core_init import BaseHandler
 
 
-class FileHandler(Handler):
+class FileBaseHandler(BaseHandler):
     class CustomFileHandler(logging.FileHandler):
         def __init__(self, filename: Union[ProperPath, Path], **kwargs):
             self.file = filename
@@ -73,7 +73,7 @@ class FileHandler(Handler):
 
     @property
     def handler(self) -> logging.Handler:
-        handler = FileHandler.CustomFileHandler(self.log_file_path)
+        handler = FileBaseHandler.CustomFileHandler(self.log_file_path)
         handler.setFormatter(self.formatter)
         handler.setLevel(logging.INFO)
         return handler

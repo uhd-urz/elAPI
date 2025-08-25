@@ -1,39 +1,41 @@
 from .._names import ENV_XDG_DOWNLOAD_DIR
 from ..configuration import (
-    APP_NAME,
     APP_BRAND_NAME,
-    inspect,
-    get_active_unsafe_token_warning,
-    get_active_enable_http2,
-    get_active_export_dir,
-    get_active_verify_ssl,
-    get_active_timeout,
-    get_development_mode,
     APP_DATA_DIR,
-    TMP_DIR,
-    KEY_HOST,
-    KEY_API_TOKEN,
-    KEY_UNSAFE_TOKEN_WARNING,
-    KEY_ENABLE_HTTP2,
-    KEY_VERIFY_SSL,
-    KEY_TIMEOUT,
-    KEY_DEVELOPMENT_MODE,
-    KEY_EXPORT_DIR,
-    LOG_FILE_PATH,
+    APP_NAME,
     EXTERNAL_LOCAL_PLUGIN_DIR,
     FALLBACK_SOURCE_NAME,
+    KEY_API_TOKEN,
+    KEY_ASYNC_RATE_LIMIT,
+    KEY_DEVELOPMENT_MODE,
+    KEY_ENABLE_HTTP2,
+    KEY_EXPORT_DIR,
+    KEY_HOST,
+    KEY_TIMEOUT,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_VERIFY_SSL,
+    TMP_DIR,
+    get_active_async_rate_limit,
+    get_active_enable_http2,
+    get_active_export_dir,
+    get_active_timeout,
+    get_active_unsafe_token_warning,
+    get_active_verify_ssl,
+    get_development_mode,
+    inspect,
     minimal_active_configuration,
 )
 
 # noinspection PyProtectedMember
 from ..configuration.config import (
     _CANON_CONFIG_FILE_NAME,
-    CONFIG_MIS_PATH,
     CANON_YAML_EXTENSION,
     CONFIG_FILE_EXTENSION,
+    CONFIG_MIS_PATH,
 )
-from ..styles import Missing, ColorText
-from ..styles.colors import RED, BLUE, YELLOW, LIGHTGREEN, LIGHTCYAN
+from ..loggers import LOG_FILE_PATH
+from ..styles import ColorText, Missing
+from ..styles.colors import BLUE, LIGHTCYAN, LIGHTGREEN, RED, YELLOW
 
 detected_config = minimal_active_configuration
 detected_config_files = inspect.applied_config_files
@@ -89,6 +91,20 @@ finally:
 
 
 try:
+    async_rate_limit_source = detected_config[KEY_ASYNC_RATE_LIMIT].source
+    async_rate_limit_source = detected_config_files[async_rate_limit_source]
+except KeyError:
+    async_rate_limit_source = FALLBACK_SOURCE_NAME
+finally:
+    async_rate_limit_value = get_active_async_rate_limit(skip_validation=True)
+    async_rate_limit_value = f"{async_rate_limit_value}" + (
+        (" requests/second" if (async_rate_limit_value > 1) else " request/second")
+        if async_rate_limit_value is not None
+        else ""
+    )
+
+
+try:
     development_mode_source = detected_config[KEY_DEVELOPMENT_MODE].source
     development_mode_source = detected_config_files[development_mode_source]
 except KeyError:
@@ -132,7 +148,7 @@ def show(no_keys: bool) -> str:
 The following information includes configuration values and their sources as detected by {APP_NAME}. 
 > Name [Key]: Value ← Source
 
-- {ColorText('Log file path').colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
+- {ColorText("Log file path").colorize(LIGHTGREEN)}: {LOG_FILE_PATH}
 """
         + (
             f"- {ColorText('Host address').colorize(LIGHTGREEN)}"
@@ -172,11 +188,11 @@ The following information includes configuration values and their sources as det
         )
         + f": {get_active_export_dir(skip_validation=True)} ← `{export_dir_source}`"
         + f"""
-- {ColorText('App data directory').colorize(LIGHTGREEN)}: {APP_DATA_DIR}
-- {ColorText('Third-party plugins directory').colorize(LIGHTCYAN)}: {
+- {ColorText("App data directory").colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText("Third-party plugins directory").colorize(LIGHTCYAN)}: {
             EXTERNAL_LOCAL_PLUGIN_DIR
         }
-- {ColorText('Caching directory').colorize(LIGHTGREEN)}: {
+- {ColorText("Caching directory").colorize(LIGHTGREEN)}: {
             TMP_DIR
             if not isinstance(TMP_DIR, Missing)
             else f"_{ColorText(TMP_DIR).colorize(RED)}_"
@@ -215,6 +231,14 @@ The following information includes configuration values and their sources as det
         )
         + f": {timeout_value} ← `{timeout_source}`"
         + "\n"
+        + f"- {ColorText('Async rate limit').colorize(LIGHTGREEN)}"
+        + (
+            f" **[{ColorText(KEY_ASYNC_RATE_LIMIT.lower()).colorize(YELLOW)}]**"
+            if not no_keys
+            else ""
+        )
+        + f": {async_rate_limit_value} ← `{async_rate_limit_source}`"
+        + "\n"
         + f"- {ColorText('Development mode').colorize(LIGHTGREEN)}"
         + (
             f" **[{ColorText(KEY_DEVELOPMENT_MODE.lower()).colorize(YELLOW)}]**"
@@ -237,6 +261,8 @@ The following information includes configuration values and their sources as det
                 export_dir_source,
                 unsafe_token_use_source,
                 enable_http2_source,
+                timeout_source,
+                async_rate_limit_source,
                 verify_ssl_source,
                 development_mode_source,
             )

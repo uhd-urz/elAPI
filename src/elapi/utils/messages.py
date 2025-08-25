@@ -1,6 +1,8 @@
+import logging
 from collections import UserList
+from typing import Optional
 
-from ..loggers import LogMessageTuple, Logger
+from ..loggers import DefaultLogLevels, LogMessageTuple
 
 
 class TupleList(UserList):
@@ -74,8 +76,8 @@ class MessagesList(TupleList):
 
 def add_message(
     message: str,
-    level: int = Logger.CONSTANTS.INFO,
-    logger: type(None) = None,
+    level: int = DefaultLogLevels.INFO,
+    logger: Optional[logging.Logger] = None,
     is_aggressive: bool = False,
 ) -> None:
     important_messages = MessagesList()

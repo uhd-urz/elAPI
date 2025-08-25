@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Optional, Iterable, Union
+from types import NoneType
+from typing import Iterable, Optional, Union
 
-from ._config_history import MinimalActiveConfiguration, FieldValueWithKey
-from ..core_validators import Validator, CriticalValidationError
-from ..styles import stdout_console, Missing
+from ..core_validators import CriticalValidationError, Validator
+from ..loggers import DefaultLogLevels
+from ..styles import Missing, stdout_console
 from ..styles.highlight import NoteText
+from ._config_history import FieldValueWithKey, MinimalActiveConfiguration
 
 
 class ConfigurationValidation:
@@ -169,21 +171,22 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
 
     def validate(self) -> Path:
         import errno
+
+        from ..core_validators import (
+            PathValidationError,
+            PathValidator,
+            Validate,
+            ValidationError,
+        )
         from ..loggers import Logger
         from .config import KEY_EXPORT_DIR
-        from ..core_validators import (
-            Validate,
-            PathValidator,
-            ValidationError,
-            PathValidationError,
-        )
 
         logger = Logger()
 
         def get_validated_fallback():
             from .._names import APP_NAME
-            from .config import _XDG_DOWNLOAD_DIR, FALLBACK_EXPORT_DIR
             from ..path import ProperPath
+            from .config import _XDG_DOWNLOAD_DIR, FALLBACK_EXPORT_DIR
 
             ACTUAL_FALLBACK_EXPORT_DIR = FALLBACK_EXPORT_DIR
             if _XDG_DOWNLOAD_DIR is not None:
@@ -212,7 +215,7 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
 
         if isinstance(
             config_export_dir := self.active_configuration.get_value(KEY_EXPORT_DIR),
-            (Missing, type(None)),
+            (Missing, NoneType),
         ):
             return get_validated_fallback()
         else:
@@ -247,7 +250,7 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
                 return export_dir
 
 
-class BooleanWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
+class ModesWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
@@ -279,14 +282,21 @@ class BooleanWithFallbackConfigurationValidator(ConfigurationValidation, Validat
         return value
 
 
-class DecimalWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
+class TimeWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
 
-    def __init__(self, *args, key_name: str, fallback_value: float):
+    def __init__(
+        self,
+        *args,
+        key_name: str,
+        fallback_value: Optional[float],
+        allow_none: bool = False,
+    ):
         super().__init__(*args)
         self.key_name = key_name
         self.fallback_value = fallback_value
+        self.allow_none = allow_none
 
     def validate(self) -> float:
         from ..loggers import Logger
@@ -296,7 +306,7 @@ class DecimalWithFallbackConfigurationValidator(ConfigurationValidation, Validat
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
             return self.fallback_value
-        if value is None:
+        if value is None and not self.allow_none:
             logger.warning(
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's null."
@@ -305,10 +315,51 @@ class DecimalWithFallbackConfigurationValidator(ConfigurationValidation, Validat
         if not isinstance(value, (float, int)) or isinstance(value, bool):
             logger.warning(
                 f"'{self.key_name.lower()}' is detected in configuration file, "
-                f"but it's not a float or integer."
+                f"but it's not a float or integer{' or None' if self.allow_none else ''}."
             )
             return self.fallback_value
         return float(value)
+
+
+class DiscreteWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
+    ALREADY_VALIDATED: bool = False
+    __slots__ = ()
+
+    def __init__(
+        self,
+        *args,
+        key_name: str,
+        fallback_value: Optional[int],
+        allow_none: bool = False,
+    ):
+        super().__init__(*args)
+        self.key_name = key_name
+        self.fallback_value = fallback_value
+        self.allow_none = allow_none
+
+    def validate(self) -> Optional[int]:
+        from ..loggers import Logger
+
+        logger = Logger()
+        if isinstance(
+            value := self.active_configuration.get_value(self.key_name), Missing
+        ):
+            return self.fallback_value
+        if value is None:
+            if not self.allow_none:
+                logger.warning(
+                    f"'{self.key_name.lower()}' is detected in configuration file, "
+                    f"but it's null."
+                )
+                return self.fallback_value
+            return None
+        if not isinstance(value, int) or isinstance(value, bool):
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's not an integer{' or None' if self.allow_none else ''}."
+            )
+            return self.fallback_value
+        return int(value)
 
 
 class PluginConfigurationValidator(ConfigurationValidation, Validator):
@@ -322,7 +373,7 @@ class PluginConfigurationValidator(ConfigurationValidation, Validator):
 
     def validate(self) -> dict:
         from dynaconf.utils.boxing import DynaBox
-        from ..loggers import Logger
+
         from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
         from ..utils import add_message
 
@@ -334,14 +385,14 @@ class PluginConfigurationValidator(ConfigurationValidation, Validator):
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's null."
             )
-            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+            add_message(message, DefaultLogLevels.WARNING, is_aggressive=True)
             return self.fallback_value
         if not isinstance(value, dict):
             message = (
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary."
             )
-            add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+            add_message(message, DefaultLogLevels.WARNING, is_aggressive=True)
             return self.fallback_value
         else:
             value: dict = value.to_dict()  # Dynaconf uses Box:
@@ -354,7 +405,7 @@ class PluginConfigurationValidator(ConfigurationValidation, Validator):
                         f"but it's not a {CANON_YAML_EXTENSION.upper()} dictionary. "
                         f"Plugin configuration for '{plugin_name}' will be ignored."
                     )
-                    add_message(message, Logger.CONSTANTS.WARNING, is_aggressive=True)
+                    add_message(message, DefaultLogLevels.WARNING, is_aggressive=True)
                     value.pop(plugin_name)
         return value
 
@@ -364,8 +415,9 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
         HostConfigurationValidator,
         APITokenConfigurationValidator,
         ExportDirConfigurationValidator,
-        BooleanWithFallbackConfigurationValidator,
-        DecimalWithFallbackConfigurationValidator,
+        ModesWithFallbackConfigurationValidator,
+        TimeWithFallbackConfigurationValidator,
+        DiscreteWithFallbackConfigurationValidator,
         PluginConfigurationValidator,
     ]
     ESSENTIAL_VALIDATORS: list = [
@@ -374,8 +426,9 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
     ]
     NON_ESSENTIAL_VALIDATORS: list = [
         ExportDirConfigurationValidator,
-        BooleanWithFallbackConfigurationValidator,
-        DecimalWithFallbackConfigurationValidator,
+        ModesWithFallbackConfigurationValidator,
+        TimeWithFallbackConfigurationValidator,
+        DiscreteWithFallbackConfigurationValidator,
         PluginConfigurationValidator,
     ]
     __slots__ = ()
@@ -412,13 +465,23 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
 
     def validate(self) -> list[FieldValueWithKey]:
         from ..core_validators import Validate, ValidationError
-        from .config import KEY_EXPORT_DIR
-        from .config import KEY_ENABLE_HTTP2, ENABLE_HTTP2_DEFAULT_VAL
-        from .config import KEY_VERIFY_SSL, VERIFY_SSL_DEFAULT_VAL
-        from .config import KEY_UNSAFE_TOKEN_WARNING, UNSAFE_TOKEN_WARNING_DEFAULT_VAL
-        from .config import KEY_TIMEOUT, TIMEOUT_DEFAULT_VAL
-        from .config import KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL
-        from .config import KEY_PLUGIN_KEY_NAME, PLUGIN_DEFAULT_VALUE
+        from .config import (
+            ASYNC_RATE_LIMIT_DEFAULT_VAL,
+            DEVELOPMENT_MODE_DEFAULT_VAL,
+            ENABLE_HTTP2_DEFAULT_VAL,
+            KEY_ASYNC_RATE_LIMIT,
+            KEY_DEVELOPMENT_MODE,
+            KEY_ENABLE_HTTP2,
+            KEY_EXPORT_DIR,
+            KEY_PLUGIN_KEY_NAME,
+            KEY_TIMEOUT,
+            KEY_UNSAFE_TOKEN_WARNING,
+            KEY_VERIFY_SSL,
+            PLUGIN_DEFAULT_VALUE,
+            TIMEOUT_DEFAULT_VAL,
+            UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
+            VERIFY_SSL_DEFAULT_VAL,
+        )
 
         validated_fields: list[FieldValueWithKey] = []
 
@@ -447,9 +510,9 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
                 raise e
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_EXPORT_DIR, export_dir))
-        if BooleanWithFallbackConfigurationValidator in self.limited_to:
+        if ModesWithFallbackConfigurationValidator in self.limited_to:
             unsafe_token_warning = Validate(
-                BooleanWithFallbackConfigurationValidator(
+                ModesWithFallbackConfigurationValidator(
                     self.active_configuration,
                     key_name=KEY_UNSAFE_TOKEN_WARNING,
                     fallback_value=UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
@@ -465,7 +528,7 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
                 (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE_DEFAULT_VAL),
             ]:
                 value = Validate(
-                    BooleanWithFallbackConfigurationValidator(
+                    ModesWithFallbackConfigurationValidator(
                         self.active_configuration,
                         key_name=key_name,
                         fallback_value=default_value,
@@ -473,9 +536,9 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
                 ).get()
                 # Update validated_fields after validation
                 validated_fields.append(FieldValueWithKey(key_name, value))
-        if DecimalWithFallbackConfigurationValidator in self.limited_to:
+        if TimeWithFallbackConfigurationValidator in self.limited_to:
             timeout = Validate(
-                DecimalWithFallbackConfigurationValidator(
+                TimeWithFallbackConfigurationValidator(
                     self.active_configuration,
                     key_name=KEY_TIMEOUT,
                     fallback_value=TIMEOUT_DEFAULT_VAL,
@@ -483,6 +546,19 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
             ).get()
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
+        if DiscreteWithFallbackConfigurationValidator in self.limited_to:
+            async_rate_limit = Validate(
+                DiscreteWithFallbackConfigurationValidator(
+                    self.active_configuration,
+                    key_name=KEY_ASYNC_RATE_LIMIT,
+                    fallback_value=ASYNC_RATE_LIMIT_DEFAULT_VAL,
+                    allow_none=True,
+                )
+            ).get()
+            # Update validated_fields after validation
+            validated_fields.append(
+                FieldValueWithKey(KEY_ASYNC_RATE_LIMIT, async_rate_limit)
+            )
         if PluginConfigurationValidator in self.limited_to:
             plugin = Validate(
                 PluginConfigurationValidator(

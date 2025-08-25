@@ -1,12 +1,17 @@
 import sys
-from abc import abstractmethod, ABC
-from typing import Any
+from abc import ABC, abstractmethod
+from typing import Any, Self, Union
+
+from .._core_init import GlobalCLIResultCallback
 
 
 class ValidationError(Exception): ...
 
 
-class Exit(BaseException):
+class BaseExit(BaseException, ABC): ...
+
+
+class Exit(BaseExit):
     if (
         hasattr(sys, "ps1")
         or hasattr(sys, "ps2")
@@ -19,10 +24,14 @@ class Exit(BaseException):
     else:
         SYSTEM_EXIT: bool = True
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> Union[SystemExit, Self]:
+        GlobalCLIResultCallback().call_callbacks()
         if cls.SYSTEM_EXIT:
             return SystemExit(*args)
         return super().__new__(cls, *args, **kwargs)  # cls == CriticalValidationError
+
+
+BaseExit.register(SystemExit)
 
 
 class RuntimeValidationError(Exit, ValidationError):
@@ -49,3 +58,4 @@ class Validate:
     def get(self, *args, **kwargs) -> Any:
         for typ in self.typ:
             return typ.validate(*args, **kwargs)
+        return None

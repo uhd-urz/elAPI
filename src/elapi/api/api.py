@@ -3,25 +3,34 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Union, Optional, Tuple, Literal
+from types import NoneType, NotImplementedType
+from typing import Literal, Optional, Tuple, Union
 
+# noinspection PyProtectedMember
 import httpx._client as httpx_private_client_module
-from httpx import Response, Client, AsyncClient, Limits
+from httpx import AsyncBaseTransport, AsyncClient, Client, Limits, Response
+
+# noinspection PyProtectedMember
+from httpx._client import BaseClient
+
+# noinspection PyProtectedMember
 from httpx._types import AuthTypes
 from httpx_auth import HeaderApiKey
+from httpx_limiter import AsyncRateLimitedTransport, Rate
 
-from .. import APP_NAME, APP_BRAND_NAME
+from .. import APP_BRAND_NAME, APP_NAME
 from ..configuration import (
     TOKEN_BEARER,
-    get_active_host,
     get_active_api_token,
+    get_active_async_rate_limit,
     get_active_enable_http2,
-    get_active_verify_ssl,
+    get_active_host,
     get_active_timeout,
+    get_active_verify_ssl,
 )
 from ..loggers import Logger
 from ..styles import Missing
-from ..utils import update_kwargs_with_defaults, get_app_version
+from ..utils import get_app_version, update_kwargs_with_defaults
 
 USER_AGENT: str = (
     f"{APP_BRAND_NAME}/{get_app_version()} {httpx_private_client_module.USER_AGENT}"
@@ -36,8 +45,9 @@ class SessionDefaults:
         default_factory=lambda: Limits(
             max_connections=100,
             max_keepalive_connections=20,
-            # same as HTTPX default. The previous value "30" can be too much for the server when uvloop is used
-            keepalive_expiry=60,
+            # The same as HTTPX default. The previous value "30"
+            # can be too much for the server when uvloop is used
+            keepalive_expiry=5,
         )
     )
 
@@ -48,7 +58,7 @@ session_defaults = SessionDefaults()
 class _CustomHeaderApiKey(HeaderApiKey): ...
 
 
-class SimpleClient(httpx_private_client_module.BaseClient):
+class SimpleClient(BaseClient):
     def __new__(
         cls,
         *,
@@ -56,24 +66,27 @@ class SimpleClient(httpx_private_client_module.BaseClient):
         auth: Optional[AuthTypes] = _CustomHeaderApiKey(
             api_key=str(Missing()), header_name=TOKEN_BEARER
         ),
+        transport: Optional[AsyncBaseTransport] = None,
         **kwargs,
     ) -> Union[Client, AsyncClient]:
-        from ..utils import check_reserved_keyword
         from .._names import CONFIG_FILE_NAME
         from ..configuration import (
-            KEY_HOST,
             KEY_API_TOKEN,
+            KEY_ASYNC_RATE_LIMIT,
             KEY_ENABLE_HTTP2,
-            KEY_VERIFY_SSL,
+            KEY_HOST,
             KEY_TIMEOUT,
+            KEY_VERIFY_SSL,
             preventive_missing_warning,
         )
+        from ..utils import check_reserved_keyword
 
         host: str = get_active_host()
         api_token: str = get_active_api_token().token
-        enable_http2 = get_active_enable_http2()
-        verify_ssl = get_active_verify_ssl()
-        timeout = get_active_timeout()
+        enable_http2: bool = get_active_enable_http2()
+        verify_ssl: bool = get_active_verify_ssl()
+        timeout: float = get_active_timeout()
+        active_async_rate_limit: Optional[int] = get_active_async_rate_limit()
 
         if isinstance(auth, _CustomHeaderApiKey):
             auth.api_key = api_token
@@ -85,9 +98,32 @@ class SimpleClient(httpx_private_client_module.BaseClient):
             (KEY_TIMEOUT, timeout),
         ):
             preventive_missing_warning(config_field)
-        client = Client if is_async_client is False else AsyncClient
         try:
-            return client(
+            if is_async_client is True:
+                if transport is None and active_async_rate_limit is not None:
+                    transport = AsyncRateLimitedTransport.create(
+                        Rate.create(magnitude=active_async_rate_limit, duration=1),
+                        # see more: https://midnighter.github.io/httpx-limiter/latest/tutorial/#single-rate-limit
+                        # In our case, magnitude=1, duration=1/active_async_rate_limit yields worse results.
+                        http2=enable_http2,  # type: ignore
+                        # See: https://github.com/Midnighter/httpx-limiter/issues/7#issuecomment-3197487921
+                        # http2 needs to be passed here if AsyncRateLimitedTransport is used
+                        verify=verify_ssl,  # type: ignore
+                    )
+                elif transport is not None and active_async_rate_limit is not None:
+                    logger.warning(
+                        f"When a manual transport parameter is passed to {SimpleClient}, "
+                        f"the '{KEY_ASYNC_RATE_LIMIT}' in the configuration file is ignored. "
+                    )
+                return AsyncClient(
+                    auth=auth,
+                    http2=enable_http2,
+                    verify=verify_ssl,
+                    timeout=timeout,
+                    transport=transport,
+                    **kwargs,
+                )
+            return Client(
                 auth=auth,
                 http2=enable_http2,
                 verify=verify_ssl,
@@ -191,7 +227,7 @@ class GlobalSharedSession:
         limited_to: Literal["sync", "async", "all"] = "all",
         suppress_override_warning: bool = False,
         **kwargs,
-    ):
+    ) -> _GlobalSharedSession:
         if cls._instance is None:
             cls.suppress_override_warning = suppress_override_warning
             cls._instance = cls._GlobalSharedSession(limited_to=limited_to, **kwargs)
@@ -260,7 +296,7 @@ class APIRequest(ABC):
 
     @shared_client.setter
     def shared_client(self, value: Union[Client, AsyncClient, None] = None):
-        if not isinstance(value, (Client, AsyncClient, type(None))):
+        if not isinstance(value, (Client, AsyncClient, NoneType)):
             raise TypeError(
                 f"shared_client must be an instance of "
                 f"httpx.{Client.__name__} or httpx.{AsyncClient.__name__} or {None}."
@@ -298,28 +334,30 @@ class APIRequest(ABC):
     def _make(self, *args, **kwargs): ...
 
     @abstractmethod
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         if self.is_global_shared_session_user is True:
             return NotImplemented
         if not self.client.is_closed:
             self.client.close()
+        return None
 
     @abstractmethod
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         if self.is_global_shared_session_user is True:
             return NotImplemented
         if not self.client.is_closed:
             await self.client.aclose()
+        return None
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Response:
         response = self._make(*args, **kwargs)
         if self.shared_client is None:
             self.close()
         return response
 
     @abstractmethod
-    async def __acall__(self, *args, **kwargs):
+    async def __acall__(self, *args, **kwargs) -> Response:
         response = await self._make(
             *args,
             **kwargs,
@@ -333,7 +371,7 @@ class ElabFTWURLError(Exception): ...
 
 
 class ElabFTWURL:
-    VALID_ENDPOINTS: dict[str : Tuple[str]] = {
+    VALID_ENDPOINTS: dict[str, Tuple[str, ...]] = {
         "apikeys": (),
         "config": (),
         "experiments": (
@@ -428,7 +466,7 @@ class ElabFTWURL:
         return self._sub_endpoint_name
 
     @sub_endpoint_name.setter
-    def sub_endpoint_name(self, value: str):
+    def sub_endpoint_name(self, value: Optional[str]):
         if value is not None:
             if value.lower() not in (
                 valid_sub_endpoint_name := ElabFTWURL.VALID_ENDPOINTS[
@@ -482,14 +520,14 @@ class ElabFTWURL:
         else:
             self._sub_endpoint_id = ""
             # Similar to an empty endpoint_id, an empty sub_endpoint_id sends back
-            # the whole list of available resources for a given sub-endpoint as response.
+            # the whole list of available resources for a given sub-endpoint as a response.
 
     @property
     def query(self) -> str:
         return self._query
 
     @query.setter
-    def query(self, value: dict):
+    def query(self, value: Optional[dict]):
         self._query = "&".join([f"{k}={v}" for k, v in (value or dict()).items()])
 
     def get(self) -> str:
@@ -517,7 +555,7 @@ class GETRequest(APIRequest):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -582,7 +620,7 @@ class POSTRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -639,7 +677,7 @@ class AsyncPOSTRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -687,7 +725,7 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -745,7 +783,7 @@ class PATCHRequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -800,7 +838,7 @@ class AsyncPATCHRequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[NotImplementedType]:
         return await super().aclose()
 
     def close(self):
@@ -850,7 +888,7 @@ class DELETERequest(APIRequest):
             **kwargs,
         )
 
-    def close(self) -> Optional[type(NotImplemented)]:
+    def close(self) -> Optional[NotImplementedType]:
         return super().close()
 
     def aclose(self):
@@ -900,7 +938,7 @@ class AsyncDELETERequest(APIRequest, is_async_client=True):
             **kwargs,
         )
 
-    async def aclose(self) -> Optional[type(NotImplemented)]:
+    async def aclose(self) -> Optional[bool]:
         return await super().aclose()
 
     def close(self):

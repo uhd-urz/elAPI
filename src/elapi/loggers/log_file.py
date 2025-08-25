@@ -8,7 +8,7 @@ from .._names import (
     APP_NAME,
     ENV_XDG_DATA_HOME,
 )
-from ..loggers import Logger
+from .._core_init import Logger
 from ..path import ProperPath
 from ..core_validators import (
     Validate,

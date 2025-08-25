@@ -27,7 +27,7 @@ class ExperimentIDValidator(Validator):
     @experiment_id.setter
     def experiment_id(self, value):
         if value is None:
-            raise ValidationError(f"Experiment ID cannot be '{type(None)}'.")
+            raise ValidationError(f"Experiment ID cannot be '{None}'.")
         if not hasattr(value, "__str__"):
             raise ValidationError(
                 f"Experiment ID '{self.experiment_id}' couldn't be validated "

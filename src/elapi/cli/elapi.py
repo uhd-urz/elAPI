@@ -16,38 +16,75 @@ import platform
 import sys
 from functools import partial
 from json import JSONDecodeError
+from sys import argv
 from typing import Optional
 
+import click
 import typer
 from rich import pretty
 from typing_extensions import Annotated
 
-from ._plugin_handler import PluginInfo
-from ._plugin_handler import (
-    internal_plugin_typer_apps,
-    external_local_plugin_typer_apps,
-)
-from .doc import __PARAMETERS__doc__ as docs
 from .. import APP_NAME
 from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
-from ..loggers import Logger, FileLogger
+from ..core_validators import Exit
+from ..loggers import (
+    DefaultLogLevels,
+    FileLogger,
+    GlobalLogRecordContainer,
+    Logger,
+    ResultCallbackHandler,
+)
 from ..plugins.commons.cli_helpers import Typer
-from ..styles import get_custom_help_text
 from ..styles import (
-    stdout_console,
-    stderr_console,
-    rich_format_help_with_callback,
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
-from ..utils import get_external_python_version, PythonVersionCheckFailed
+from ..styles import (
+    get_custom_help_text,
+    rich_format_help_with_callback,
+    stderr_console,
+    stdout_console,
+)
+from ..utils import (
+    GlobalCLIGracefulCallback,
+    GlobalCLIResultCallback,
+    GlobalCLISuperStartupCallback,
+    PythonVersionCheckFailed,
+    get_external_python_version,
+)
 from ..utils.typer_patches import patch_typer_flag_value
+from ._plugin_handler import (
+    PluginInfo,
+    external_local_plugin_typer_apps,
+    internal_plugin_typer_apps,
+)
+from .doc import __PARAMETERS__doc__ as docs
 
 logger = Logger()
 file_logger = FileLogger()
 pretty.install()
 patch_typer_flag_value()
 
-app = Typer()
+
+def result_callback_wrapper(_, override_config):
+    if (
+        calling_sub_command_name := (
+            ctx := click.get_current_context()
+        ).invoked_subcommand
+    ) not in SENSITIVE_PLUGIN_NAMES and ctx.command.name != calling_sub_command_name:
+        if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
+            global_result_callback = GlobalCLIResultCallback()
+            if global_result_callback.get_callbacks():
+                logger.debug(
+                    f"Running {__package__} controlled callback with "
+                    f"Typer result callback: "
+                    f"{global_result_callback.singleton_subclass_name}"
+                )
+                global_result_callback.call_callbacks()
+
+
+app = Typer(result_callback=result_callback_wrapper)
+
+
 SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
     "init",
     "show-config",
@@ -94,24 +131,36 @@ def cli_startup(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = "{}",
-) -> type(None):
-    import click
-    from sys import argv
-    from ..styles import print_typer_error
+) -> None:
+    from ..configuration import get_development_mode, reinitiate_config
     from ..configuration.config import (
-        settings,
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
-        KEY_PLUGIN_KEY_NAME,
         KEY_DEVELOPMENT_MODE,
+        KEY_PLUGIN_KEY_NAME,
+        APIToken,
         AppliedConfigIdentity,
         minimal_active_configuration,
+        settings,
     )
-    from ..configuration.config import APIToken
-    from ..core_validators import Exit
-    from ..configuration import reinitiate_config
-    from ..utils import MessagesList
     from ..plugins.commons.get_data_from_input_or_path import get_structured_data
+    from ..styles import print_typer_error
+    from ..utils import MessagesList
+
+    if get_development_mode(skip_validation=True) is True:
+        Exit.SYSTEM_EXIT = False
+        for handler in logger.handlers:
+            handler.setLevel(DefaultLogLevels.DEBUG)
+    # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
+    # However, PluginConfigurationValidator is always run
+    # first when development_mode is enabled
+    global_init_callbacks = GlobalCLISuperStartupCallback()
+    if global_init_callbacks.get_callbacks():
+        logger.debug(
+            f"Running {__package__} controlled callback before anything else: "
+            f"{global_init_callbacks.singleton_subclass_name}"
+        )
+        global_init_callbacks.call_callbacks()
 
     def show_aggressive_log_message():
         messages = MessagesList()
@@ -194,6 +243,14 @@ def cli_startup(
             if argv[-1] != (ARG_TO_SKIP := "--help") or ARG_TO_SKIP not in argv:
                 reinitiate_config()
                 show_aggressive_log_message()
+                global_graceful_callbacks = GlobalCLIGracefulCallback()
+                if global_graceful_callbacks.get_callbacks():
+                    logger.debug(
+                        f"Running {__package__} controlled callback "
+                        f"after configuration validation: "
+                        f"{global_graceful_callbacks.singleton_subclass_name}"
+                    )
+                    global_graceful_callbacks.call_callbacks()
         else:
             if calling_sub_command_name in SENSITIVE_PLUGIN_NAMES:
                 if override_config:
@@ -206,8 +263,18 @@ def cli_startup(
                     reinitiate_config(ignore_essential_validation=True)
 
 
+def check_result_callback_log_container():
+    if (
+        ResultCallbackHandler.is_store_okay()
+        and ResultCallbackHandler.get_client_count() == 0
+    ):
+        GlobalLogRecordContainer().data.clear()
+        ResultCallbackHandler.is_store_okay = False
+
+
 def cli_switch_venv_state(state: bool, /) -> None:
     import click
+
     from ._venv_state_manager import switch_venv_state
 
     try:
@@ -235,9 +302,8 @@ def cli_startup_for_plugins(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = None,
-):
+) -> None:
     from ..styles import print_typer_error
-    from ..validators import Exit
 
     cli_switch_venv_state(True)
     if override_config is not None:
@@ -246,7 +312,12 @@ def cli_startup_for_plugins(
             f"the main program name '{APP_NAME}', and not after a plugin name."
         )
         raise Exit(1)
-    return cli_startup()
+    # Calling cli_startup again here would call cli_startup
+    # again before loading each plugin. This is necessary because
+    # whatever modifications/additions a plugin made,
+    # cli_startup would need to consider them again. E.g., adding a
+    # callback to GlobalGlobalCLIGracefulCallback.
+    cli_startup()
 
 
 def cli_cleanup_for_third_party_plugins(*args, override_config=None):
@@ -275,6 +346,7 @@ def disable_plugin(
     short_reason: Optional[str] = None,
 ):
     import logging
+
     from ..utils import add_message
 
     add_message(err_msg, logging.WARNING)
@@ -293,19 +365,19 @@ def disable_plugin(
         help=help_message,
     )
     def name_conflict_error():
-        from ..core_validators import Exit
-
         logger.error(err_msg)
         raise Exit(1)
 
 
 def messages_panel():
     import logging
-    from ..styles import NoteText
-    from ..configuration import CONFIG_FILE_NAME
+
+    from rich.logging import RichHandler
     from rich.panel import Panel
     from rich.table import Table
-    from rich.logging import RichHandler
+
+    from ..configuration import CONFIG_FILE_NAME
+    from ..styles import NoteText
     from ..utils import MessagesList
 
     messages = MessagesList()
@@ -421,12 +493,12 @@ def init(
     With arguments: `elapi init --host <host> --api-token <api-token> --export-dir <export-directory>`
 
     """
+    from time import sleep
+
     from .._names import CONFIG_FILE_NAME
     from ..configuration import LOCAL_CONFIG_LOC
-    from ..core_validators import Validate, ValidationError
-    from ..core_validators import PathValidator
+    from ..core_validators import PathValidator, Validate, ValidationError
     from ..path import ProperPath
-    from time import sleep
 
     with stdout_console.status(
         f"Creating configuration file {CONFIG_FILE_NAME}...", refresh_per_second=15
@@ -442,7 +514,7 @@ def init(
                 f"Please make sure you have write and read access to '{LOCAL_CONFIG_LOC}'. "
                 "Configuration initialization has failed!"
             )
-            raise typer.Exit(1)
+            raise Exit(1)
         else:
             path = ProperPath(LOCAL_CONFIG_LOC)
             try:
@@ -454,7 +526,7 @@ def init(
                             f"It's ambiguous what to do in this situation."
                         )
                         logger.error("Configuration initialization has failed!")
-                        raise typer.Exit(1)
+                        raise Exit(1)
             except path.PathException as e:
                 if isinstance(e, FileNotFoundError):
                     path.create()
@@ -462,7 +534,7 @@ def init(
                     status.stop()
                     logger.error(e)
                     logger.error("Configuration initialization has failed!")
-                    raise typer.Exit(1)
+                    raise Exit(1)
             try:
                 with path.open(mode="w") as f:
                     _configuration_yaml_text = f"""host: {host_url}
@@ -472,12 +544,14 @@ unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
 timeout: 90
+async_rate_limit: null
+development_mode: false
 """
                     f.write(_configuration_yaml_text)
             except path.PathException as e:
                 logger.error(e)
                 logger.error("Configuration initialization has failed!")
-                raise typer.Exit(1)
+                raise Exit(1)
             else:
                 stdout_console.print(
                     "Configuration file has been successfully created! "
@@ -561,16 +635,17 @@ def get(
     `$ elapi get users --id <id>` will return information about the specific user `<id>`.
     """
     import re
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, GETRequest, ElabFTWURLError
-    from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
-    from ..plugins.commons import get_structured_data
-    from ..core_validators import Validate, Exit
+
+    from httpx import ConnectError
+
+    from ..api import ElabFTWURLError, GETRequest, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
-    from ..plugins.commons import Export
-    from ..styles import Highlight, print_typer_error, NoteText
     from ..configuration import get_active_host
+    from ..core_validators import Validate
+    from ..plugins.commons import Export, get_structured_data
+    from ..plugins.commons.cli_helpers import CLIExport, CLIFormat
+    from ..styles import Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -648,8 +723,8 @@ def get(
     except JSONDecodeError as e:
         if raw_response.status_code == 200:
             logger.info(
-                f"Request was successful, but response data could not be parsed as JSON. "
-                f"Response will be read as binary."
+                "Request was successful, but response data could not be parsed as JSON. "
+                "Response will be read as binary."
             )
             formatted_data = format(response_data := raw_response.content)
         else:
@@ -780,18 +855,18 @@ def post(
     `$ elapi post users -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'`
     will create a new user.
     """
-    from httpx import ConnectError
     from ssl import SSLError
+
+    from httpx import ConnectError
+
     from .. import APP_NAME
-    from ..api import GlobalSharedSession, POSTRequest, ElabFTWURLError
-    from ..core_validators import Validate
+    from ..api import ElabFTWURLError, GlobalSharedSession, POSTRequest
     from ..api.validators import HostIdentityValidator
-    from ..plugins.commons import get_location_from_headers
-    from ..plugins.commons import get_structured_data
-    from ..styles import Format, Highlight, print_typer_error, NoteText
-    from ..core_validators import Exit
-    from ..path import ProperPath
     from ..configuration import get_active_host
+    from ..core_validators import Validate
+    from ..path import ProperPath
+    from ..plugins.commons import get_location_from_headers, get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -840,7 +915,7 @@ def post(
                     f"Error: Given value with --file doesn't follow the expected pattern. "
                     f"See '{APP_NAME} post --help' for more on exactly how to use --file."
                 )
-                raise typer.Exit(1)
+                raise Exit(1)
             else:
                 _file_obj = (_file_path := ProperPath(_file_path)).expanded.open(
                     mode="rb"
@@ -904,10 +979,10 @@ def post(
                     logger.error(
                         "Request was successful but no location for resource was found!"
                     )
-                    raise typer.Exit(1)
+                    raise Exit(1)
                 else:
                     typer.echo(f"{_id},{_url}")
-                    raise typer.Exit()
+                    raise Exit()
             stdout_console.print("Success: Resource created!", style="green")
             return None
         else:
@@ -921,7 +996,7 @@ def post(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
@@ -1001,15 +1076,16 @@ def patch(
     <br/>
     `$ elapi patch users --id me -d '{"email": "new_email@itnerd.de"}'`.
     """
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, PATCHRequest, ElabFTWURLError
-    from ..core_validators import Validate
+
+    from httpx import ConnectError
+
+    from ..api import ElabFTWURLError, GlobalSharedSession, PATCHRequest
     from ..api.validators import HostIdentityValidator
-    from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..core_validators import Validate
     from ..plugins.commons import get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -1084,7 +1160,7 @@ def patch(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
@@ -1164,15 +1240,16 @@ def delete(
     <br/>
     `$ elapi delete experiments -i <experiment ID> --sub tags --sub-id <tag ID>`
     """
-    from httpx import ConnectError
     from ssl import SSLError
-    from ..api import GlobalSharedSession, DELETERequest, ElabFTWURLError
-    from ..core_validators import Validate
+
+    from httpx import ConnectError
+
+    from ..api import DELETERequest, ElabFTWURLError, GlobalSharedSession
     from ..api.validators import HostIdentityValidator
-    from ..styles import Format, Highlight, NoteText, print_typer_error
-    from ..core_validators import Exit
     from ..configuration import get_active_host
+    from ..core_validators import Validate
     from ..plugins.commons import get_structured_data
+    from ..styles import Format, Highlight, NoteText, print_typer_error
 
     with GlobalSharedSession(limited_to="sync"):
         validate_identity = Validate(HostIdentityValidator())
@@ -1242,7 +1319,7 @@ def delete(
                     stem="Hint",
                 )
             )
-            raise typer.Exit(1)
+            raise Exit(1)
     else:
         if highlight_syntax is True:
             highlight = Highlight(
@@ -1271,6 +1348,7 @@ def show_config(
     Get information about detected configuration values.
     """
     from rich.markdown import Markdown
+
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
@@ -1297,9 +1375,10 @@ def cleanup() -> None:
     """
     Remove cached data.
     """
+    from time import sleep
+
     from ..configuration import TMP_DIR
     from ..path import ProperPath
-    from time import sleep
 
     with stdout_console.status("Cleaning up...", refresh_per_second=15):
         sleep(0.5)
@@ -1419,3 +1498,6 @@ for plugin_info in external_local_plugin_typer_apps:
                 callback=cli_startup_for_plugins,
                 result_callback=cli_cleanup_for_third_party_plugins,
             )
+# Must be run after all plugins are loaded as they are given
+# a chance to modify ResultCallbackHandler.is_store_okay
+check_result_callback_log_container()
