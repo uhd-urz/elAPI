@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-10-25
+
+> [!NOTE]
+> This release deprecates support for Python versions 3.9 and 3.10.
+
+This release brings general bug fixes and a few major improvements.
+
+### Added
+
+- The `mail` built-in plugin that is able to scan logs and send emails based on pre-configured trigger conditions (see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#mail-built-in-plugin))
+- New configuration field `async_rate_limit` that lets you control requests per second (see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
+- Global callback mechanisms (GH https://github.com/uhd-urz/elAPI/pull/156/; see "Callback classes")
+- `add_logging_level` to add new logging levels (see [documentation](https://haggis.readthedocs.io/en/stable/api.html#haggis.logs.add_logging_level))
+
+### Fixed
+
+- Fix important bugs in `bill-teams` plugin
+
+### Changes
+
+- Deprecate Python versions 3.9 and
+  3.10 (https://github.com/uhd-urz/elAPI/pull/156/commits/977890860f68feb1c0c6a3dd9b1a84da988c36e8)
+- Improve architecture without breaking
+  APIs ([ARCHITECTURE.md](https://github.com/uhd-urz/elAPI/blob/main/ARCHITECTURE.md))
+- Improve `development_mode` (GH https://github.com/uhd-urz/elAPI/pull/156/; see "Better `development_mode`")
+
 ## [2.3.3] - 2025-06-17
 
 This is a hotfix release.
