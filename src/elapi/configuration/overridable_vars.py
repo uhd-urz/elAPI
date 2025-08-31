@@ -26,22 +26,6 @@ def get_active_host(*, skip_validation: bool = False) -> str:
     return MinimalActiveConfiguration().get_value(KEY_HOST)
 
 
-def get_active_host_url_without_api_subdir(
-    *, skip_validation: bool = False
-) -> Union[str, Missing]:
-    import re
-
-    if (host := get_active_host(skip_validation=skip_validation)) != Missing():
-        return re.sub(
-            ELAB_HOST_URL_API_SUFFIX,
-            r"",
-            get_active_host(skip_validation=skip_validation),
-            count=1,
-            flags=re.IGNORECASE,
-        )
-    return host
-
-
 def get_active_api_token(*, skip_validation: bool = False) -> APIToken:
     if not skip_validation:
         _development_mode_validation_switch()
