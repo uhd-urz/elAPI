@@ -14,6 +14,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
 
 import platform
 import sys
+from enum import StrEnum
 from functools import partial
 from json import JSONDecodeError
 from sys import argv
@@ -21,11 +22,17 @@ from typing import Optional
 
 import click
 import typer
+from httpx import HTTPError
 from rich import pretty
+from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from .. import APP_NAME
-from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
+from ..api.validators import ElabUserGroups
+from ..configuration import (
+    FALLBACK_EXPORT_DIR,
+    get_active_export_dir,
+)
 from ..core_validators import Exit
 from ..loggers import (
     DefaultLogLevels,
@@ -35,15 +42,18 @@ from ..loggers import (
     ResultCallbackHandler,
 )
 from ..plugins.commons.cli_helpers import Typer
+from ..plugins.commons.get_whoami import get_whoami
 from ..styles import (
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
 from ..styles import (
+    ColorText,
     get_custom_help_text,
     rich_format_help_with_callback,
     stderr_console,
     stdout_console,
 )
+from ..styles.colors import BLUE, GREEN, MAGENTA, RED
 from ..utils import (
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
@@ -1347,8 +1357,6 @@ def show_config(
     """
     Get information about detected configuration values.
     """
-    from rich.markdown import Markdown
-
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
@@ -1387,6 +1395,55 @@ def cleanup() -> None:
     stdout_console.print("Done!", style="green")
 
 
+@app.command(name="whoami", help="Show information about current user and eLab server.")
+def whoami() -> None:
+    class _ElabUserGroupColors(StrEnum):
+        sysadmin = RED
+        admin = MAGENTA
+        user = GREEN
+
+    formatted_groups: dict[int, str] = {}
+    for user_group in ElabUserGroups:
+        # noinspection PyTypeChecker
+        formatted_groups[user_group.value] = ColorText(
+            user_group.name.capitalize()
+        ).colorize(_ElabUserGroupColors[user_group.name])
+
+    with stdout_console.status("Contemplating...", refresh_per_second=15) as status:
+        try:
+            whoami_info = get_whoami()
+        except (RuntimeError, HTTPError, JSONDecodeError) as e:
+            status.stop()
+            logger.error(f"{e!r}")
+            raise Exit(1) from e
+
+        formatted_whoami_info = f"""- __{ColorText("Host URL:").colorize(GREEN)}__ {
+            ColorText(whoami_info["host_url"]).colorize(BLUE)
+        }
+- __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]} ({
+            ColorText("Read/Write").colorize(RED)
+            if whoami_info["can_api_key_write"]
+            else ColorText("Read-only").colorize(GREEN)
+        })
+- __{ColorText("eLabFTW version:").colorize(GREEN)}__ {whoami_info["elabftw_version"]}
+- __{ColorText("Name:").colorize(GREEN)}__ {whoami_info["name"]} ({
+            ColorText("ID:").colorize(GREEN)
+        } {whoami_info["user_id"]})
+- __{ColorText("Email:").colorize(GREEN)}__ {whoami_info["email"]}
+- __{ColorText("Team:").colorize(GREEN)}__ {whoami_info["team"]} ({
+            ColorText("ID:").colorize(GREEN)
+        } {whoami_info["team_id"]})
+- __{ColorText("Sysadmin:").colorize(GREEN)}__ {
+            ColorText("Yes").colorize(RED) if whoami_info["is_sysadmin"] else "No"
+        }
+- __{ColorText("User group:").colorize(GREEN)}__ {
+            formatted_groups[whoami_info["user_group"]]
+        }
+    """
+    stdout_console.print(Markdown(formatted_whoami_info))
+
+
+# Load external plugins
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
         ext_app_obj, _path, _venv, _proj_dir = plugin_info
