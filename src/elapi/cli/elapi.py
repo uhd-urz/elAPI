@@ -32,6 +32,7 @@ from ..api.validators import ElabUserGroups
 from ..configuration import (
     FALLBACK_EXPORT_DIR,
     get_active_export_dir,
+    get_development_mode,
 )
 from ..core_validators import Exit
 from ..loggers import (
@@ -40,6 +41,7 @@ from ..loggers import (
     GlobalLogRecordContainer,
     Logger,
     ResultCallbackHandler,
+    SimpleLogger,
 )
 from ..plugins.commons.cli_helpers import Typer
 from ..plugins.commons.get_whoami import get_whoami
@@ -73,6 +75,16 @@ logger = Logger()
 file_logger = FileLogger()
 pretty.install()
 patch_typer_flag_value()
+
+
+if get_development_mode(skip_validation=True) is True:
+    Exit.SYSTEM_EXIT = False
+    for handler in logger.handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
+    for handler in file_logger.handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
+    for handler in SimpleLogger().handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
 
 
 def result_callback_wrapper(_, override_config):
@@ -142,7 +154,7 @@ def cli_startup(
         ),
     ] = "{}",
 ) -> None:
-    from ..configuration import get_development_mode, reinitiate_config
+    from ..configuration import reinitiate_config
     from ..configuration.config import (
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
@@ -157,10 +169,6 @@ def cli_startup(
     from ..styles import print_typer_error
     from ..utils import MessagesList
 
-    if get_development_mode(skip_validation=True) is True:
-        Exit.SYSTEM_EXIT = False
-        for handler in logger.handlers:
-            handler.setLevel(DefaultLogLevels.DEBUG)
     # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
     # However, PluginConfigurationValidator is always run
     # first when development_mode is enabled
@@ -334,6 +342,7 @@ def cli_cleanup_for_third_party_plugins(*args, override_config=None):
     cli_switch_venv_state(False)
 
 
+logger.debug(f"{APP_NAME} will load internal plugins.")
 for inter_app_obj in internal_plugin_typer_apps:
     if inter_app_obj is not None:
         app_name = inter_app_obj.info.name
@@ -1443,6 +1452,7 @@ def whoami() -> None:
     stdout_console.print(Markdown(formatted_whoami_info))
 
 
+logger.debug(f"{APP_NAME} will load external plugins.")
 # Load external plugins
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
