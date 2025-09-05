@@ -1,6 +1,10 @@
 from enum import StrEnum
+from json import JSONDecodeError
+
+from httpx import HTTPError
 
 from ...api import GETRequest, GlobalSharedSession
+from ...api.validators import ElabUserGroups
 from ...configuration import get_active_api_token, get_active_host
 from ...configuration.config import APIToken
 from ...loggers import Logger
@@ -21,12 +25,20 @@ def get_whoami() -> dict[str, str | int | APIToken]:
         session = GETRequest()
         user = session("users", "me")
         user_info = user.json()
-        user_all_teams = user_info["teams"]
         elab_server = session("info")
         elab_server_info = elab_server.json()
         api_keys = session("apikeys")
         api_keys_info = api_keys.json()
 
+    if not user.is_success or not elab_server.is_success or not api_keys.is_success:
+        raise RuntimeError(
+            "Retrieving information about the current user, "
+            f"the ElabFTW server, or API keys for '{get_whoami.__name__}' "
+            f"was unsuccessful. HTTP status codes: {user.status_code}, "
+            f"{elab_server.status_code}, {api_keys.status_code}."
+        )
+
+    user_all_teams = user_info["teams"]
     elab_server_version: str = elab_server_info["elabftw_version"]
     user_full_name: str = user_info["fullname"]
     user_id: int = user_info["userid"]
@@ -61,3 +73,34 @@ def get_whoami() -> dict[str, str | int | APIToken]:
         "is_sysadmin": is_user_sysadmin,
         "user_group": user_group,
     }
+
+
+def debug_log_whoami_message() -> None:
+    try:
+        (
+            host_url,
+            api_token,
+            can_api_key_write,
+            elabftw_version,
+            user_id,
+            name,
+            email,
+            team_id,
+            team,
+            is_sysadmin,
+            user_group,
+        ) = get_whoami().values()
+    except (RuntimeError, HTTPError, JSONDecodeError) as e:
+        logger.warning(f"{e!r}")
+        return
+    user_groups_reversed: dict[int, str] = {
+        v: k for k, v in ElabUserGroups.__members__.items()
+    }
+    logger.debug(
+        f"Based on the detected configuration, the requests will be made to the server {host_url}, "
+        f"with API token '{api_token}' ({'Read/Write' if can_api_key_write else 'Read-only'}), "
+        f"by user '{name}' (ID: {user_id}), "
+        f"from team '{team}' (ID: {team_id}), in user group "
+        f"'{user_groups_reversed[user_group].capitalize()}', "
+        f"{'as a sysadmin' if is_sysadmin else 'not as a sysadmin'}."
+    )

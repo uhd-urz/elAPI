@@ -1426,7 +1426,7 @@ def whoami() -> None:
             logger.error(f"{e!r}")
             raise Exit(1) from e
 
-        formatted_whoami_info = f"""- __{ColorText("Host URL:").colorize(GREEN)}__ {
+        formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
             ColorText(whoami_info["host_url"]).colorize(BLUE)
         }
 - __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]} ({
