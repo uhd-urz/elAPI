@@ -91,7 +91,10 @@ def debug_log_whoami_message() -> None:
             user_group,
         ) = get_whoami().values()
     except (RuntimeError, HTTPError, JSONDecodeError) as e:
-        logger.warning(f"{e!r}")
+        logger.warning(
+            f"Fetching '{get_whoami.__name__}' information has failed with "
+            f"the following error: {e!r}"
+        )
         return
     user_groups_reversed: dict[int, str] = {
         v: k for k, v in ElabUserGroups.__members__.items()
