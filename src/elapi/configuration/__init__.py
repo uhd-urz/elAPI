@@ -35,6 +35,7 @@ from .config import (
     FALLBACK_SOURCE_NAME,
     HOST,
     KEY_API_TOKEN,
+    KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
     KEY_ENABLE_HTTP2,
@@ -59,6 +60,7 @@ from .config import (
 )
 from .overridable_vars import (
     get_active_api_token,
+    get_active_async_capacity,
     get_active_async_rate_limit,
     get_active_enable_http2,
     get_active_export_dir,
@@ -121,6 +123,7 @@ __all__ = [
     "KEY_TIMEOUT",
     "KEY_UNSAFE_TOKEN_WARNING",
     "KEY_VERIFY_SSL",
+    "KEY_ASYNC_CAPACITY",
     "LOCAL_CONFIG_LOC",
     "PLUGIN",
     "PROJECT_CONFIG_LOC",
@@ -141,6 +144,7 @@ __all__ = [
     "get_active_plugin_configs",
     "get_active_timeout",
     "get_active_unsafe_token_warning",
+    "get_active_async_capacity",
     "get_active_verify_ssl",
     "get_development_mode",
     "ConfigurationValidation",

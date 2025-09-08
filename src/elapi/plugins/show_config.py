@@ -6,6 +6,7 @@ from ..configuration import (
     EXTERNAL_LOCAL_PLUGIN_DIR,
     FALLBACK_SOURCE_NAME,
     KEY_API_TOKEN,
+    KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
     KEY_ENABLE_HTTP2,
@@ -15,6 +16,7 @@ from ..configuration import (
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_VERIFY_SSL,
     TMP_DIR,
+    get_active_async_capacity,
     get_active_async_rate_limit,
     get_active_enable_http2,
     get_active_export_dir,
@@ -101,6 +103,19 @@ finally:
         (" requests/second" if (async_rate_limit_value > 1) else " request/second")
         if async_rate_limit_value is not None
         else ""
+    )
+
+try:
+    async_capacity_source = detected_config[KEY_ASYNC_CAPACITY].source
+    async_capacity_source = detected_config_files[async_capacity_source]
+except KeyError:
+    async_capacity_source = FALLBACK_SOURCE_NAME
+finally:
+    async_capacity_value = get_active_async_capacity(skip_validation=False)
+    async_capacity_value = (
+        f"{async_capacity_value} avg. connections at a time"
+        if async_capacity_value is not None
+        else None
     )
 
 
@@ -239,6 +254,14 @@ The following information includes configuration values and their sources as det
         )
         + f": {async_rate_limit_value} ← `{async_rate_limit_source}`"
         + "\n"
+        + f"- {ColorText('Async capacity').colorize(LIGHTGREEN)}"
+        + (
+            f" **[{ColorText(KEY_ASYNC_CAPACITY.lower()).colorize(YELLOW)}]**"
+            if not no_keys
+            else ""
+        )
+        + f": {async_capacity_value} ← `{async_capacity_source}`"
+        + "\n"
         + f"- {ColorText('Development mode').colorize(LIGHTGREEN)}"
         + (
             f" **[{ColorText(KEY_DEVELOPMENT_MODE.lower()).colorize(YELLOW)}]**"
@@ -263,6 +286,7 @@ The following information includes configuration values and their sources as det
                 enable_http2_source,
                 timeout_source,
                 async_rate_limit_source,
+                async_capacity_source,
                 verify_ssl_source,
                 development_mode_source,
             )
