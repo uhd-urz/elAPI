@@ -3,7 +3,7 @@ from json import JSONDecodeError
 
 from httpx import HTTPError
 
-from ...api import GETRequest, GlobalSharedSession
+from ...api import GETRequest, SimpleClient
 from ...api.validators import ElabUserGroups
 from ...configuration import get_active_api_token, get_active_host
 from ...configuration.config import APIToken
@@ -21,15 +21,15 @@ class _ElabUserGroupColors(StrEnum):
 
 
 def get_whoami() -> dict[str, str | int | APIToken]:
-    with GlobalSharedSession(limited_to="sync"):
-        session = GETRequest()
-        user = session("users", "me")
-        user_info = user.json()
-        elab_server = session("info")
-        elab_server_info = elab_server.json()
-        api_keys = session("apikeys")
-        api_keys_info = api_keys.json()
-
+    client = SimpleClient(is_async_client=False)
+    session = GETRequest(shared_client=client)
+    user = session("users", "me")
+    user_info = user.json()
+    elab_server = session("info")
+    elab_server_info = elab_server.json()
+    api_keys = session("apikeys")
+    api_keys_info = api_keys.json()
+    client.close()
     if not user.is_success or not elab_server.is_success or not api_keys.is_success:
         raise RuntimeError(
             "Retrieving information about the current user, "

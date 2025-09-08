@@ -186,7 +186,7 @@ class SimpleClient(BaseClient):
             return async_client
         if sync_transport is not None:
             logger.debug(
-                f"Sync transport has been to {sync_transport!r} by an external method."
+                f"Sync transport has been set to {sync_transport!r} by an external method."
             )
         return Client(
             auth=auth,
