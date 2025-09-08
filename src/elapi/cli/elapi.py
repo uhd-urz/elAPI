@@ -564,6 +564,7 @@ enable_http2: false
 verify_ssl: true
 timeout: 90
 async_rate_limit: null
+async_capacity: null
 development_mode: false
 """
                     f.write(_configuration_yaml_text)
