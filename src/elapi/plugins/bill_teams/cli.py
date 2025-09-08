@@ -1,7 +1,9 @@
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from importlib.util import find_spec
+from math import floor
 from pathlib import Path
 from types import NoneType
 
@@ -17,14 +19,24 @@ else:
     import re
     from typing import Annotated, Generator, Optional, Tuple, Union
 
-    import tenacity
     import uvloop
     from dateutil import parser
     from dateutil.relativedelta import relativedelta
-    from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
+    from tenacity import (
+        RetryCallState,
+        retry,
+        retry_if_exception_type,
+        stop_after_attempt,
+        wait_exponential,
+    )
 
     from ...cli.doc import __PARAMETERS__doc__ as elapi_docs
-    from ...configuration import APP_NAME, get_active_export_dir
+    from ...configuration import (
+        APP_NAME,
+        get_active_async_capacity,
+        get_active_async_rate_limit,
+        get_active_export_dir,
+    )
     from ...core_validators import Exit, RuntimeValidationError, ValidationError
     from ...plugins.commons.cli_helpers import CLIExport, CLIFormat
     from ...styles import __PACKAGE_IDENTIFIER__ as styles_package_identifier
@@ -78,16 +90,43 @@ else:
 
     logger = BillingLogger()
 
+    @dataclass
+    class _RetryInitHandler:
+        retry_state: Optional[RetryCallState]
+
+        def log_retry_message(self):
+            logger.info(
+                f"{APP_NAME} {PLUGIN_NAME} plugin will try again in "
+                f"{self.retry_state.upcoming_sleep} seconds. "
+                f"Total attempt(s) so far: {self.retry_state.attempt_number}. "
+            )
+
+        def get_updated_rate_limit(self, curr_limit: Optional[int]) -> Optional[int]:
+            if self.retry_state is None:
+                return curr_limit
+            if curr_limit is not None:
+                return curr_limit // (self.retry_state.attempt_number + 2)
+            return None
+
+        def get_updated_capacity(self, curr_capacity: Optional[int]) -> Optional[int]:
+            if self.retry_state is None:
+                return curr_capacity
+            if curr_capacity is not None:
+                return floor(curr_capacity ** (1 / self.retry_state.attempt_number))
+            return None
+
+    _retry_init_handler = _RetryInitHandler(retry_state=None)
+
+    def _call_retry_init_handler(retry_state: RetryCallState):
+        _retry_init_handler.retry_state = retry_state
+        _retry_init_handler.log_retry_message()
+
     @app.command(name="teams-info")
-    @tenacity.retry(
+    @retry(
         retry=retry_if_exception_type((InterruptedError, RuntimeValidationError)),
-        stop=stop_after_attempt(6),  # including the very first attempt
+        stop=stop_after_attempt(6),  # the very first attempt is included
         wait=wait_exponential(multiplier=60, min=5, max=4260),
-        before_sleep=lambda retry_state: logger.info(
-            f"{APP_NAME} {PLUGIN_NAME} plugin will try again in "
-            f"{retry_state.upcoming_sleep} seconds. "
-            f"Total attempt(s) so far: {retry_state.attempt_number}. "
-        ),
+        before_sleep=_call_retry_init_handler,
         retry_error_callback=lambda retry_state: logger.error(
             f"Collecting teams data (teams-info) from the server has failed "
             f"after {retry_state.attempt_number} attempts. "
@@ -135,7 +174,28 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from ...core_validators import Validate
 
-        global_session = GlobalSharedSession()
+        global_session = GlobalSharedSession(
+            async_rate_limit=(
+                async_rate_limit := _retry_init_handler.get_updated_rate_limit(
+                    get_active_async_rate_limit()
+                )
+            ),
+            async_capacity=(
+                async_capacity := _retry_init_handler.get_updated_capacity(
+                    get_active_async_capacity()
+                )
+            ),
+        )
+        if async_rate_limit != get_active_async_rate_limit():
+            logger.info(
+                f"Async rate limit is updated to {async_rate_limit} for "
+                f"retrieving billing users data. "
+            )
+        if async_capacity != get_active_async_capacity():
+            logger.info(
+                f"Async capacity is updated to {async_capacity} for "
+                f"retrieving billing users data."
+            )
         with stderr_console.status(
             "Validating...\n", refresh_per_second=15
         ) as validation_status:

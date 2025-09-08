@@ -112,7 +112,7 @@ class FixedAsyncEndpoint:
         )
 
     async def aclose(self) -> Optional[NotImplementedType]:
-        if self._is_global_shared_instance_none is False:
+        if self._is_global_shared_instance_none is True:
             await self._client.aclose()
         return NotImplemented
 
