@@ -135,6 +135,15 @@ else:
         # meant to suppress raising the final exception once all attempts have been made
     )
     def get_teams(
+        admins_only: Annotated[
+            Optional[bool],
+            typer.Option(
+                "--admins-only",
+                "-A",
+                help="Don't include members of the teams, administrators only.",
+                show_default=True,
+            ),
+        ] = False,
         data_format: Annotated[
             Optional[str],
             typer.Option(
@@ -237,7 +246,7 @@ else:
             return tl
 
         teams_list = uvloop.run(gather_teams_list())
-        formatted_teams = format(teams := teams_list.items())
+        formatted_teams = format(teams := teams_list.items(admins_only))
         if export is not None:
             export_teams = Export(
                 export_dest,
