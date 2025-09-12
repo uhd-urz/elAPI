@@ -2,20 +2,20 @@ import importlib.util
 import sys
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Tuple, Generator, Union, Optional
+from typing import Generator, List, Optional, Tuple, Union
 
 import typer
 
 from ..configuration import get_development_mode
 from ..configuration.config import (
-    ROOT_INSTALLATION_DIR,
+    EXTERNAL_LOCAL_PLUGIN_DIR,
+    EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME,
     INTERNAL_PLUGIN_DIRECTORY_NAME,
     INTERNAL_PLUGIN_TYPER_APP_FILE_NAME,
     INTERNAL_PLUGIN_TYPER_APP_VAR_NAME,
-    EXTERNAL_LOCAL_PLUGIN_DIR,
-    EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME,
+    ROOT_INSTALLATION_DIR,
 )
-from ..core_validators import Validator, ValidationError, Validate
+from ..core_validators import Validate, ValidationError, Validator
 from ..loggers import Logger
 from ..path import ProperPath
 from ..plugins import __PACKAGE_IDENTIFIER__ as plugins_sub_package_identifier
@@ -70,24 +70,25 @@ class ExternalPluginLocationValidator(Validator):
                     f"'location' attribute for class {self.__class__.__class__} "
                     f"is invalid."
                 ) from e
-            else:
-                self._location = value.expanded
+        self._location = value.expanded
 
     def validate(self):
         import os
+
         import yaml
+
         from ..configuration import (
             APP_BRAND_NAME,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME,
-            EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX,
             CANON_YAML_EXTENSION,
             CONFIG_FILE_EXTENSION,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX,
+            EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME,
         )
 
         _CANON_PLUGIN_METADATA_FILE_NAME: str = (
@@ -275,8 +276,8 @@ class ExternalPluginLocationValidator(Validator):
 class ExternalPluginHandler:
     @staticmethod
     def get_plugin_metadata() -> Generator[Optional[dict], None, None]:
-        from ..utils import add_message
         from ..configuration import EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR
+        from ..utils import add_message
 
         try:
             for path in sorted(
@@ -310,13 +311,14 @@ class ExternalPluginHandler:
 
     def get_typer_apps(self) -> Generator[Optional[PluginInfo], None, None]:
         import logging
+
         from ..configuration import (
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR,
-            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
             EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH,
+            EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR,
         )
         from ._venv_state_manager import switch_venv_state
 

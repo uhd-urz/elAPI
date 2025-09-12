@@ -296,7 +296,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8,<8.2" },
     { name = "dynaconf", specifier = ">=3.2.0,<4" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1,<0.29" },
-    { name = "httpx-aiohttp", specifier = ">=0.1.8" },
+    { name = "httpx-aiohttp", specifier = ">=0.1.8,<0.2" },
     { name = "httpx-auth", specifier = ">=0.23.1,<0.24" },
     { name = "httpx-limiter", specifier = ">=0.3.0,<0.4.0" },
     { name = "jinja2", marker = "extra == 'mail'", specifier = ">=3.1.6,<3.2" },
