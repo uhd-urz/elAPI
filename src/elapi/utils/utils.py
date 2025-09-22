@@ -3,6 +3,8 @@ import subprocess
 from pathlib import Path
 from typing import Tuple
 
+from .._core_init import PatternNotFoundError
+from .._names import ELAB_HOST_URL_API_SUFFIX
 from ..styles import Missing
 
 
@@ -55,11 +57,14 @@ def _get_venv_relative_python_binary_path() -> Path:
 
 def get_external_python_version(venv_dir: Path) -> Tuple[str, str, str]:
     external_python_path: Path = (
-        venv_dir / _get_venv_relative_python_binary_path()
+        external_python_path_unresolved := (
+            venv_dir / _get_venv_relative_python_binary_path()
+        )
     ).resolve()
     if external_python_path.exists() is False:
         raise PythonVersionCheckFailed(
-            f"Resolved Python binary path {external_python_path} does not exist"
+            f"Resolved Python binary path {external_python_path_unresolved} -> "
+            f"{external_python_path} does not exist"
         )
     try:
         external_python_version_call = subprocess.run(
@@ -88,3 +93,14 @@ def get_external_python_version(venv_dir: Path) -> Tuple[str, str, str]:
         raise PythonVersionCheckFailed(
             "Matching Python version not found in output string"
         )
+
+
+def parse_url_only_from_host(host: str) -> str:
+    return re.sub(ELAB_HOST_URL_API_SUFFIX, r"", host, count=1, flags=re.IGNORECASE)
+
+
+def parse_api_id_from_api_token(api_token: str) -> str:
+    match = re.match(r"^(\d+)-", api_token, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    raise PatternNotFoundError("No API token ID prefix found in API token string!")

@@ -19,8 +19,12 @@ class BaseHighlight(ABC):
 
 
 class Highlight(BaseHighlight):
-    def __init__(self, language: str, /, theme: str = "lightbulb", *, package_identifier: str):
-        validator = RegisterFormattingLanguage(language, package_identifier=package_identifier)
+    def __init__(
+        self, language: str, /, theme: str = "lightbulb", *, package_identifier: str
+    ):
+        validator = RegisterFormattingLanguage(
+            language, package_identifier=package_identifier
+        )
         self.name = validator.name
         self.theme = theme
 

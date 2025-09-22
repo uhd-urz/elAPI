@@ -55,6 +55,7 @@ class ApplyConfigHistory:
             FALLBACK_EXPORT_DIR,
             FALLBACK_SOURCE_NAME,
             KEY_API_TOKEN,
+            KEY_ASYNC_CAPACITY,
             KEY_ASYNC_RATE_LIMIT,
             KEY_DEVELOPMENT_MODE,
             KEY_ENABLE_HTTP2,
@@ -106,6 +107,7 @@ class ApplyConfigHistory:
                 KEY_VERIFY_SSL,
                 KEY_TIMEOUT,
                 KEY_ASYNC_RATE_LIMIT,
+                KEY_ASYNC_CAPACITY,
                 KEY_DEVELOPMENT_MODE,
                 KEY_PLUGIN_KEY_NAME,
             ]:
@@ -161,6 +163,7 @@ def preventive_missing_warning(field: Tuple[str, Any], /) -> None:
         )
     try:
         key, value = field
+        # value can be an API token, so it must not be exposed to STDOUT
     except ValueError as e:
         raise ValueError(
             "Only a pair of configuration key and its value in an "

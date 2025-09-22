@@ -1,11 +1,17 @@
+from enum import IntEnum
 from json import JSONDecodeError
-from typing import Union, Iterable, Optional
+from typing import Iterable, Optional, Union
 
 import httpx
 
-from ..core_validators import Validator, RuntimeValidationError, CriticalValidationError
+from ..api import GETRequest
+from ..configuration import KEY_HOST, get_active_api_token, get_active_host
+from ..core_validators import CriticalValidationError, RuntimeValidationError, Validator
+from ..loggers import Logger
 from ..styles import stdout_console
 from ..styles.highlight import NoteText
+
+logger = Logger()
 
 
 class HostIdentityValidator(Validator):
@@ -28,23 +34,13 @@ class HostIdentityValidator(Validator):
             self._restrict_to = value
         else:
             raise AttributeError(
-                "restrict_to must be a string of target host URL, or an iterable of strings where "
-                f"each string is a host URL that {HostIdentityValidator.__name__} validation will be restricted to."
+                "restrict_to must be a string of target host URL, "
+                "or an iterable of strings where "
+                f"each string is a host URL that {HostIdentityValidator.__name__} "
+                f"validation will be restricted to."
             )
 
-    @staticmethod
-    def check_endpoint():
-        from ..api import GETRequest
-
-        session = GETRequest()
-        return session(endpoint_name="apikeys", endpoint_id=None)
-
     def validate(self):
-        from ..loggers import Logger
-        from ..configuration import get_active_host, get_active_api_token
-        from ..configuration import KEY_HOST
-
-        logger = Logger()
         host = get_active_host()
         api_token = get_active_api_token()
         if self.restrict_to is not None:
@@ -57,79 +53,91 @@ class HostIdentityValidator(Validator):
                     stdout_console.print(
                         NoteText(
                             f"Detected '{KEY_HOST.lower()}': '{host}'. "
-                            f"Host(s) restricted by {HostIdentityValidator.__name__}: '{', '.join(self.restrict_to)}'."
+                            f"Host(s) restricted by {HostIdentityValidator.__name__}: "
+                            f"'{', '.join(self.restrict_to)}'."
                         )
                     )
                 except TypeError as e:
                     raise ValueError(
                         f"An invalid value might have been given to restrict_to "
-                        f"attribute of {HostIdentityValidator.__name__}. Validation could not be completed!"
+                        f"attribute of {HostIdentityValidator.__name__}. "
+                        f"Validation could not be completed!"
                     ) from e
                 raise CriticalValidationError
 
-        API_TOKEN_MASKED = api_token
+        api_token_masked = api_token
         try:
-            response: httpx.Response = self.check_endpoint()
-            response.json()
-        except (httpx.HTTPError, JSONDecodeError) as error:
+            session = GETRequest()
+            response: httpx.Response = session(endpoint_name="apikeys")
+        except httpx.HTTPError as e:
             logger.critical(
-                f"There was a problem accessing host '{host}' with API token '{API_TOKEN_MASKED}'."
-            )
-            try:
-                # noinspection PyUnboundLocalVariable
-                logger.info(
-                    f"Returned response: '{response.status_code}: {response.text}'"
-                )
-            except UnboundLocalError:
-                logger.info(
-                    f"No request was made to the host URL! Exception details: '{error!r}'"
-                )
-                raise RuntimeValidationError
-            if response.is_server_error:
-                logger.critical(
-                    f"There was a problem with the host server: '{host}'. "
-                    f"Please contact an administrator."
-                )
-                raise RuntimeValidationError
-            stdout_console.print(
-                NoteText(
-                    "There is likely nothing wrong with the host server. "
-                    "Possible reasons for failure:\n"
-                    "• Invalid/expired/incorrect API token\n"
-                    "• Incorrect host URL\n",
-                )
+                f"There was a problem accessing host '{host}' with API token "
+                f"'{api_token_masked}'. No request was made. "
+                f"Exception details: {e!r}"
             )
             raise RuntimeValidationError
+        else:
+            try:
+                response.json()
+            except JSONDecodeError as error:
+                logger.error(
+                    f"Returned response from host '{host}' could not be parsed as JSON. "
+                    f"JSON exception details: {error!r}."
+                    f"Response status: {response.status_code}. "
+                    f"Response: {response.text}"
+                )
+                if response.is_server_error:
+                    logger.critical(
+                        f"There was a problem with the host server: '{host}'. "
+                        f"Please contact an administrator."
+                    )
+                    raise RuntimeValidationError
+                stdout_console.print(
+                    NoteText(
+                        "There is likely nothing wrong with the host server. "
+                        "Possible reasons for failure:\n"
+                        "• Invalid/expired/incorrect API token\n"
+                        "• Incorrect host URL\n",
+                    )
+                )
+                raise RuntimeValidationError
+
+
+class ElabUserGroups(IntEnum):
+    """eLabFTW's default permission groups.
+    See: https://github.com/elabftw/elabftw/blob/master/src/Enums/Usergroup.php
+    """
+
+    sysadmin = 1
+    admin = 2
+    user = 4
+
+    @classmethod
+    def group_names(cls) -> list[str]:
+        return [_.name for _ in cls]
+
+    @classmethod
+    def group_values(cls) -> list[int]:
+        return [_.value for _ in cls]
+
+
+class ElabScopes(IntEnum):
+    self = 1
+    team = 2
+    everything = 3
 
 
 class PermissionValidator(Validator):
-    _SYSADMIN_GROUP_KEY_NAME = "sysadmin"
-    _ADMIN_GROUP_KEY_NAME = "admin"
-    _USER_GROUP_KEY_NAME = "user"
     __slots__ = "_group", "_who", "_team_id"
 
     def __init__(
         self,
-        group: str = _USER_GROUP_KEY_NAME,
+        group: str = ElabUserGroups.user.name,
         team_id: Union[int, str, None] = None,
     ):
         super().__init__()
         self.group: str = group
         self.team_id = team_id
-
-    @property
-    def GROUPS(self) -> dict:
-        # Default (all) permission groups.
-        # Reference: https://github.com/elabftw/elabftw/blob/master/src/enums/Usergroup.php
-        return {
-            PermissionValidator._SYSADMIN_GROUP_KEY_NAME: 1,
-            PermissionValidator._ADMIN_GROUP_KEY_NAME: 2,
-            PermissionValidator._USER_GROUP_KEY_NAME: 4,
-        }
-
-    @GROUPS.setter
-    def GROUPS(self, value):
-        raise AttributeError("Groups cannot be modified!")
 
     @property
     def group(self) -> str:
@@ -138,11 +146,12 @@ class PermissionValidator(Validator):
     @group.setter
     def group(self, value: str):
         value = value.lower()
-
         try:
-            self.GROUPS[value]
+            ElabUserGroups[value]
         except KeyError:
-            raise ValueError(f"Supported values are: {', '.join(self.GROUPS.keys())}.")
+            raise ValueError(
+                f"Supported values are: {', '.join(ElabUserGroups.group_names())}."
+            )
         else:
             self._who = value
 
@@ -152,30 +161,28 @@ class PermissionValidator(Validator):
 
     @team_id.setter
     def team_id(self, value):
-        if value is None and self.group != PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
+        if value is None and self.group != ElabUserGroups.sysadmin.name:
             raise AttributeError(
                 f"A team ID must be provided to {self.__class__.__name__} class "
-                f"if the group to validate is not '{PermissionValidator._SYSADMIN_GROUP_KEY_NAME}'!"
+                f"if the group to validate is not a "
+                f"'{ElabUserGroups.sysadmin.name}' group!"
             )
         self._team_id = str(value) if value is not None else value
 
     def validate(self) -> None:
-        from ..api import GETRequest
-        from ..loggers import Logger
-
-        logger = Logger()
         try:
             session = GETRequest()
             caller_data: dict = session(endpoint_name="users", endpoint_id="me").json()
-        except (httpx.HTTPError, JSONDecodeError):
+        except (httpx.HTTPError, JSONDecodeError) as e:
             logger.critical(
-                "Something went wrong while trying to read user information! "
-                f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
-                "to see what specifically went wrong."
+                "An exception occurred while trying to read user information! "
+                f"Maybe configuration was not validated first? If not, "
+                f"validate the configuration first with '{HostIdentityValidator.__name__}' "
+                f"to see what specifically went wrong. Exception details: {e!r}"
             )
             raise RuntimeValidationError
         else:
-            if self.group == PermissionValidator._SYSADMIN_GROUP_KEY_NAME:
+            if self.group == ElabUserGroups.sysadmin.name:
                 if not caller_data["is_sysadmin"]:
                     logger.critical(
                         f"Requesting user doesn't have eLabFTW '{self.group}' permission "
@@ -185,11 +192,7 @@ class PermissionValidator(Validator):
             if self.team_id is not None:
                 for team in caller_data["teams"]:
                     if str(team["id"]) == self.team_id:
-                        if (
-                            team["usergroup"] > self.GROUPS[self.group]
-                            and self.group
-                            != PermissionValidator._SYSADMIN_GROUP_KEY_NAME
-                        ):  # "sysadmin" has access to all teams, hence we don't check if "sysadmin" belongs to a team.
+                        if team["usergroup"] > ElabUserGroups[self.group]:
                             logger.critical(
                                 f"Requesting user is part of the team '{self.team_id}' but "
                                 f"doesn't belong to the permission group '{self.group}'!"
@@ -197,7 +200,8 @@ class PermissionValidator(Validator):
                             raise CriticalValidationError
                         return
                 logger.critical(
-                    f"Requesting user is not part of the given team with team ID '{self.team_id}'!"
+                    f"Requesting user is not part of the given team with "
+                    f"team ID '{self.team_id}'!"
                 )
                 raise CriticalValidationError
 
@@ -208,21 +212,18 @@ class APITokenRWValidator(Validator):
         self.can_write = can_write
 
     def validate(self):
-        from ..api import GETRequest
-        from ..loggers import Logger
-
-        logger = Logger()
         if self.can_write:
             try:
                 session = GETRequest()
                 api_token_data: Optional[dict] = session(
-                    endpoint_name="apikeys", endpoint_id="me"
+                    endpoint_name="apikeys"
                 ).json()[0]
-            except (httpx.HTTPError, JSONDecodeError):
+            except (httpx.HTTPError, JSONDecodeError) as e:
                 logger.critical(
-                    "Something went wrong while trying to read API token information! "
-                    f"Try to validate the configuration first with '{HostIdentityValidator.__name__}' "
-                    "to see what specifically went wrong."
+                    "An exception occurred while trying to read API token information! "
+                    f"Maybe configuration was not validated first? If not, "
+                    f"validate the configuration first with '{HostIdentityValidator.__name__}' "
+                    f"to see what specifically went wrong. Exception details: {e!r}"
                 )
                 raise RuntimeValidationError
             else:

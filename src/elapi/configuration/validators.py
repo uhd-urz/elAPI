@@ -1,30 +1,61 @@
+import errno
 from pathlib import Path
 from types import NoneType
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
-from ..core_validators import CriticalValidationError, Validator
-from ..loggers import DefaultLogLevels
+from dynaconf.utils.boxing import DynaBox
+
+from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
+from ..core_validators import (
+    CriticalValidationError,
+    PathValidationError,
+    PathValidator,
+    Validate,
+    ValidationError,
+    Validator,
+)
+from ..loggers import DefaultLogLevels, Logger
 from ..styles import Missing, stdout_console
 from ..styles.highlight import NoteText
+from ..utils import add_message
 from ._config_history import FieldValueWithKey, MinimalActiveConfiguration
+from .config import (
+    ASYNC_CAPACITY_DEFAULT_VAL,
+    ASYNC_RATE_LIMIT_DEFAULT_VAL,
+    DEVELOPMENT_MODE_DEFAULT_VAL,
+    ENABLE_HTTP2_DEFAULT_VAL,
+    KEY_ASYNC_CAPACITY,
+    KEY_ASYNC_RATE_LIMIT,
+    KEY_DEVELOPMENT_MODE,
+    KEY_ENABLE_HTTP2,
+    KEY_EXPORT_DIR,
+    KEY_HOST,
+    KEY_PLUGIN_KEY_NAME,
+    KEY_TIMEOUT,
+    KEY_UNSAFE_TOKEN_WARNING,
+    KEY_VERIFY_SSL,
+    PLUGIN_DEFAULT_VALUE,
+    TIMEOUT_DEFAULT_VAL,
+    UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
+    VERIFY_SSL_DEFAULT_VAL,
+)
+
+logger = Logger()
 
 
 class ConfigurationValidation:
-    def __init__(
-        self, minimal_active_config_obj: Union[MinimalActiveConfiguration, dict], /
-    ):
+    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration, /):
         self.active_configuration = minimal_active_config_obj
 
     @property
-    def active_configuration(self) -> Union[MinimalActiveConfiguration, dict]:
+    def active_configuration(self) -> MinimalActiveConfiguration:
         return self._active_configuration
 
     @active_configuration.setter
     def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, (MinimalActiveConfiguration, dict)):
+        if not isinstance(value, MinimalActiveConfiguration):
             raise TypeError(
-                f"Value must be an instance of "
-                f"{MinimalActiveConfiguration.__name__} or {dict.__name__}."
+                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
             )
         self._active_configuration = value
 
@@ -37,10 +68,6 @@ class HostConfigurationValidator(ConfigurationValidation, Validator):
         super().__init__(*args)
 
     def validate(self) -> str:
-        from ..loggers import Logger
-        from .config import KEY_HOST
-
-        logger = Logger()
         _HOST_EXAMPLE: str = f"{KEY_HOST.lower()}: 'https://demo.elabftw.net/api/v2'"
 
         if isinstance(self.active_configuration.get_value(KEY_HOST), Missing):
@@ -170,19 +197,6 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
         super().__init__(*args)
 
     def validate(self) -> Path:
-        import errno
-
-        from ..core_validators import (
-            PathValidationError,
-            PathValidator,
-            Validate,
-            ValidationError,
-        )
-        from ..loggers import Logger
-        from .config import KEY_EXPORT_DIR
-
-        logger = Logger()
-
         def get_validated_fallback():
             from .._names import APP_NAME
             from ..path import ProperPath
@@ -299,9 +313,6 @@ class TimeWithFallbackConfigurationValidator(ConfigurationValidation, Validator)
         self.allow_none = allow_none
 
     def validate(self) -> float:
-        from ..loggers import Logger
-
-        logger = Logger()
         if isinstance(
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
@@ -338,9 +349,6 @@ class DiscreteWithFallbackConfigurationValidator(ConfigurationValidation, Valida
         self.allow_none = allow_none
 
     def validate(self) -> Optional[int]:
-        from ..loggers import Logger
-
-        logger = Logger()
         if isinstance(
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
@@ -372,11 +380,6 @@ class PluginConfigurationValidator(ConfigurationValidation, Validator):
         self.fallback_value = fallback_value
 
     def validate(self) -> dict:
-        from dynaconf.utils.boxing import DynaBox
-
-        from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
-        from ..utils import add_message
-
         value: DynaBox = self.active_configuration.get_value(self.key_name)
         if isinstance(value, Missing):
             return self.fallback_value
@@ -464,25 +467,6 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
             self._limited_to = value
 
     def validate(self) -> list[FieldValueWithKey]:
-        from ..core_validators import Validate, ValidationError
-        from .config import (
-            ASYNC_RATE_LIMIT_DEFAULT_VAL,
-            DEVELOPMENT_MODE_DEFAULT_VAL,
-            ENABLE_HTTP2_DEFAULT_VAL,
-            KEY_ASYNC_RATE_LIMIT,
-            KEY_DEVELOPMENT_MODE,
-            KEY_ENABLE_HTTP2,
-            KEY_EXPORT_DIR,
-            KEY_PLUGIN_KEY_NAME,
-            KEY_TIMEOUT,
-            KEY_UNSAFE_TOKEN_WARNING,
-            KEY_VERIFY_SSL,
-            PLUGIN_DEFAULT_VALUE,
-            TIMEOUT_DEFAULT_VAL,
-            UNSAFE_TOKEN_WARNING_DEFAULT_VAL,
-            VERIFY_SSL_DEFAULT_VAL,
-        )
-
         validated_fields: list[FieldValueWithKey] = []
 
         if HostConfigurationValidator in self.limited_to:
@@ -547,18 +531,20 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_TIMEOUT, timeout))
         if DiscreteWithFallbackConfigurationValidator in self.limited_to:
-            async_rate_limit = Validate(
-                DiscreteWithFallbackConfigurationValidator(
-                    self.active_configuration,
-                    key_name=KEY_ASYNC_RATE_LIMIT,
-                    fallback_value=ASYNC_RATE_LIMIT_DEFAULT_VAL,
-                    allow_none=True,
-                )
-            ).get()
-            # Update validated_fields after validation
-            validated_fields.append(
-                FieldValueWithKey(KEY_ASYNC_RATE_LIMIT, async_rate_limit)
-            )
+            for key_name, default_value in [
+                (KEY_ASYNC_RATE_LIMIT, ASYNC_RATE_LIMIT_DEFAULT_VAL),
+                (KEY_ASYNC_CAPACITY, ASYNC_CAPACITY_DEFAULT_VAL),
+            ]:
+                value = Validate(
+                    DiscreteWithFallbackConfigurationValidator(
+                        self.active_configuration,
+                        key_name=key_name,
+                        fallback_value=default_value,
+                        allow_none=True,
+                    )
+                ).get()
+                # Update validated_fields after validation
+                validated_fields.append(FieldValueWithKey(key_name, value))
         if PluginConfigurationValidator in self.limited_to:
             plugin = Validate(
                 PluginConfigurationValidator(

@@ -8,29 +8,50 @@ from typing import Literal, Optional, Tuple, Union
 
 # noinspection PyProtectedMember
 import httpx._client as httpx_private_client_module
-from httpx import AsyncBaseTransport, AsyncClient, Client, Limits, Response
+from httpx import (
+    AsyncBaseTransport,
+    AsyncClient,
+    BaseTransport,
+    Client,
+    Limits,
+    Response,
+)
 
 # noinspection PyProtectedMember
 from httpx._client import BaseClient
 
 # noinspection PyProtectedMember
 from httpx._types import AuthTypes
+from httpx_aiohttp import AiohttpTransport
 from httpx_auth import HeaderApiKey
 from httpx_limiter import AsyncRateLimitedTransport, Rate
 
-from .. import APP_BRAND_NAME, APP_NAME
+from .. import APP_BRAND_NAME
 from ..configuration import (
+    KEY_API_TOKEN,
+    KEY_ASYNC_RATE_LIMIT,
+    KEY_ENABLE_HTTP2,
+    KEY_HOST,
+    KEY_TIMEOUT,
+    KEY_VERIFY_SSL,
     TOKEN_BEARER,
+    MinimalActiveConfiguration,
     get_active_api_token,
+    get_active_async_capacity,
     get_active_async_rate_limit,
     get_active_enable_http2,
     get_active_host,
     get_active_timeout,
     get_active_verify_ssl,
+    preventive_missing_warning,
 )
+from ..configuration.config import APIToken
 from ..loggers import Logger
 from ..styles import Missing
-from ..utils import get_app_version, update_kwargs_with_defaults
+from ..utils import (
+    get_app_version,
+    update_kwargs_with_defaults,
+)
 
 USER_AGENT: str = (
     f"{APP_BRAND_NAME}/{get_app_version()} {httpx_private_client_module.USER_AGENT}"
@@ -55,90 +76,126 @@ class SessionDefaults:
 session_defaults = SessionDefaults()
 
 
-class _CustomHeaderApiKey(HeaderApiKey): ...
+class _CustomHeaderApiKey(HeaderApiKey):
+    def __init__(self):
+        self.api_key = str(Missing())
+        self.header_name = TOKEN_BEARER
+        super().__init__(self.api_key, self.header_name)
 
 
 class SimpleClient(BaseClient):
-    def __new__(
-        cls,
-        *,
-        is_async_client: bool,
-        auth: Optional[AuthTypes] = _CustomHeaderApiKey(
-            api_key=str(Missing()), header_name=TOKEN_BEARER
-        ),
-        transport: Optional[AsyncBaseTransport] = None,
-        **kwargs,
-    ) -> Union[Client, AsyncClient]:
-        from .._names import CONFIG_FILE_NAME
-        from ..configuration import (
-            KEY_API_TOKEN,
-            KEY_ASYNC_RATE_LIMIT,
-            KEY_ENABLE_HTTP2,
-            KEY_HOST,
-            KEY_TIMEOUT,
-            KEY_VERIFY_SSL,
-            preventive_missing_warning,
+    def __new__(cls, *, is_async_client: bool, **kwargs) -> Union[Client, AsyncClient]:
+        host: str = kwargs.pop("host", get_active_host())
+        api_token: str | APIToken = kwargs.pop("api_token", get_active_api_token())
+        if not isinstance(api_token, APIToken):
+            api_token = APIToken(api_token)
+        auth: Optional[AuthTypes] = kwargs.pop("auth", _CustomHeaderApiKey())
+        if auth is None:
+            auth: AuthTypes = _CustomHeaderApiKey()
+            auth.api_key = api_token.token
+            logger.debug(
+                f"Argument 'auth' passed to {SimpleClient.__name__} is {None}. "
+                f"It has been be set to {HeaderApiKey} with "
+                f"API key/token '{api_token}'."
+            )
+        elif isinstance(auth, HeaderApiKey):
+            auth.api_key = api_token.token
+        else:
+            logger.debug(
+                f"'auth' has been set to {auth!r} for {SimpleClient.__name__} "
+                f"by an external method."
+                f"API token from configuration file '{api_token}' will be ignored."
+            )
+        enable_http2: bool = kwargs.pop("http2", get_active_enable_http2())
+        verify_ssl: bool = kwargs.pop("verify", get_active_verify_ssl())
+        timeout: float = kwargs.pop("timeout", get_active_timeout())
+        async_rate_limit: Optional[int] = kwargs.pop(
+            "async_rate_limit", get_active_async_rate_limit()
         )
-        from ..utils import check_reserved_keyword
+        async_capacity: Optional[int] = kwargs.pop(
+            "async_capacity", get_active_async_capacity()
+        )
+        async_transport: Optional[AsyncBaseTransport] = kwargs.pop(
+            "async_transport", None
+        )
+        sync_transport: Optional[BaseTransport] = kwargs.pop("sync_transport", None)
 
-        host: str = get_active_host()
-        api_token: str = get_active_api_token().token
-        enable_http2: bool = get_active_enable_http2()
-        verify_ssl: bool = get_active_verify_ssl()
-        timeout: float = get_active_timeout()
-        active_async_rate_limit: Optional[int] = get_active_async_rate_limit()
-
-        if isinstance(auth, _CustomHeaderApiKey):
-            auth.api_key = api_token
-        for config_field in (
+        for key_name, value in (
             (KEY_HOST, host),
             (KEY_API_TOKEN, api_token),
             (KEY_ENABLE_HTTP2, enable_http2),
             (KEY_VERIFY_SSL, verify_ssl),
             (KEY_TIMEOUT, timeout),
         ):
-            preventive_missing_warning(config_field)
-        try:
-            if is_async_client is True:
-                if transport is None and active_async_rate_limit is not None:
-                    transport = AsyncRateLimitedTransport.create(
-                        rate=Rate.create(magnitude=active_async_rate_limit, duration=1),
-                        # see more: https://midnighter.github.io/httpx-limiter/latest/tutorial/#single-rate-limit
-                        # In our case, magnitude=1, duration=1/active_async_rate_limit yields worse results.
-                        http2=enable_http2,  # type: ignore
-                        # See: https://github.com/Midnighter/httpx-limiter/issues/7#issuecomment-3197487921
-                        # http2 needs to be passed here if AsyncRateLimitedTransport is used
-                        verify=verify_ssl,  # type: ignore
-                    )
-                elif transport is not None and active_async_rate_limit is not None:
+            preventive_missing_warning((key_name, value))
+            if MinimalActiveConfiguration().get_value(key_name) != value:
+                logger.debug(
+                    f"Configuration value for '{key_name}' "
+                    f"is set to '{value}' for {SimpleClient.__name__} by an "
+                    f"external method."
+                )
+        if is_async_client is True:
+            if async_transport is None and async_rate_limit is not None:
+                # noinspection PyTypeChecker
+                async_transport = AsyncRateLimitedTransport.create(
+                    rate=Rate.create(magnitude=async_rate_limit, duration=1),
+                    # see more: https://midnighter.github.io/httpx-limiter/latest/tutorial/#single-rate-limit
+                    # In our case, magnitude=1, duration=1/async_rate_limit yields worse results.
+                    http2=enable_http2,  # type: ignore
+                    # See: https://github.com/Midnighter/httpx-limiter/issues/7#issuecomment-3197487921
+                    # http2 needs to be passed here if AsyncRateLimitedTransport is used
+                    verify=verify_ssl,  # type: ignore
+                )
+                logger.debug(
+                    f"Async rate limit is set to {async_transport.__class__.__name__} "
+                    f"instance {async_transport!r}: {async_rate_limit}"
+                )
+            elif async_transport is not None:
+                logger.debug(
+                    f"Async transport has been set to {async_transport!r} by an "
+                    f"external method."
+                )
+                if async_rate_limit is not None:
                     logger.warning(
                         f"When a manual transport parameter is passed to {SimpleClient}, "
                         f"the '{KEY_ASYNC_RATE_LIMIT}' in the configuration file is ignored. "
                     )
-                return AsyncClient(
-                    auth=auth,
+            elif async_transport is None:
+                async_transport = AiohttpTransport(
                     http2=enable_http2,
                     verify=verify_ssl,
-                    timeout=timeout,
-                    transport=transport,
-                    **kwargs,
+                    timeout=timeout,  # type: ignore
                 )
-            return Client(
+                logger.debug(
+                    f"Async transport has been to {async_transport!r} by {APP_BRAND_NAME}."
+                )
+            async_client = AsyncClient(
                 auth=auth,
                 http2=enable_http2,
                 verify=verify_ssl,
                 timeout=timeout,
+                transport=async_transport,
                 **kwargs,
             )
-        except TypeError as e:
-            check_reserved_keyword(
-                e,
-                what=f"{APP_NAME}",
-                against=f"class {SimpleClient.__name__}, "
-                f"so the parameter remains user-configurable "
-                f"through {CONFIG_FILE_NAME} configuration file",
+            if async_capacity is not None:
+                async_client._async_semaphore_ = asyncio.Semaphore(async_capacity)
+                logger.debug(
+                    f"Async semaphore is set to {async_client.__class__.__name__} "
+                    f"instance {async_client!r}: {async_capacity}"
+                )
+            return async_client
+        if sync_transport is not None:
+            logger.debug(
+                f"Sync transport has been set to {sync_transport!r} by an external method."
             )
-            raise e
+        return Client(
+            auth=auth,
+            http2=enable_http2,
+            verify=verify_ssl,
+            timeout=timeout,
+            transport=sync_transport,
+            **kwargs,
+        )
 
 
 class GlobalSharedSession:
@@ -172,13 +229,23 @@ class GlobalSharedSession:
         @cached_property
         def sync_client(self) -> Optional[Client]:
             if self.limited_to in ("sync", "all"):
-                return SimpleClient(is_async_client=False, **self._kwargs)
+                client = SimpleClient(is_async_client=False, **self._kwargs)
+                logger.debug(
+                    f"{GlobalSharedSession.__name__} instance {self!r} "
+                    f"injected sync client {client!r}."
+                )
+                return client
             return None
 
         @cached_property
         def async_client(self) -> Optional[AsyncClient]:
             if self.limited_to in ("async", "all"):
-                return SimpleClient(is_async_client=True, **self._kwargs)
+                client = SimpleClient(is_async_client=True, **self._kwargs)
+                logger.debug(
+                    f"{GlobalSharedSession.__name__} instance {self!r} "
+                    f"injected async client {client!r}."
+                )
+                return client
             return None
 
         def close(self) -> None:
@@ -186,6 +253,9 @@ class GlobalSharedSession:
             if self.sync_client is not None:
                 if self.sync_client.is_closed is False:
                     self.sync_client.close()
+                    logger.debug(
+                        f"{self.__class__.__name__} has closed sync client {self.sync_client!r}."
+                    )
             if self.async_client is not None:
                 if self.async_client.is_closed is False:
                     # nest_asyncio is needed if there are multiple asyncio.run.
@@ -209,8 +279,15 @@ class GlobalSharedSession:
                             ) from e
                         else:
                             event_loop.close()
+                            logger.debug(
+                                f"{self.__class__.__name__} has closed async client {self.async_client!r}."
+                            )
                     else:
                         event_loop.create_task(self.async_client.aclose())
+                        logger.debug(
+                            f"{self.__class__.__name__} has added a task for async client "
+                            f"{self.async_client!r} to be closed."
+                        )
 
         def __enter__(self):
             self._outer_instance = GlobalSharedSession._instance
@@ -339,6 +416,7 @@ class APIRequest(ABC):
             return NotImplemented
         if not self.client.is_closed:
             self.client.close()
+            logger.debug(f"Sync client {self.client!r} is closed.")
         return None
 
     @abstractmethod
@@ -347,6 +425,7 @@ class APIRequest(ABC):
             return NotImplemented
         if not self.client.is_closed:
             await self.client.aclose()
+            logger.debug(f"Async client {self.client!r} is closed.")
         return None
 
     @abstractmethod
@@ -721,6 +800,14 @@ class AsyncGETRequest(APIRequest, is_async_client=True):
         url = ElabFTWURL(
             endpoint_name, endpoint_id, sub_endpoint_name, sub_endpoint_id, query
         )
+        client = super().client
+        if async_semaphore := getattr(client, "_async_semaphore_", None):
+            async with async_semaphore:
+                return await client.get(
+                    url.get(),
+                    headers=headers or {"Accept": "application/json"},
+                    **kwargs,
+                )
         return await super().client.get(
             url.get(), headers=headers or {"Accept": "application/json"}, **kwargs
         )

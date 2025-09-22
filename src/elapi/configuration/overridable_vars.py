@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from ..styles import Missing
 from ._overload_history import reinitiate_config
 from .config import (
-    ELAB_HOST_URL_API_SUFFIX,
     KEY_API_TOKEN,
+    KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
     KEY_ENABLE_HTTP2,
@@ -24,22 +24,6 @@ def get_active_host(*, skip_validation: bool = False) -> str:
     if not skip_validation:
         _development_mode_validation_switch()
     return MinimalActiveConfiguration().get_value(KEY_HOST)
-
-
-def get_active_host_url_without_api_subdir(
-    *, skip_validation: bool = False
-) -> Union[str, Missing]:
-    import re
-
-    if (host := get_active_host(skip_validation=skip_validation)) != Missing():
-        return re.sub(
-            ELAB_HOST_URL_API_SUFFIX,
-            r"",
-            get_active_host(skip_validation=skip_validation),
-            count=1,
-            flags=re.IGNORECASE,
-        )
-    return host
 
 
 def get_active_api_token(*, skip_validation: bool = False) -> APIToken:
@@ -82,6 +66,12 @@ def get_active_async_rate_limit(*, skip_validation: bool = False) -> Optional[in
     if not skip_validation:
         _development_mode_validation_switch()
     return MinimalActiveConfiguration().get_value(KEY_ASYNC_RATE_LIMIT)
+
+
+def get_active_async_capacity(*, skip_validation: bool = False) -> Optional[int]:
+    if not skip_validation:
+        _development_mode_validation_switch()
+    return MinimalActiveConfiguration().get_value(KEY_ASYNC_CAPACITY)
 
 
 def _development_mode_validation_switch() -> None:

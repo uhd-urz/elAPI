@@ -1,8 +1,8 @@
 # noinspection PyProtectedMember
 from .._core_init._utils import (
-    GlobalCLISuperStartupCallback,
-    GlobalCLIResultCallback,
     GlobalCLIGracefulCallback,
+    GlobalCLIResultCallback,
+    GlobalCLISuperStartupCallback,
     NoException,
     PatternNotFoundError,
     get_app_version,
@@ -14,6 +14,8 @@ from .utils import (
     check_reserved_keyword,
     get_external_python_version,
     get_sub_package_name,
+    parse_api_id_from_api_token,
+    parse_url_only_from_host,
     update_kwargs_with_defaults,
 )
 
@@ -33,4 +35,6 @@ __all__ = [
     "GlobalCLISuperStartupCallback",
     "GlobalCLIResultCallback",
     "GlobalCLIGracefulCallback",
+    "parse_url_only_from_host",
+    "parse_api_id_from_api_token",
 ]

@@ -5,6 +5,7 @@ from typing import Union
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
+from ...api.validators import ElabUserGroups
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
@@ -130,19 +131,22 @@ class TeamsList:
                 return True
         return False
 
-    def _get_owners(self) -> dict:
+    def _get_owners(self, admins_only: bool = False) -> dict:
         # Generate teams information with team owners
-        team_members, teams = {}, {}
+        team_members: dict[str, dict[str, dict[str, str | bool | int]]] = {}
+        admins: dict[str, dict[str, dict[str, str | bool | int]]] = {}
+        teams: dict[str, dict[str, str | int | dict]] = {}
         for u in self.users:
             for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
                 uid = u["userid"]
                 # Get teams user count
                 if not team_members.get(team["id"]):
-                    team_members[team["id"]]: dict = {
+                    team_members[team["id"]] = {
                         uid: {
                             "firstname": u["firstname"],
                             "lastname": u["lastname"],
                             "email": u["email"],
+                            "usergroup": team["usergroup"],
                             "expired": self.is_user_expired(user_data=u),
                         }
                     }
@@ -153,10 +157,34 @@ class TeamsList:
                                 "firstname": u["firstname"],
                                 "lastname": u["lastname"],
                                 "email": u["email"],
+                                "usergroup": team["usergroup"],
                                 "expired": self.is_user_expired(user_data=u),
                             }
                         }
                     )
+                if team["usergroup"] == ElabUserGroups.admin:
+                    if not admins.get(team["id"]):
+                        admins[team["id"]] = {
+                            uid: {
+                                "firstname": u["firstname"],
+                                "lastname": u["lastname"],
+                                "email": u["email"],
+                                "usergroup": team["usergroup"],
+                                "expired": self.is_user_expired(user_data=u),
+                            }
+                        }
+                    else:
+                        admins[team["id"]].update(
+                            {
+                                uid: {
+                                    "firstname": u["firstname"],
+                                    "lastname": u["lastname"],
+                                    "email": u["email"],
+                                    "usergroup": team["usergroup"],
+                                    "expired": self.is_user_expired(user_data=u),
+                                }
+                            }
+                        )
                 # Get team basic information
                 teams[team["id"]] = {}
                 teams[team["id"]]["team_name"] = team["name"]
@@ -169,8 +197,10 @@ class TeamsList:
 
         # Add member count to teams
         for team_id in teams:
-            teams[team_id]["members"] = {}
-            teams[team_id]["members"] = team_members[team_id]
+            if not admins_only:
+                teams[team_id]["members"] = {}
+                teams[team_id]["members"] = team_members[team_id]
+            teams[team_id]["admins"] = admins.get(team_id, {})
             teams[team_id]["total_unarchived_member_count"] = len(team_members[team_id])
             teams[team_id]["active_member_count"] = 0
             for k in team_members[team_id]:
@@ -186,8 +216,8 @@ class TeamsList:
 
         return teams
 
-    def items(self) -> dict:
-        return self._get_owners()
+    def items(self, admins_only: bool = False) -> dict:
+        return self._get_owners(admins_only)
 
 
 class OwnersList:
@@ -228,7 +258,7 @@ class OwnersList:
                 spec.BILLING_MANAGEMENT_LIMIT
             ]
 
-            # Get billing address related information
+            # Get billing-address-related information
             team_owners[team_id][spec.BILLING_INSTITUTE1] = team[
                 spec.BILLING_INSTITUTE1
             ]

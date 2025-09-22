@@ -5,21 +5,21 @@ from typing import Optional, Union
 
 from dynaconf import Dynaconf
 
-# noinspection PyUnresolvedReferences
 from .._names import (
-    APP_BRAND_NAME,  # noqa: F401
+    APP_BRAND_NAME,
     APP_NAME,
-    CONFIG_FILE_EXTENSION,  # noqa: F401
-    CONFIG_FILE_NAME,  # noqa: F401
-    DEFAULT_EXPORT_DATA_FORMAT,  # noqa: F401
-    ELAB_API_EXPECTED_VERSION,  # noqa: F401
-    ELAB_BRAND_NAME,  # noqa: F401
-    ELAB_HOST_URL_API_SUFFIX,  # noqa: F401
-    ELAB_NAME,  # noqa: F401
+    CONFIG_FILE_EXTENSION,
+    CONFIG_FILE_NAME,
+    DEFAULT_EXPORT_DATA_FORMAT,
+    ELAB_API_EXPECTED_VERSION,
+    ELAB_BRAND_NAME,
+    ELAB_HOST_URL_API_SUFFIX,
+    ELAB_NAME,
     ENV_XDG_DOWNLOAD_DIR,
     FALLBACK_DIR,
-    FALLBACK_EXPORT_DIR,  # noqa: F401
+    FALLBACK_EXPORT_DIR,
     KEY_API_TOKEN,
+    KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
     KEY_ENABLE_HTTP2,
@@ -33,8 +33,7 @@ from .._names import (
     LOG_DIR_ROOT,
     PROJECT_CONFIG_LOC,
     SYSTEM_CONFIG_LOC,
-    TMP_DIR,
-    VERSION_FILE_NAME,  # noqa: F401
+    VERSION_FILE_NAME,
 )
 from ..core_validators import (
     CriticalValidationError,
@@ -52,6 +51,76 @@ from ._config_history import (
     InspectConfigHistory,
     MinimalActiveConfiguration,
 )
+
+__all__ = [
+    "APP_BRAND_NAME",
+    "APP_NAME",
+    "CONFIG_FILE_EXTENSION",
+    "CONFIG_FILE_NAME",
+    "DEFAULT_EXPORT_DATA_FORMAT",
+    "ELAB_API_EXPECTED_VERSION",
+    "ELAB_BRAND_NAME",
+    "ELAB_HOST_URL_API_SUFFIX",
+    "ELAB_NAME",
+    "ENV_XDG_DOWNLOAD_DIR",
+    "FALLBACK_DIR",
+    "FALLBACK_EXPORT_DIR",
+    "KEY_API_TOKEN",
+    "KEY_ASYNC_CAPACITY",
+    "KEY_ASYNC_RATE_LIMIT",
+    "KEY_DEVELOPMENT_MODE",
+    "KEY_ENABLE_HTTP2",
+    "KEY_EXPORT_DIR",
+    "KEY_HOST",
+    "KEY_PLUGIN_KEY_NAME",
+    "KEY_TIMEOUT",
+    "KEY_UNSAFE_TOKEN_WARNING",
+    "KEY_VERIFY_SSL",
+    "LOCAL_CONFIG_LOC",
+    "LOG_DIR_ROOT",
+    "PROJECT_CONFIG_LOC",
+    "SYSTEM_CONFIG_LOC",
+    "APIToken",
+    "settings",
+    "history",
+    "inspect",
+    "minimal_active_configuration",
+    "ASYNC_CAPACITY_DEFAULT_VAL",
+    "ASYNC_RATE_LIMIT_DEFAULT_VAL",
+    "DEVELOPMENT_MODE_DEFAULT_VAL",
+    "ENABLE_HTTP2_DEFAULT_VAL",
+    "PLUGIN_DEFAULT_VALUE",
+    "TIMEOUT_DEFAULT_VAL",
+    "UNSAFE_TOKEN_WARNING_DEFAULT_VAL",
+    "VERIFY_SSL_DEFAULT_VAL",
+    "MinimalActiveConfiguration",
+    "VERSION_FILE_NAME",
+    "DEVELOPMENT_MODE",
+    "ENABLE_HTTP2",
+    "EXPORT_DIR",
+    "EXTERNAL_LOCAL_PLUGIN_DIR",
+    "EXTERNAL_LOCAL_PLUGIN_DIRECTORY_NAME",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME_PREFIX",
+    "EXTERNAL_LOCAL_PLUGIN_METADATA_KEY_PLUGIN_ROOT_DIR",
+    "EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME",
+    "EXTERNAL_LOCAL_PLUGIN_TYPER_APP_VAR_NAME",
+    "FALLBACK_SOURCE_NAME",
+    "HOST",
+    "PLUGIN",
+    "TOKEN_BEARER",
+    "UNSAFE_TOKEN_WARNING",
+    "ASYNC_RATE_LIMIT",
+    "CANON_YAML_EXTENSION",
+    "API_TOKEN",
+    "APP_DATA_DIR",
+    "_XDG_DOWNLOAD_DIR",
+]
 
 logger = Logger()
 
@@ -192,6 +261,10 @@ TIMEOUT = settings.get(KEY_TIMEOUT, None)
 ASYNC_RATE_LIMIT_DEFAULT_VAL: None = None
 ASYNC_RATE_LIMIT = settings.get(KEY_ASYNC_RATE_LIMIT, None)
 
+
+ASYNC_CAPACITY_DEFAULT_VAL: None = None
+ASYNC_CAPACITY = settings.get(KEY_ASYNC_CAPACITY, None)
+
 # DEVELOPMENT_MODE falls back to false if not defined in the configuration
 DEVELOPMENT_MODE_DEFAULT_VAL: bool = False
 DEVELOPMENT_MODE = settings.get(KEY_DEVELOPMENT_MODE, None)
@@ -210,6 +283,7 @@ for key_name, key_val in [
     (KEY_VERIFY_SSL, VERIFY_SSL),
     (KEY_TIMEOUT, TIMEOUT),
     (KEY_ASYNC_RATE_LIMIT, ASYNC_RATE_LIMIT),
+    (KEY_ASYNC_CAPACITY, ASYNC_CAPACITY),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
     (KEY_PLUGIN_KEY_NAME, PLUGIN),
 ]:
@@ -227,15 +301,6 @@ for key_name, key_val in [
             history
         ).applied_config[key_name]
 
-# Temporary data storage location
-# This location is not currently used anywhere, for potential future use only.
-TMP_DIR: Union[ProperPath, Path, Missing] = ProperPath(TMP_DIR, err_logger=logger)
-try:
-    TMP_DIR.create()
-except TMP_DIR.PathException:
-    TMP_DIR = Missing("NONE!")
-else:
-    TMP_DIR = TMP_DIR.expanded
 
 # Plugin file definitions and locations
 ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent

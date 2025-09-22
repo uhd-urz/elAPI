@@ -14,6 +14,7 @@ documented in https://doc.elabftw.net/api/v2/ with ease.
 
 import platform
 import sys
+from enum import StrEnum
 from functools import partial
 from json import JSONDecodeError
 from sys import argv
@@ -21,11 +22,18 @@ from typing import Optional
 
 import click
 import typer
+from httpx import HTTPError
 from rich import pretty
+from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from .. import APP_NAME
-from ..configuration import FALLBACK_EXPORT_DIR, get_active_export_dir
+from ..api.validators import ElabScopes, ElabUserGroups
+from ..configuration import (
+    FALLBACK_EXPORT_DIR,
+    get_active_export_dir,
+    get_development_mode,
+)
 from ..core_validators import Exit
 from ..loggers import (
     DefaultLogLevels,
@@ -33,17 +41,21 @@ from ..loggers import (
     GlobalLogRecordContainer,
     Logger,
     ResultCallbackHandler,
+    SimpleLogger,
 )
 from ..plugins.commons.cli_helpers import Typer
+from ..plugins.commons.get_whoami import get_whoami
 from ..styles import (
     __PACKAGE_IDENTIFIER__ as styles_package_identifier,
 )
 from ..styles import (
+    ColorText,
     get_custom_help_text,
     rich_format_help_with_callback,
     stderr_console,
     stdout_console,
 )
+from ..styles.colors import BLUE, CYAN, GREEN, MAGENTA, RED
 from ..utils import (
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
@@ -63,6 +75,16 @@ logger = Logger()
 file_logger = FileLogger()
 pretty.install()
 patch_typer_flag_value()
+
+
+if get_development_mode(skip_validation=True) is True:
+    Exit.SYSTEM_EXIT = False
+    for handler in logger.handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
+    for handler in file_logger.handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
+    for handler in SimpleLogger().handlers:
+        handler.setLevel(DefaultLogLevels.DEBUG)
 
 
 def result_callback_wrapper(_, override_config):
@@ -132,7 +154,7 @@ def cli_startup(
         ),
     ] = "{}",
 ) -> None:
-    from ..configuration import get_development_mode, reinitiate_config
+    from ..configuration import reinitiate_config
     from ..configuration.config import (
         CONFIG_FILE_NAME,
         KEY_API_TOKEN,
@@ -147,10 +169,6 @@ def cli_startup(
     from ..styles import print_typer_error
     from ..utils import MessagesList
 
-    if get_development_mode(skip_validation=True) is True:
-        Exit.SYSTEM_EXIT = False
-        for handler in logger.handlers:
-            handler.setLevel(DefaultLogLevels.DEBUG)
     # Notice GlobalCLICallback is run before configuration validation (reinitiate_config)
     # However, PluginConfigurationValidator is always run
     # first when development_mode is enabled
@@ -324,6 +342,7 @@ def cli_cleanup_for_third_party_plugins(*args, override_config=None):
     cli_switch_venv_state(False)
 
 
+logger.debug(f"{APP_NAME} will load internal plugins.")
 for inter_app_obj in internal_plugin_typer_apps:
     if inter_app_obj is not None:
         app_name = inter_app_obj.info.name
@@ -545,6 +564,7 @@ enable_http2: false
 verify_ssl: true
 timeout: 90
 async_rate_limit: null
+async_capacity: null
 development_mode: false
 """
                     f.write(_configuration_yaml_text)
@@ -555,6 +575,8 @@ development_mode: false
             else:
                 stdout_console.print(
                     "Configuration file has been successfully created! "
+                    f"Run '{APP_NAME} whoami' to get a short summary of your eLab user account "
+                    f"and permissions."
                     f"Run '{APP_NAME} show-config' to see the configuration path "
                     "and more configuration details.",
                     style="green",
@@ -1347,8 +1369,6 @@ def show_config(
     """
     Get information about detected configuration values.
     """
-    from rich.markdown import Markdown
-
     from ..plugins.show_config import show
 
     md = Markdown(show(no_keys))
@@ -1368,25 +1388,65 @@ def version() -> str:
     return _version
 
 
-@app.command(
-    hidden=True, deprecated=True
-)  # deprecated instead of removing for future use
-def cleanup() -> None:
+@app.command(name="whoami", help="Show information about current user and eLab server.")
+def whoami() -> None:
+    class _ElabUserGroupColors(StrEnum):
+        sysadmin = RED
+        admin = MAGENTA
+        user = GREEN
+
+    formatted_groups: dict[int, str] = {}
+    newline = "\n"
+    scopes_reversed: dict[int, str] = {v: k for k, v in ElabScopes.__members__.items()}
+    for user_group in ElabUserGroups:
+        # noinspection PyTypeChecker
+        formatted_groups[user_group.value] = ColorText(
+            user_group.name.capitalize()
+        ).colorize(_ElabUserGroupColors[user_group.name])
+
+    with stdout_console.status("Contemplating...", refresh_per_second=15) as status:
+        try:
+            whoami_info = get_whoami()
+        except (RuntimeError, HTTPError, JSONDecodeError) as e:
+            status.stop()
+            logger.error(f"{e!r}")
+            raise Exit(1) from e
+
+        formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
+            ColorText(whoami_info["host_url"]).colorize(BLUE)
+        }
+- __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]} ({
+            ColorText("Read/Write").colorize(RED)
+            if whoami_info["can_api_key_write"]
+            else ColorText("Read-only").colorize(GREEN)
+        })
+- __{ColorText("eLabFTW version:").colorize(GREEN)}__ {whoami_info["elabftw_version"]}
+- __{ColorText("Name:").colorize(GREEN)}__ {whoami_info["name"]} ({
+            ColorText("ID:").colorize(GREEN)
+        } {whoami_info["user_id"]})
+- __{ColorText("Email:").colorize(GREEN)}__ {whoami_info["email"]}
+- __{ColorText("Team:").colorize(GREEN)}__ {whoami_info["team"]} ({
+            ColorText("ID:").colorize(GREEN)
+        } {whoami_info["team_id"]})
+- __{ColorText("Sysadmin:").colorize(GREEN)}__ {
+            ColorText("Yes").colorize(RED) if whoami_info["is_sysadmin"] else "No"
+        }
+- __{ColorText("User group:").colorize(GREEN)}__ {
+            formatted_groups[whoami_info["user_group"]]
+        }
+- __{ColorText("Scopes:").colorize(GREEN)}__ {
+            "".join(
+                f"{newline}    - {ColorText(k.capitalize().replace('_', ' ')).colorize(CYAN)}: "
+                f"{scopes_reversed[v].capitalize()}"
+                for k, v in whoami_info["scopes"].items()
+            )
+        }
     """
-    Remove cached data.
-    """
-    from time import sleep
-
-    from ..configuration import TMP_DIR
-    from ..path import ProperPath
-
-    with stdout_console.status("Cleaning up...", refresh_per_second=15):
-        sleep(0.5)
-        typer.echo()  # mainly for a newline!
-        ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
-    stdout_console.print("Done!", style="green")
+    stdout_console.print(Markdown(formatted_whoami_info))
 
 
+logger.debug(f"{APP_NAME} will load external plugins.")
+# Load external plugins
 for plugin_info in external_local_plugin_typer_apps:
     if plugin_info is not None:
         ext_app_obj, _path, _venv, _proj_dir = plugin_info
