@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.1] - 2025-10-26
+## [2.4.2] - 2025-09-22
+
+This release brings some minor bug fixes and improvements.
+
+### Added
+
+- elAPI `whoami` that shows information about the eLab user (see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#elapi-whoami))
+- New configuration field `async_capacity` that lets you the maximum number of in-flight requests (see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
+- Improved `bill-teams` retry strategy that uses `async_capacity`
+
+### Fixed
+
+- Fix #162, #155, #19, #8
+
+### Changes
+
+- Replace HTTPX's back-end with `aiohttp`. This fixes #162. 
+
+## [2.4.1] - 2025-08-26
 
 > [!NOTE]
 > This release deprecates support for Python versions 3.9 and 3.10.
@@ -17,7 +35,7 @@ This is a hotfix release. See the [version 2.4.0 changelog](https://github.com/u
 - Rollback [httpx-limiter](https://midnighter.github.io/httpx-limiter/) to version 0.3.0. The version 0.4.0 would break elAPI support on Pyodide (see GH #160)
 
 
-## [2.4.0] - 2025-10-25
+## [2.4.0] - 2025-08-25
 
 > [!NOTE]
 > This release deprecates support for Python versions 3.9 and 3.10.
