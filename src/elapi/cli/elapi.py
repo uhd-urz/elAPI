@@ -575,6 +575,8 @@ development_mode: false
             else:
                 stdout_console.print(
                     "Configuration file has been successfully created! "
+                    f"Run '{APP_NAME} whoami' to get a short summary of your eLab user account "
+                    f"and permissions."
                     f"Run '{APP_NAME} show-config' to see the configuration path "
                     "and more configuration details.",
                     style="green",
