@@ -4,7 +4,7 @@ from json import JSONDecodeError
 from httpx import HTTPError
 
 from ...api import GETRequest, SimpleClient
-from ...api.validators import ElabUserGroups
+from ...api.validators import ElabScopes, ElabUserGroups
 from ...configuration import get_active_api_token, get_active_host
 from ...configuration.config import APIToken
 from ...loggers import Logger
@@ -20,7 +20,7 @@ class _ElabUserGroupColors(StrEnum):
     user = GREEN
 
 
-def get_whoami() -> dict[str, str | int | APIToken]:
+def get_whoami() -> dict[str, str | int | APIToken | dict[str, int]]:
     client = SimpleClient(is_async_client=False)
     session = GETRequest(shared_client=client)
     user = session("users", "me")
@@ -47,6 +47,10 @@ def get_whoami() -> dict[str, str | int | APIToken]:
     user_team_id: str = user_info["team"]
     user_email: str = user_info["email"]
     is_user_sysadmin: int = user_info["is_sysadmin"]
+    scope_experiments: int = user_info["scope_experiments"]
+    scope_items = user_info["scope_items"]
+    scope_experiments_templates = user_info["scope_experiments_templates"]
+    scope_teamgroups = user_info["scope_teamgroups"]
     for user_team in user_all_teams:
         if user_team["id"] == user_team_id:
             user_team_name = user_team["name"]
@@ -72,6 +76,12 @@ def get_whoami() -> dict[str, str | int | APIToken]:
         "team": user_team_name,
         "is_sysadmin": is_user_sysadmin,
         "user_group": user_group,
+        "scopes": {
+            "experiments": scope_experiments,
+            "items": scope_items,
+            "experiments_templates": scope_experiments_templates,
+            "teamgroups": scope_teamgroups,
+        },
     }
 
 
@@ -89,6 +99,7 @@ def debug_log_whoami_message() -> None:
             team,
             is_sysadmin,
             user_group,
+            scopes,
         ) = get_whoami().values()
     except (RuntimeError, HTTPError, JSONDecodeError) as e:
         logger.warning(
@@ -99,6 +110,7 @@ def debug_log_whoami_message() -> None:
     user_groups_reversed: dict[int, str] = {
         v: k for k, v in ElabUserGroups.__members__.items()
     }
+    scopes_reversed: dict[int, str] = {v: k for k, v in ElabScopes.__members__.items()}
     logger.debug(
         f"Based on the detected configuration, the requests will be made to the server {host_url} "
         f"(eLabFTW version: {elabftw_version}), "
@@ -106,5 +118,9 @@ def debug_log_whoami_message() -> None:
         f"by user '{name}' (ID: {user_id}), "
         f"from team '{team}' (ID: {team_id}), in user group "
         f"'{user_groups_reversed[user_group].capitalize()}', "
-        f"{'as a sysadmin' if is_sysadmin else 'not as a sysadmin'}."
+        f"{'as a sysadmin' if is_sysadmin else 'not as a sysadmin'}. Scopes: "
+        f"experiments = '{scopes_reversed[scopes['experiments']].capitalize()}', "
+        f"items = '{scopes_reversed[scopes['items']].capitalize()}', "
+        f"experiments_templates = '{scopes_reversed[scopes['experiments_templates']].capitalize()}', "
+        f"teamgroups = '{scopes_reversed[scopes['teamgroups']].capitalize()}'."
     )

@@ -28,7 +28,7 @@ from rich.markdown import Markdown
 from typing_extensions import Annotated
 
 from .. import APP_NAME
-from ..api.validators import ElabUserGroups
+from ..api.validators import ElabScopes, ElabUserGroups
 from ..configuration import (
     FALLBACK_EXPORT_DIR,
     get_active_export_dir,
@@ -55,7 +55,7 @@ from ..styles import (
     stderr_console,
     stdout_console,
 )
-from ..styles.colors import BLUE, GREEN, MAGENTA, RED
+from ..styles.colors import BLUE, CYAN, GREEN, MAGENTA, RED
 from ..utils import (
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
@@ -1413,6 +1413,8 @@ def whoami() -> None:
         user = GREEN
 
     formatted_groups: dict[int, str] = {}
+    newline = "\n"
+    scopes_reversed: dict[int, str] = {v: k for k, v in ElabScopes.__members__.items()}
     for user_group in ElabUserGroups:
         # noinspection PyTypeChecker
         formatted_groups[user_group.value] = ColorText(
@@ -1448,6 +1450,13 @@ def whoami() -> None:
         }
 - __{ColorText("User group:").colorize(GREEN)}__ {
             formatted_groups[whoami_info["user_group"]]
+        }
+- __{ColorText("Scopes:").colorize(GREEN)}__ {
+            "".join(
+                f"{newline}    - {ColorText(k.capitalize().replace('_', ' ')).colorize(CYAN)}: "
+                f"{scopes_reversed[v].capitalize()}"
+                for k, v in whoami_info["scopes"].items()
+            )
         }
     """
     stdout_console.print(Markdown(formatted_whoami_info))

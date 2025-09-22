@@ -121,6 +121,12 @@ class ElabUserGroups(IntEnum):
         return [_.value for _ in cls]
 
 
+class ElabScopes(IntEnum):
+    self = 1
+    team = 2
+    everything = 3
+
+
 class PermissionValidator(Validator):
     __slots__ = "_group", "_who", "_team_id"
 
