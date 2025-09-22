@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 
 from dynaconf.utils.boxing import DynaBox
 
+from .._names import APP_NAME
 from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
 from ..core_validators import (
     CriticalValidationError,
@@ -15,15 +16,18 @@ from ..core_validators import (
     Validator,
 )
 from ..loggers import DefaultLogLevels, Logger
+from ..path import ProperPath
 from ..styles import Missing, stdout_console
 from ..styles.highlight import NoteText
 from ..utils import add_message
 from ._config_history import FieldValueWithKey, MinimalActiveConfiguration
 from .config import (
+    _XDG_DOWNLOAD_DIR,
     ASYNC_CAPACITY_DEFAULT_VAL,
     ASYNC_RATE_LIMIT_DEFAULT_VAL,
     DEVELOPMENT_MODE_DEFAULT_VAL,
     ENABLE_HTTP2_DEFAULT_VAL,
+    FALLBACK_EXPORT_DIR,
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
@@ -48,14 +52,14 @@ class ConfigurationValidation:
         self.active_configuration = minimal_active_config_obj
 
     @property
-    def active_configuration(self) -> MinimalActiveConfiguration:
+    def active_configuration(self) -> MinimalActiveConfiguration | dict:
         return self._active_configuration
 
     @active_configuration.setter
-    def active_configuration(self, value: MinimalActiveConfiguration):
-        if not isinstance(value, MinimalActiveConfiguration):
+    def active_configuration(self, value: MinimalActiveConfiguration | dict):
+        if not isinstance(value, (MinimalActiveConfiguration, dict)):
             raise TypeError(
-                f"Value must be an instance of {MinimalActiveConfiguration.__name__}."
+                f"Value must be an instance of dict or {MinimalActiveConfiguration.__name__}."
             )
         self._active_configuration = value
 
@@ -68,6 +72,7 @@ class HostConfigurationValidator(ConfigurationValidation, Validator):
         super().__init__(*args)
 
     def validate(self) -> str:
+        self.active_configuration: MinimalActiveConfiguration
         _HOST_EXAMPLE: str = f"{KEY_HOST.lower()}: 'https://demo.elabftw.net/api/v2'"
 
         if isinstance(self.active_configuration.get_value(KEY_HOST), Missing):
@@ -126,10 +131,9 @@ class APITokenConfigurationValidator(ConfigurationValidation, Validator):
         super().__init__(*args)
 
     def validate(self) -> str:
-        from ..loggers import Logger
         from .config import KEY_API_TOKEN
 
-        logger = Logger()
+        self.active_configuration: MinimalActiveConfiguration
         if isinstance(self.active_configuration.get_value(KEY_API_TOKEN), Missing):
             logger.critical(
                 f"'{KEY_API_TOKEN.lower()}' is missing from configuration file."
@@ -197,10 +201,10 @@ class ExportDirConfigurationValidator(ConfigurationValidation, Validator):
         super().__init__(*args)
 
     def validate(self) -> Path:
+        self.active_configuration: MinimalActiveConfiguration
+
         def get_validated_fallback():
-            from .._names import APP_NAME
-            from ..path import ProperPath
-            from .config import _XDG_DOWNLOAD_DIR, FALLBACK_EXPORT_DIR
+            global FALLBACK_EXPORT_DIR, _XDG_DOWNLOAD_DIR, ProperPath
 
             ACTUAL_FALLBACK_EXPORT_DIR = FALLBACK_EXPORT_DIR
             if _XDG_DOWNLOAD_DIR is not None:
@@ -274,9 +278,6 @@ class ModesWithFallbackConfigurationValidator(ConfigurationValidation, Validator
         self.fallback_value = fallback_value
 
     def validate(self) -> bool:
-        from ..loggers import Logger
-
-        logger = Logger()
         if isinstance(
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
@@ -312,7 +313,9 @@ class TimeWithFallbackConfigurationValidator(ConfigurationValidation, Validator)
         self.fallback_value = fallback_value
         self.allow_none = allow_none
 
-    def validate(self) -> float:
+    def validate(self) -> Optional[float]:
+        self.active_configuration: MinimalActiveConfiguration
+
         if isinstance(
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
@@ -349,6 +352,8 @@ class DiscreteWithFallbackConfigurationValidator(ConfigurationValidation, Valida
         self.allow_none = allow_none
 
     def validate(self) -> Optional[int]:
+        self.active_configuration: MinimalActiveConfiguration
+
         if isinstance(
             value := self.active_configuration.get_value(self.key_name), Missing
         ):
@@ -380,7 +385,9 @@ class PluginConfigurationValidator(ConfigurationValidation, Validator):
         self.fallback_value = fallback_value
 
     def validate(self) -> dict:
+        self.active_configuration: MinimalActiveConfiguration
         value: DynaBox = self.active_configuration.get_value(self.key_name)
+
         if isinstance(value, Missing):
             return self.fallback_value
         if value is None:
