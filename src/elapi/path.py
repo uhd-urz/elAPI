@@ -1,10 +1,7 @@
-import errno
 import logging
-import os
-from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import IO, Generator, Optional, Self, Union
+from typing import Optional, Self, Union
 
 from ._core_init import Logger, NoException
 
@@ -13,12 +10,10 @@ class ProperPath:
     def __init__(
         self,
         name: Union[str, Path, None, "ProperPath"],
-        env_var: bool = False,
         kind: Optional[str] = None,  # Here, None => Undefined/unknown
         err_logger: Optional[logging.Logger] = None,
     ):
         self.name = name
-        self.env_var = env_var
         self.kind = kind
         self.err_logger = err_logger or Logger()
         self.PathException = NoException
@@ -28,7 +23,7 @@ class ProperPath:
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(name={self.name}, env_var={self.env_var}, kind={self.kind}, "
+            f"{self.__class__.__name__}(name={self.name}, kind={self.kind}, "
             f"err_logger={self.err_logger})"
         )
 
@@ -85,13 +80,6 @@ class ProperPath:
 
     @property
     def expanded(self) -> Path:
-        if self.env_var:
-            try:
-                return Path(os.environ[self.name]).expanduser()
-            except KeyError as e:
-                raise ValueError(
-                    f"Environment variable {self.name} doesn't exist."
-                ) from e
         return Path(self.name).expanduser()
 
     @expanded.setter
@@ -234,109 +222,30 @@ class ProperPath:
                         # So in case of permission error with rmtree(ref), shutil.rmtree() might give better
                         # traceback message. I.e., which file or directory exactly
 
-    @contextmanager
-    def open(
-        self,
-        mode="r",
-        encoding: Union[str, None] = None,
-        **kwargs,
-    ) -> Generator[IO, None, None]:
-        path = self.expanded.resolve()
-        file: Union[IO, None] = None
+    def open(self, mode="r", encoding=None, *args, **kwargs):
+        """
+        ProperPath open first resolves the whole path and then simply returns pathlib.Path.open.
+        This method is mainly overloaded to log exceptions.
+        """
+        file = self.expanded.resolve()
         try:
-            # this try block doesn't yield anything yet. Here, we want to catch possible errors that occur
-            # before the file is opened. E.g., FileNotFoundError
-            file: IO = path.open(mode=mode, encoding=encoding, **kwargs)
-        except (exception := FileNotFoundError) as e:
-            message = f"File in {path} couldn't be found while trying to open it with mode '{mode}'!"
-            self.err_logger.warning(message)
-            self.PathException = exception
-            raise e
-
-        except (exception := PermissionError) as e:
-            message = (
-                f"Permission denied while trying to open file with mode '{mode}' for "
-                f"{self._error_helper_compare_path_source(self.name, path)}."
+            return Path(file).open(
+                mode=mode,
+                encoding=encoding,
+                *args,
+                **kwargs,
             )
-            self.err_logger.error(message)
-            self.PathException = exception
-
-            try:
-                yield  # Without yield (yield None) Python throws RuntimeError: generator didn't yield.
-                # I.e., contextmanager always expects a yield?
-            except (exception := AttributeError) as attribute_err:
-                # However, yielding None leads to attribute calls to None
-                # (e.g., yield None -> file = None -> file.read() -> None.read()!! So we also catch that error.
-                attribute_in_error = str(attribute_err).split()[-1]
-                message = (
-                    f"An attempt to access attribute {attribute_in_error} was made,"
-                    f"but there was a problem opening the file {path}."
-                )
-                self.err_logger.warning(message)
-                self.PathException = exception
-                raise attribute_err
-            else:
-                raise e
-        except (exception := OSError) as os_err:
-            # When an attempt to create a file or directory inside root (e.g., '/foo')
-            # is made, OS can throw OSError with error no. 30 instead of PermissionError.
-            self.err_logger.error(os_err)
-            self.PathException = exception
-            raise os_err
-
-        else:
-            try:
-                # Now we yield the contextmanager expected yield
-                yield file
-            except AttributeError as e:
-                # This is useful for catching AttributeError when the file object is valid but the attributes being
-                # attempted to access aren't valid/known/public.
-                attribute_in_error = str(e).split()[-1]
-                message = (
-                    f"An attempt to access unknown/private attribute {attribute_in_error} "
-                    f"of the file object {file} was made."
-                )
-                self.err_logger.warning(message)
-                raise e
-            except (exception := MemoryError) as e:
-                message = (
-                    f"Out of memory while trying to use mode '{mode}' with "
-                    f"{self._error_helper_compare_path_source(self.name, path)}."
-                )
-                self.err_logger.critical(message)
-                self.PathException = exception
-                raise e
-            except (exception := IOError) as io_err:
-                # We catch "No disk space left" error which will likely be triggered during a write attempt on the file
-                if io_err.errno == errno.ENOSPC:
-                    message = (
-                        f"Not enough disk space left while trying to use mode '{mode}' with "
-                        f"{self._error_helper_compare_path_source(self.name, path)}."
-                    )
-                    self.err_logger.critical(message)
-                    self.PathException = exception
-                raise io_err
-            except (exception := OSError) as os_err:
-                self.err_logger.error(os_err)
-                self.PathException = exception
-                raise os_err
-        finally:
-            if file:
-                try:
-                    file.close()
-                # This behavior was noticed during an experiment with "/dev/full" on Debian/Linux.
-                # f = open("/dev/full", mode="w"); f.write("hello"); <- This won't trigger ENOSPC error yet.
-                # But the error is triggered immediately after when closing with f.close()!*
-                # f = open("/dev/full", mode="w");f.write("hello" * 10_000); <- Opening f again.
-                # The above will trigger ENOSPC error, and will be captured by previous ENOSPC IOError exception.
-                # Because of *, we again need to catch the error during close().
-                except (exception := IOError) as io_err:
-                    if io_err.errno == errno.ENOSPC:
-                        message = (
-                            f"An 'ENOSPC' error (not enough disk space left) is received while trying to"
-                            f"close the file before using it with '{mode}'. Data may have been lost."
-                            f"{self._error_helper_compare_path_source(self.name, path)}."
-                        )
-                        self.err_logger.critical(message)
-                    self.PathException = exception
-                    raise io_err
+        except tuple(OSError.__subclasses__()) as e:
+            self.err_logger.debug(
+                f"Could not open file {self._error_helper_compare_path_source(self.name, file)}. "
+                f"Exception: {e!r}"
+            )
+            self.PathException = e
+            raise e
+        except (os_exception := OSError) as e:
+            self.err_logger.debug(
+                f"Could not open file {self._error_helper_compare_path_source(self.name, file)}. "
+                f"Exception: {e!r}"
+            )
+            self.PathException = os_exception
+            raise e
