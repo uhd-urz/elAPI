@@ -1386,25 +1386,6 @@ def version() -> str:
     return _version
 
 
-@app.command(
-    hidden=True, deprecated=True
-)  # deprecated instead of removing for future use
-def cleanup() -> None:
-    """
-    Remove cached data.
-    """
-    from time import sleep
-
-    from ..configuration import TMP_DIR
-    from ..path import ProperPath
-
-    with stdout_console.status("Cleaning up...", refresh_per_second=15):
-        sleep(0.5)
-        typer.echo()  # mainly for a newline!
-        ProperPath(TMP_DIR, err_logger=logger).remove(verbose=True)
-    stdout_console.print("Done!", style="green")
-
-
 @app.command(name="whoami", help="Show information about current user and eLab server.")
 def whoami() -> None:
     class _ElabUserGroupColors(StrEnum):

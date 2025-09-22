@@ -27,7 +27,6 @@ ELAB_HOST_URL_API_SUFFIX: str = f"/api/v{ELAB_API_EXPECTED_VERSION}"
 ENV_XDG_DATA_HOME: str = "XDG_DATA_HOME"
 ENV_XDG_DOWNLOAD_DIR: str = "XDG_DOWNLOAD_DIR"
 ENV_XDG_CONFIG_HOME: str = "XDG_CONFIG_HOME"
-TMP_DIR: Path = Path(f"/var/tmp/{APP_NAME}")
 
 # Fallback definitions
 FALLBACK_DIR: Path = user_home / ".local/share" / APP_NAME

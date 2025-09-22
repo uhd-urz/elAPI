@@ -15,7 +15,6 @@ from ..configuration import (
     KEY_TIMEOUT,
     KEY_UNSAFE_TOKEN_WARNING,
     KEY_VERIFY_SSL,
-    TMP_DIR,
     get_active_async_capacity,
     get_active_async_rate_limit,
     get_active_enable_http2,
@@ -206,11 +205,6 @@ The following information includes configuration values and their sources as det
 - {ColorText("App data directory").colorize(LIGHTGREEN)}: {APP_DATA_DIR}
 - {ColorText("Third-party plugins directory").colorize(LIGHTCYAN)}: {
             EXTERNAL_LOCAL_PLUGIN_DIR
-        }
-- {ColorText("Caching directory").colorize(LIGHTGREEN)}: {
-            TMP_DIR
-            if not isinstance(TMP_DIR, Missing)
-            else f"_{ColorText(TMP_DIR).colorize(RED)}_"
         }
 """
         + "\n"

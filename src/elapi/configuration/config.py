@@ -33,7 +33,6 @@ from .._names import (
     LOG_DIR_ROOT,
     PROJECT_CONFIG_LOC,
     SYSTEM_CONFIG_LOC,
-    TMP_DIR,
     VERSION_FILE_NAME,
 )
 from ..core_validators import (
@@ -81,7 +80,6 @@ __all__ = [
     "LOG_DIR_ROOT",
     "PROJECT_CONFIG_LOC",
     "SYSTEM_CONFIG_LOC",
-    "TMP_DIR",
     "APIToken",
     "settings",
     "history",
@@ -303,15 +301,6 @@ for key_name, key_val in [
             history
         ).applied_config[key_name]
 
-# Temporary data storage location
-# This location is not currently used anywhere, for potential future use only.
-TMP_DIR: Union[ProperPath, Path, Missing] = ProperPath(TMP_DIR, err_logger=logger)
-try:
-    TMP_DIR.create()
-except TMP_DIR.PathException:
-    TMP_DIR = Missing("NONE!")
-else:
-    TMP_DIR = TMP_DIR.expanded
 
 # Plugin file definitions and locations
 ROOT_INSTALLATION_DIR: Path = Path(__file__).parent.parent
