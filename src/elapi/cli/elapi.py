@@ -55,7 +55,7 @@ from ..styles import (
     stderr_console,
     stdout_console,
 )
-from ..styles.colors import BLUE, CYAN, GREEN, MAGENTA, RED
+from ..styles.colors import BLUE, CYAN, GREEN, MAGENTA, RED, LIGHTBLUE
 from ..utils import (
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
@@ -1413,7 +1413,7 @@ def whoami() -> None:
             raise Exit(1) from e
 
         formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
-            ColorText(whoami_info["host_url"]).colorize(BLUE)
+            ColorText(whoami_info["host_url"]).colorize(LIGHTBLUE)
         }
 - __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]} ({
             ColorText("Read/Write").colorize(RED)
