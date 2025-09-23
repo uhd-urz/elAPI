@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] - 2025-09-23
+
+This is a bugfix release. See the **version 2.4.2 changelog below** for the main changes.
+
+### Fixed
+
+- Fix how type for `ConfigurationValidation` argument is validated that affects `bill-teams` plugin
+
 ## [2.4.3] - 2025-09-22
 
-This is a hotfix release. See the **version 2.4.2 changelog below** for the new changes.
+This is a hotfix release. See the **version 2.4.2 changelog below** for the main changes.
 
 ### Fixed
 
