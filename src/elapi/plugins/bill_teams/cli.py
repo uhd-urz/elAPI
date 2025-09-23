@@ -13,7 +13,6 @@ from .generate_table import is_team_on_trial
 from .names import PLUGIN_NAME, REGISTRY_SUB_PLUGIN_NAME, TARGET_GROUP_NAME
 
 if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop")):
-    print("No bill-teams")
     ...
 else:
     import re
