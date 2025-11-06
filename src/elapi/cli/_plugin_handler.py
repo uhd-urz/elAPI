@@ -19,7 +19,7 @@ from ..core_validators import Validate, ValidationError, Validator
 from ..loggers import Logger
 from ..path import ProperPath
 from ..plugins import __PACKAGE_IDENTIFIER__ as plugins_sub_package_identifier
-from ..utils import add_message
+from ..utils import SafeCWD, add_message
 
 logger = Logger()
 PluginInfo = namedtuple("PluginInfo", ["plugin_app", "path", "venv", "project_dir"])
@@ -101,173 +101,174 @@ class ExternalPluginLocationValidator(Validator):
         }
 
         if self.location.is_dir():
-            actual_cwd = Path.cwd()
-            os.chdir(self.location)
-            if (
-                _canon_plugin_metadata_file := (
-                    self.location / _CANON_PLUGIN_METADATA_FILE_NAME
-                )
-            ).exists():
-                import logging
-
-                message = (
-                    f"File '{_canon_plugin_metadata_file.name}' detected in location {_canon_plugin_metadata_file}. "
-                    f"If it is meant to be an {APP_BRAND_NAME} plugin metadata file, "
-                    f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
-                    f"to '{CONFIG_FILE_EXTENSION}'. "
-                    f"{APP_BRAND_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
-                    f"as file extension for plugin metadata files."
-                )
-                add_message(message, logging.INFO)
-
-            if (
-                plugin_metadata_file := (
-                    self.location / EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME
-                )
-            ).exists():
-                parsed_metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS] = (
-                    True
-                )
-                with ProperPath(plugin_metadata_file).open(mode="r") as f:
-                    try:
-                        plugin_metadata = yaml.safe_load(f)
-                    except yaml.YAMLError as e:
-                        raise ValidationError(
-                            f"Plugin {CANON_YAML_EXTENSION.upper()} "
-                            f"metadata file {plugin_metadata_file} exists, "
-                            f"but it couldn't be parsed. Exception details: {e}"
-                        )
-                    else:
-                        try:
-                            CLI_SCRIPT_PATH = plugin_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
-                            ]
-                        except KeyError:
-                            if (
-                                external_local_plugin_typer_app_file := (
-                                    self.location
-                                    / EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME
-                                )
-                            ).exists():
-                                parsed_metadata[
-                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
-                                ] = external_local_plugin_typer_app_file
-                        else:
-                            try:
-                                CLI_SCRIPT_PATH = ProperPath(CLI_SCRIPT_PATH)
-                            except (TypeError, ValueError):
-                                raise ValidationError(
-                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH}' "
-                                    f"exists in {plugin_metadata_file}, but its assigned "
-                                    f"value '{CLI_SCRIPT_PATH}' is invalid."
-                                )
-                            else:
-                                if CLI_SCRIPT_PATH.expanded.exists():
-                                    parsed_metadata[
-                                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
-                                    ] = CLI_SCRIPT_PATH.expanded.absolute()
-                                else:
-                                    raise ValidationError(
-                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH}' "
-                                        f"exists in {plugin_metadata_file}, but the path "
-                                        f"{CLI_SCRIPT_PATH} does not exist."
-                                    )
-                        try:
-                            VENV_PATH = plugin_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
-                            ]
-                        except KeyError:
-                            VENV_PATH = parsed_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
-                            ] = None
-                        else:
-                            try:
-                                VENV_PATH = ProperPath(VENV_PATH)
-                            except (TypeError, ValueError):
-                                raise ValidationError(
-                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH}' "
-                                    f"exists in {plugin_metadata_file}, but its assigned "
-                                    f"value '{VENV_PATH}' is invalid."
-                                )
-                            else:
-                                if VENV_PATH.expanded.exists():
-                                    parsed_metadata[
-                                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
-                                    ] = VENV_PATH.expanded.absolute()
-                                else:
-                                    raise ValidationError(
-                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH}' "
-                                        f"exists in {plugin_metadata_file}, but the path "
-                                        f"{VENV_PATH} does not exist."
-                                    )
-                        try:
-                            PROJECT_PATH = plugin_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
-                            ]
-                        except KeyError:
-                            PROJECT_PATH = parsed_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
-                            ] = CLI_SCRIPT_PATH.expanded.parent
-                        else:
-                            try:
-                                PROJECT_PATH = ProperPath(PROJECT_PATH)
-                            except (TypeError, ValueError):
-                                raise ValidationError(
-                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
-                                    f"exists in {plugin_metadata_file}, but its assigned "
-                                    f"value '{PROJECT_PATH}' is invalid."
-                                )
-                            else:
-                                if PROJECT_PATH.expanded.exists():
-                                    parsed_metadata[
-                                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
-                                    ] = PROJECT_PATH.expanded.absolute()
-                                else:
-                                    raise ValidationError(
-                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
-                                        f"exists in {plugin_metadata_file}, but the path "
-                                        f"{PROJECT_PATH} does not exist."
-                                    )
-                        try:
-                            PLUGIN_NAME = plugin_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
-                            ]
-                        except KeyError:
-                            PLUGIN_NAME = parsed_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
-                            ] = self.location.name
-                        else:
-                            if self.location.name != PLUGIN_NAME:
-                                raise ValidationError(
-                                    f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME}' "
-                                    f"exists in {plugin_metadata_file}, but it must be the same "
-                                    f"name as the directory name the metadata file is in."
-                                )
-                            parsed_metadata[
-                                EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
-                            ] = PLUGIN_NAME
-            else:
-                parsed_metadata[EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS] = (
-                    False
-                )
+            with SafeCWD():
+                os.chdir(self.location)
                 if (
-                    external_local_plugin_typer_app_file := (
-                        self.location / EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME
+                    _canon_plugin_metadata_file := (
+                        self.location / _CANON_PLUGIN_METADATA_FILE_NAME
+                    )
+                ).exists():
+                    import logging
+
+                    message = (
+                        f"File '{_canon_plugin_metadata_file.name}' detected in location {_canon_plugin_metadata_file}. "
+                        f"If it is meant to be an {APP_BRAND_NAME} plugin metadata file, "
+                        f"please rename the file extension from '{CANON_YAML_EXTENSION}' "
+                        f"to '{CONFIG_FILE_EXTENSION}'. "
+                        f"{APP_BRAND_NAME} only supports '{CONFIG_FILE_EXTENSION}' "
+                        f"as file extension for plugin metadata files."
+                    )
+                    add_message(message, logging.INFO)
+
+                if (
+                    plugin_metadata_file := (
+                        self.location / EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_NAME
                     )
                 ).exists():
                     parsed_metadata[
-                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
-                    ] = external_local_plugin_typer_app_file
-                    parsed_metadata[
-                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
-                    ] = self.location
-                    PLUGIN_NAME = self.location.name
-                    parsed_metadata[
-                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
-                    ] = PLUGIN_NAME
+                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS
+                    ] = True
+                    with ProperPath(plugin_metadata_file).open(mode="r") as f:
+                        try:
+                            plugin_metadata = yaml.safe_load(f)
+                        except yaml.YAMLError as e:
+                            raise ValidationError(
+                                f"Plugin {CANON_YAML_EXTENSION.upper()} "
+                                f"metadata file {plugin_metadata_file} exists, "
+                                f"but it couldn't be parsed. Exception details: {e}"
+                            )
+                        else:
+                            try:
+                                CLI_SCRIPT_PATH = plugin_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
+                                ]
+                            except KeyError:
+                                if (
+                                    external_local_plugin_typer_app_file := (
+                                        self.location
+                                        / EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME
+                                    )
+                                ).exists():
+                                    parsed_metadata[
+                                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
+                                    ] = external_local_plugin_typer_app_file
+                            else:
+                                try:
+                                    CLI_SCRIPT_PATH = ProperPath(CLI_SCRIPT_PATH)
+                                except (TypeError, ValueError):
+                                    raise ValidationError(
+                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH}' "
+                                        f"exists in {plugin_metadata_file}, but its assigned "
+                                        f"value '{CLI_SCRIPT_PATH}' is invalid."
+                                    )
+                                else:
+                                    if CLI_SCRIPT_PATH.expanded.exists():
+                                        parsed_metadata[
+                                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
+                                        ] = CLI_SCRIPT_PATH.expanded.absolute()
+                                    else:
+                                        raise ValidationError(
+                                            f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH}' "
+                                            f"exists in {plugin_metadata_file}, but the path "
+                                            f"{CLI_SCRIPT_PATH} does not exist."
+                                        )
+                            try:
+                                VENV_PATH = plugin_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
+                                ]
+                            except KeyError:
+                                VENV_PATH = parsed_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
+                                ] = None
+                            else:
+                                try:
+                                    VENV_PATH = ProperPath(VENV_PATH)
+                                except (TypeError, ValueError):
+                                    raise ValidationError(
+                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH}' "
+                                        f"exists in {plugin_metadata_file}, but its assigned "
+                                        f"value '{VENV_PATH}' is invalid."
+                                    )
+                                else:
+                                    if VENV_PATH.expanded.exists():
+                                        parsed_metadata[
+                                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH
+                                        ] = VENV_PATH.expanded.absolute()
+                                    else:
+                                        raise ValidationError(
+                                            f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_VENV_PATH}' "
+                                            f"exists in {plugin_metadata_file}, but the path "
+                                            f"{VENV_PATH} does not exist."
+                                        )
+                            try:
+                                PROJECT_PATH = plugin_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                                ]
+                            except KeyError:
+                                PROJECT_PATH = parsed_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                                ] = CLI_SCRIPT_PATH.expanded.parent
+                            else:
+                                try:
+                                    PROJECT_PATH = ProperPath(PROJECT_PATH)
+                                except (TypeError, ValueError):
+                                    raise ValidationError(
+                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
+                                        f"exists in {plugin_metadata_file}, but its assigned "
+                                        f"value '{PROJECT_PATH}' is invalid."
+                                    )
+                                else:
+                                    if PROJECT_PATH.expanded.exists():
+                                        parsed_metadata[
+                                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                                        ] = PROJECT_PATH.expanded.absolute()
+                                    else:
+                                        raise ValidationError(
+                                            f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH}' "
+                                            f"exists in {plugin_metadata_file}, but the path "
+                                            f"{PROJECT_PATH} does not exist."
+                                        )
+                            try:
+                                PLUGIN_NAME = plugin_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
+                                ]
+                            except KeyError:
+                                PLUGIN_NAME = parsed_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
+                                ] = self.location.name
+                            else:
+                                if self.location.name != PLUGIN_NAME:
+                                    raise ValidationError(
+                                        f"Key '{EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME}' "
+                                        f"exists in {plugin_metadata_file}, but it must be the same "
+                                        f"name as the directory name the metadata file is in."
+                                    )
+                                parsed_metadata[
+                                    EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
+                                ] = PLUGIN_NAME
                 else:
-                    raise ValueError(f"{self.location} may not be a plugin directory.")
-            os.chdir(actual_cwd)
+                    parsed_metadata[
+                        EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_FILE_EXISTS
+                    ] = False
+                    if (
+                        external_local_plugin_typer_app_file := (
+                            self.location / EXTERNAL_LOCAL_PLUGIN_TYPER_APP_FILE_NAME
+                        )
+                    ).exists():
+                        parsed_metadata[
+                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_CLI_SCRIPT_PATH
+                        ] = external_local_plugin_typer_app_file
+                        parsed_metadata[
+                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PROJECT_PATH
+                        ] = self.location
+                        PLUGIN_NAME = self.location.name
+                        parsed_metadata[
+                            EXTERNAL_LOCAL_PLUGIN_METADATA_FILE_KEY_PLUGIN_NAME
+                        ] = PLUGIN_NAME
+                    else:
+                        raise ValueError(
+                            f"{self.location} may not be a plugin directory."
+                        )
         else:
             raise ValueError(f"{self.location} is not a directory.")
         return parsed_metadata

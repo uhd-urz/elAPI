@@ -14,11 +14,11 @@ import yagmail
 from nameparser import HumanName
 from yagmail import YagAddressError
 
-from ... import APP_NAME
+from ..._names import APP_NAME
 from ...configuration import get_development_mode
 from ...core_validators import Exit
 from ...loggers import GlobalLogRecordContainer, Logger
-from ..commons.cli_helpers import detected_click_feedback
+from ...utils import detected_click_feedback
 from ._yagmail_patch import prepare_enforced_plaintext_message
 from .configuration import (
     _validated_email_cases,

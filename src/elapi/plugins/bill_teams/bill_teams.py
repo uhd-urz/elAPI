@@ -5,10 +5,11 @@ from typing import Union
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
-from ...api.validators import ElabUserGroups
+from ...api import ElabUserGroups, handle_new_user_teams
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
+from ..commons import AsyncInformation, RecursiveInformation
 
 logger = Logger()
 
@@ -20,11 +21,18 @@ class UsersInformation:
 
     @classmethod
     async def items(cls):
-        from ..commons import RecursiveInformation
-
-        return await RecursiveInformation(
+        all_users = await AsyncInformation(cls.endpoint_name).items()
+        fallback_all_users = RecursiveInformation(
             cls.endpoint_name, cls.endpoint_id_key_name
-        ).items()
+        )
+        for user in all_users:
+            if (user_teams := user.get("teams")) is not None:
+                if handle_new_user_teams(user_teams) is not None:
+                    return all_users
+                return await fallback_all_users.items()
+            return await fallback_all_users.items()
+        else:
+            return await fallback_all_users.items()
 
 
 class TeamsInformation:
@@ -32,10 +40,8 @@ class TeamsInformation:
     endpoint_name = "teams"
 
     @classmethod
-    def items(cls) -> list[dict]:
-        from ..commons import Information
-
-        return Information(cls.endpoint_name).items()
+    async def items(cls) -> list[dict]:
+        return await AsyncInformation(cls.endpoint_name).items()
 
 
 class OwnersInformation:
@@ -137,11 +143,13 @@ class TeamsList:
         admins: dict[str, dict[str, dict[str, str | bool | int]]] = {}
         teams: dict[str, dict[str, str | int | dict]] = {}
         for u in self.users:
-            for team in u["teams"]:  # O(n^2): u["teams"] is again an iterable!
+            user_teams = handle_new_user_teams(u["teams"])
+            for team in user_teams:  # O(n^2): user_teams is again an iterable!
                 uid = u["userid"]
                 # Get teams user count
-                if not team_members.get(team["id"]):
-                    team_members[team["id"]] = {
+                team_id = str(team["id"])
+                if not team_members.get(team_id):
+                    team_members[team_id] = {
                         uid: {
                             "firstname": u["firstname"],
                             "lastname": u["lastname"],
@@ -151,7 +159,7 @@ class TeamsList:
                         }
                     }
                 else:
-                    team_members[team["id"]].update(
+                    team_members[team_id].update(
                         {
                             uid: {
                                 "firstname": u["firstname"],
@@ -163,8 +171,8 @@ class TeamsList:
                         }
                     )
                 if team["usergroup"] == ElabUserGroups.admin:
-                    if not admins.get(team["id"]):
-                        admins[team["id"]] = {
+                    if not admins.get(team_id):
+                        admins[team_id] = {
                             uid: {
                                 "firstname": u["firstname"],
                                 "lastname": u["lastname"],
@@ -174,7 +182,7 @@ class TeamsList:
                             }
                         }
                     else:
-                        admins[team["id"]].update(
+                        admins[team_id].update(
                             {
                                 uid: {
                                     "firstname": u["firstname"],
@@ -186,14 +194,15 @@ class TeamsList:
                             }
                         )
                 # Get team basic information
-                teams[team["id"]] = {}
-                teams[team["id"]]["team_name"] = team["name"]
-                teams[team["id"]]["team_id"] = team["id"]
+                teams[team_id] = {}
+                teams[team_id]["team_name"] = team["name"]
+                teams[team_id]["team_id"] = team["id"]
 
         # Add team creation date to teams
         for team in self.teams:
-            if team["id"] in teams.keys():
-                teams[team["id"]]["team_created_at"] = team["created_at"]
+            team_id = str(team["id"])
+            if team_id in teams.keys():
+                teams[team_id]["team_created_at"] = team["created_at"]
 
         # Add member count to teams
         for team_id in teams:
@@ -202,7 +211,7 @@ class TeamsList:
                 teams[team_id]["members"] = team_members[team_id]
             teams[team_id]["admins"] = admins.get(team_id, {})
             teams[team_id]["total_unarchived_member_count"] = len(team_members[team_id])
-            teams[team_id]["active_member_count"] = 0
+            teams[team_id]["active_member_count"]: int = 0
             for k in team_members[team_id]:
                 if team_members[team_id][k]["expired"] is False:
                     teams[team_id]["active_member_count"] += 1

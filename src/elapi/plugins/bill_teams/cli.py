@@ -9,6 +9,7 @@ from types import NoneType
 
 import typer
 
+from ...utils import UnexpectedAPIResponseType
 from .generate_table import is_team_on_trial
 from .names import PLUGIN_NAME, REGISTRY_SUB_PLUGIN_NAME, TARGET_GROUP_NAME
 
@@ -135,7 +136,7 @@ else:
     )
     def get_teams(
         admins_only: Annotated[
-            Optional[bool],
+            bool,
             typer.Option(
                 "--admins-only",
                 "-A",
@@ -158,7 +159,7 @@ else:
                 show_default=True,
             ),
         ] = False,
-        sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
+        sort_json_format: Annotated[bool, typer.Option(hidden=True)] = True,
         export: Annotated[
             Optional[str],
             typer.Option(
@@ -215,6 +216,10 @@ else:
             except RuntimeValidationError as e:
                 validation_status.stop()
                 raise e
+            except UnexpectedAPIResponseType as unex_exc:
+                validation_status.stop()
+                logger.critical(f"Unexpected API response: {unex_exc}")
+                raise Exit(1) from unex_exc
         if export == "":
             export = get_active_export_dir()
         if sort_json_format is True:
@@ -236,10 +241,21 @@ else:
 
         async def gather_teams_list() -> TeamsList:
             try:
-                tl = TeamsList(await users_info.items(), teams_info.items())
+                tl = TeamsList(await users_info.items(), await teams_info.items())
             except (RuntimeError, InterruptedError) as error:
+                logger.error(
+                    f"Retrieving users/teams data has failed. Exception details: {error}"
+                )
                 global_session.close()
                 raise InterruptedError from error
+            except UnexpectedAPIResponseType as unex_exc:
+                global_session.close()
+                logger.critical(
+                    "Some functions failed because they couldn't find "
+                    f"the expected fields in the API response. "
+                    f"Exception details: {unex_exc}"
+                )
+                raise unex_exc
             else:
                 global_session.close()
             return tl
@@ -272,7 +288,7 @@ else:
             ),
         ],
         skip_essential_validation: Annotated[bool, typer.Option(hidden=True)] = False,
-        sort_json_format: Annotated[bool, typer.Option(hidden=True)] = False,
+        sort_json_format: Annotated[bool, typer.Option(hidden=True)] = True,
         data_format: Annotated[
             Optional[str],
             typer.Option(

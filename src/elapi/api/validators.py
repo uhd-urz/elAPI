@@ -1,15 +1,16 @@
-from enum import IntEnum
 from json import JSONDecodeError
 from typing import Iterable, Optional, Union
 
 import httpx
 
-from ..api import GETRequest
 from ..configuration import KEY_HOST, get_active_api_token, get_active_host
 from ..core_validators import CriticalValidationError, RuntimeValidationError, Validator
 from ..loggers import Logger
 from ..styles import stdout_console
 from ..styles.highlight import NoteText
+from ._handle_unexp_response import handle_new_user_teams
+from ._names import ElabUserGroups
+from .api import ElabFTWUnsupportedVersion, GETRequest
 
 logger = Logger()
 
@@ -76,6 +77,9 @@ class HostIdentityValidator(Validator):
                 f"Exception details: {e!r}"
             )
             raise RuntimeValidationError
+        except ElabFTWUnsupportedVersion as e:
+            logger.error(e)
+            raise RuntimeValidationError
         else:
             try:
                 response.json()
@@ -101,30 +105,6 @@ class HostIdentityValidator(Validator):
                     )
                 )
                 raise RuntimeValidationError
-
-
-class ElabUserGroups(IntEnum):
-    """eLabFTW's default permission groups.
-    See: https://github.com/elabftw/elabftw/blob/master/src/Enums/Usergroup.php
-    """
-
-    sysadmin = 1
-    admin = 2
-    user = 4
-
-    @classmethod
-    def group_names(cls) -> list[str]:
-        return [_.name for _ in cls]
-
-    @classmethod
-    def group_values(cls) -> list[int]:
-        return [_.value for _ in cls]
-
-
-class ElabScopes(IntEnum):
-    self = 1
-    team = 2
-    everything = 3
 
 
 class PermissionValidator(Validator):
@@ -190,7 +170,8 @@ class PermissionValidator(Validator):
                     )
                     raise CriticalValidationError
             if self.team_id is not None:
-                for team in caller_data["teams"]:
+                caller_data_teams = handle_new_user_teams(caller_data["teams"])
+                for team in caller_data_teams:
                     if str(team["id"]) == self.team_id:
                         if team["usergroup"] > ElabUserGroups[self.group]:
                             logger.critical(

@@ -1,5 +1,10 @@
 import os
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
+
+from pydantic import BaseModel
 
 # variables with leading underscores here indicate that they are to be overwritten by config.py
 # In which case, import their counterparts from src/config.py
@@ -56,3 +61,22 @@ KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")
+
+
+class _ElabHostsCacheModel(BaseModel):
+    url: str
+
+
+class CacheModel(BaseModel):
+    date: datetime
+    elab_hosts: dict[str, str] = {}
+
+
+@dataclass(frozen=True)
+class CacheFileProperties:
+    expires_in_days: ClassVar[int] = 6 * 60 * 60
+    encoding: ClassVar[str] = "utf-8"
+    indent: ClassVar[int] = 4
+
+
+CACHE_PATH: Path = Path("~/.cache").expanduser() / APP_NAME / f"{APP_NAME}.json"

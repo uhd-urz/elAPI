@@ -1,5 +1,5 @@
 from .formats import BaseFormat, PDFAFormat, ZIPAFormat
-from ... import APP_NAME
+from ..._names import APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
 supported_format_values = ", ".join(

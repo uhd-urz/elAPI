@@ -17,6 +17,10 @@ class ResultCallbackHandler(Handler):
         cls._client_count += 1
 
     @classmethod
+    def disable_store_okay(cls) -> None:
+        cls._store_okay = False
+
+    @classmethod
     def is_store_okay(cls) -> bool:
         return cls._store_okay
 
@@ -25,6 +29,6 @@ class ResultCallbackHandler(Handler):
         return cls._client_count
 
     def emit(self, record):
-        if self._store_okay:
+        if ResultCallbackHandler._store_okay:
             if record.levelno >= self.level:
                 self.log_container.append(record)

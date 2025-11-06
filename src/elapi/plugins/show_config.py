@@ -1,4 +1,4 @@
-from .._names import ENV_XDG_DOWNLOAD_DIR
+from .._names import ENV_XDG_DOWNLOAD_DIR, CACHE_PATH
 from ..configuration import (
     APP_BRAND_NAME,
     APP_DATA_DIR,
@@ -203,6 +203,7 @@ The following information includes configuration values and their sources as det
         + f": {get_active_export_dir(skip_validation=True)} ← `{export_dir_source}`"
         + f"""
 - {ColorText("App data directory").colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText("Cache file path").colorize(LIGHTGREEN)}: {CACHE_PATH}
 - {ColorText("Third-party plugins directory").colorize(LIGHTCYAN)}: {
             EXTERNAL_LOCAL_PLUGIN_DIR
         }

@@ -1,7 +1,11 @@
+import os
 import re
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
+
+import typer
 
 from .._core_init import PatternNotFoundError
 from .._names import ELAB_HOST_URL_API_SUFFIX
@@ -12,6 +16,23 @@ class PreventiveWarning(RuntimeWarning): ...
 
 
 class PythonVersionCheckFailed(Exception): ...
+
+
+class OpenAPISpecificationException(Exception): ...
+
+
+class UnexpectedAPIResponseType(TypeError): ...
+
+
+@dataclass
+class _DetectedClickFeedback:
+    context: Optional[typer.Context]
+    commands: Optional[str]
+
+
+detected_click_feedback: _DetectedClickFeedback = _DetectedClickFeedback(
+    context=None, commands=None
+)
 
 
 def check_reserved_keyword(
@@ -104,3 +125,11 @@ def parse_api_id_from_api_token(api_token: str) -> str:
     if match:
         return match.group(1)
     raise PatternNotFoundError("No API token ID prefix found in API token string!")
+
+
+class SafeCWD:
+    def __enter__(self):
+        self.cwd = Path.cwd()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.chdir(self.cwd)

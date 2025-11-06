@@ -48,7 +48,7 @@ logger = Logger()
 
 
 class ConfigurationValidation:
-    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration, /):
+    def __init__(self, minimal_active_config_obj: MinimalActiveConfiguration | dict, /):
         self.active_configuration = minimal_active_config_obj
 
     @property

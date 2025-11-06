@@ -9,9 +9,13 @@ from .._core_init._utils import (
 )
 from .messages import MessagesList, TupleList, add_message
 from .utils import (
+    OpenAPISpecificationException,
     PreventiveWarning,
     PythonVersionCheckFailed,
+    SafeCWD,
+    UnexpectedAPIResponseType,
     check_reserved_keyword,
+    detected_click_feedback,
     get_external_python_version,
     get_sub_package_name,
     parse_api_id_from_api_token,
@@ -37,4 +41,8 @@ __all__ = [
     "GlobalCLIGracefulCallback",
     "parse_url_only_from_host",
     "parse_api_id_from_api_token",
+    "OpenAPISpecificationException",
+    "UnexpectedAPIResponseType",
+    "detected_click_feedback",
+    "SafeCWD",
 ]
