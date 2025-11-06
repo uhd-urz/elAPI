@@ -9,7 +9,7 @@ from ...api import ElabUserGroups, handle_new_user_teams
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
-from ..commons import AsyncInformation, RecursiveInformation
+from ..commons import AsyncInformation, Information, RecursiveInformation
 
 logger = Logger()
 
@@ -40,7 +40,11 @@ class TeamsInformation:
     endpoint_name = "teams"
 
     @classmethod
-    async def items(cls) -> list[dict]:
+    def items(cls) -> list[dict]:
+        return Information(cls.endpoint_name).items()
+
+    @classmethod
+    async def aitems(cls) -> list[dict]:
         return await AsyncInformation(cls.endpoint_name).items()
 
 

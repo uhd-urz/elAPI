@@ -241,7 +241,7 @@ else:
 
         async def gather_teams_list() -> TeamsList:
             try:
-                tl = TeamsList(await users_info.items(), await teams_info.items())
+                tl = TeamsList(await users_info.items(), await teams_info.aitems())
             except (RuntimeError, InterruptedError) as error:
                 logger.error(
                     f"Retrieving users/teams data has failed. Exception details: {error}"
