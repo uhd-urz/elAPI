@@ -22,7 +22,7 @@ from .._names import (
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
-    KEY_ELAB_VERSION_MODE,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     KEY_HOST,
@@ -35,7 +35,7 @@ from .._names import (
     PROJECT_CONFIG_LOC,
     SYSTEM_CONFIG_LOC,
     VERSION_FILE_NAME,
-    ElabVersionModes,
+    ElabStrictVersionMatchModes,
 )
 from ..core_validators import (
     CriticalValidationError,
@@ -77,7 +77,7 @@ __all__ = [
     "KEY_TIMEOUT",
     "KEY_UNSAFE_TOKEN_WARNING",
     "KEY_VERIFY_SSL",
-    "KEY_ELAB_VERSION_MODE",
+    "KEY_ELAB_STRICT_VERSION_MATCH",
     "LOCAL_CONFIG_LOC",
     "LOG_DIR_ROOT",
     "PROJECT_CONFIG_LOC",
@@ -95,7 +95,7 @@ __all__ = [
     "TIMEOUT_DEFAULT_VAL",
     "UNSAFE_TOKEN_WARNING_DEFAULT_VAL",
     "VERIFY_SSL_DEFAULT_VAL",
-    "ELAB_VERSION_MODE_DEFAULT_VAL",
+    "ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL",
     "MinimalActiveConfiguration",
     "VERSION_FILE_NAME",
     "DEVELOPMENT_MODE",
@@ -277,8 +277,10 @@ PLUGIN = settings.get(KEY_PLUGIN_KEY_NAME, None)
 PLUGIN_DEFAULT_VALUE: dict = {}
 
 # Elab version mode
-ELAB_VERSION_MODE = settings.get(KEY_ELAB_VERSION_MODE, None)
-ELAB_VERSION_MODE_DEFAULT_VAL: ElabVersionModes | str = ElabVersionModes.warn
+ELAB_STRICT_VERSION_MATCH = settings.get(KEY_ELAB_STRICT_VERSION_MATCH, None)
+ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL: ElabStrictVersionMatchModes | str = (
+    ElabStrictVersionMatchModes.warn
+)
 
 for key_name, key_val in [
     (KEY_HOST, HOST),
@@ -292,7 +294,7 @@ for key_name, key_val in [
     (KEY_ASYNC_CAPACITY, ASYNC_CAPACITY),
     (KEY_DEVELOPMENT_MODE, DEVELOPMENT_MODE),
     (KEY_PLUGIN_KEY_NAME, PLUGIN),
-    (KEY_ELAB_VERSION_MODE, ELAB_VERSION_MODE),
+    (KEY_ELAB_STRICT_VERSION_MATCH, ELAB_STRICT_VERSION_MATCH),
 ]:
     try:
         history.patch(key_name, key_val)

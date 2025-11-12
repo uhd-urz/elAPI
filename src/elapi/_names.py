@@ -59,10 +59,10 @@ KEY_TIMEOUT: str = "TIMEOUT"
 KEY_ASYNC_RATE_LIMIT: str = "ASYNC_RATE_LIMIT"
 KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
 KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
-KEY_ELAB_VERSION_MODE: str = "ELAB_VERSION_MODE"
+KEY_ELAB_STRICT_VERSION_MATCH: str = "ELAB_STRICT_VERSION_MATCH"
 
 
-class ElabVersionModes(StrEnum):
+class ElabStrictVersionMatchModes(StrEnum):
     abort = "abort"
     warn = "warn"
     yolo = "yolo"

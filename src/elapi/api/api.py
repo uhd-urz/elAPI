@@ -33,12 +33,12 @@ from .._core_init import get_cached_data, update_cache
 from .._names import (
     APP_BRAND_NAME,
     ELAB_BRAND_NAME,
-    ElabVersionModes,
+    ElabStrictVersionMatchModes,
 )
 from ..configuration import (
     KEY_API_TOKEN,
     KEY_ASYNC_RATE_LIMIT,
-    KEY_ELAB_VERSION_MODE,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_HOST,
     KEY_TIMEOUT,
@@ -55,7 +55,7 @@ from ..configuration import (
     get_elab_version_mode,
     preventive_missing_warning,
 )
-from ..configuration.config import ELAB_VERSION_MODE_DEFAULT_VAL, APIToken
+from ..configuration.config import ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL, APIToken
 from ..loggers import Logger
 from ..styles import Missing
 from ..utils import (
@@ -467,7 +467,7 @@ class ElabFTWUnsupportedVersion(ElabFTWURLError): ...
 
 
 class ElabFTWURL:
-    force_endpoint_validation: ElabVersionModes | None = None
+    force_endpoint_validation: ElabStrictVersionMatchModes | None = None
 
     def __init__(
         self,
@@ -555,31 +555,32 @@ class ElabFTWURL:
                 f"Supported versions are: "
                 f"{', '.join(ElabVersionDefaults.supported_versions)}. "
                 f"You can ignore this validation by setting configuration "
-                f"'{KEY_ELAB_VERSION_MODE.lower()}' "
-                f"value to '{ElabVersionModes.yolo}' (or by setting the class "
+                f"'{KEY_ELAB_STRICT_VERSION_MATCH.lower()}' "
+                f"value to '{ElabStrictVersionMatchModes.yolo}' (or by setting the class "
                 f"{ElabFTWURL.__name__} attribute 'force_endpoint_validation' "
-                f"to '{ElabVersionModes.yolo}'). Setting the value to "
-                f"'{ElabVersionModes.abort}' would raise an exception and "
+                f"to '{ElabStrictVersionMatchModes.yolo}'). Setting the value to "
+                f"'{ElabStrictVersionMatchModes.abort}' would raise an exception and "
                 f"abort {APP_BRAND_NAME}."
             )
             match cls.force_endpoint_validation or get_elab_version_mode(
                 skip_validation=True
             ):
-                case ElabVersionModes.abort:
+                case ElabStrictVersionMatchModes.abort:
                     raise ElabFTWUnsupportedVersion(validation_message)
-                case ElabVersionModes.warn:
+                case ElabStrictVersionMatchModes.warn:
                     if _DEBUG_LOG_EMIT_ONCE is False:
                         logger.warning(validation_message)
                         _DEBUG_LOG_EMIT_ONCE = True
                     return None
-                case ElabVersionModes.yolo:
+                case ElabStrictVersionMatchModes.yolo:
                     return None
                 case _:
                     if _DEBUG_LOG_EMIT_ONCE is False:
                         logger.warning(
-                            f"Invalid value for Elab version mode (force_endpoint_validation). "
-                            f"Valid values are: {', '.join(ElabVersionModes)}. Default value "
-                            f"'{ELAB_VERSION_MODE_DEFAULT_VAL}' will be considered."
+                            f"Invalid value for Elab strict version match mode "
+                            f"(force_endpoint_validation). "
+                            f"Valid values are: {', '.join(ElabStrictVersionMatchModes)}. "
+                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' will be considered."
                         )
                         logger.warning(validation_message)
                         _DEBUG_LOG_EMIT_ONCE = True
