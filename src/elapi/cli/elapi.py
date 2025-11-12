@@ -109,10 +109,11 @@ def result_callback_wrapper(_, override_config):
 app = Typer(result_callback=result_callback_wrapper)
 
 
-SENSITIVE_PLUGIN_NAMES: tuple[str, str, str] = (
+SENSITIVE_PLUGIN_NAMES: tuple[str, ...] = (
     "init",
     "show-config",
     "version",
+    "clear-cache",
 )  # version is no longer a plugin, but it used to be
 SPECIAL_SENSITIVE_PLUGIN_NAMES: tuple[str] = ("show-config",)
 COMMANDS_TO_SKIP_CLI_STARTUP: list = list(SENSITIVE_PLUGIN_NAMES)

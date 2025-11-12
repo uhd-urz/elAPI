@@ -112,7 +112,7 @@ try:
 except KeyError:
     async_capacity_source = FALLBACK_SOURCE_NAME
 finally:
-    async_capacity_value = get_active_async_capacity(skip_validation=False)
+    async_capacity_value = get_active_async_capacity(skip_validation=True)
     async_capacity_value = (
         f"{async_capacity_value} avg. connections at a time"
         if async_capacity_value is not None
@@ -154,7 +154,7 @@ try:
 except KeyError:
     elab_strict_version_match_source = FALLBACK_SOURCE_NAME
 finally:
-    elab_strict_version_match_value = get_elab_version_mode(skip_validation=False)
+    elab_strict_version_match_value = get_elab_version_mode(skip_validation=True)
 
 detected_config_files_formatted = "\n- " + "\n- ".join(
     f"`{v}`: {k}" for k, v in detected_config_files.items()
