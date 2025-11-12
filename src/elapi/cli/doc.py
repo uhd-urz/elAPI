@@ -32,11 +32,15 @@ if valid_endpoints is None:
     )
     _USER_ELAB_VERSION = False
 valid_main_endpoints = ", ".join(valid_endpoints.keys())
-
+endpoint_names_message: str = (
+    f"Your actual {ELAB_BRAND_NAME} version will be reflected after you make "
+    "your first successful request."
+    if not _USER_ELAB_VERSION
+    else ""
+)
 __PARAMETERS__doc__ = {
     "endpoint_name": f"Name of an endpoint. Valid endpoints are ({ELAB_BRAND_NAME} {version}): {valid_main_endpoints}. "
-                     f"{f'Your actual {ELAB_BRAND_NAME} version will be reflected after you make '
-                        'your first successful request.' if not _USER_ELAB_VERSION else ''}",
+                     f"{endpoint_names_message}",
     "endpoint_id_get": "ID for one of the preceding endpoints. If provided, only information associated with that "
                      "ID will be returned. E.g., user ID, team ID, experiments ID.",
     "endpoint_id_post": "ID for a preceding endpoint. If provided, `POST` request will be made against that "
