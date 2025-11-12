@@ -30,10 +30,15 @@ from httpx_auth import HeaderApiKey
 from httpx_limiter import AsyncRateLimitedTransport, Rate
 
 from .._core_init import get_cached_data, update_cache
-from .._names import APP_BRAND_NAME, ELAB_BRAND_NAME
+from .._names import (
+    APP_BRAND_NAME,
+    ELAB_BRAND_NAME,
+    ElabVersionModes,
+)
 from ..configuration import (
     KEY_API_TOKEN,
     KEY_ASYNC_RATE_LIMIT,
+    KEY_ELAB_VERSION_MODE,
     KEY_ENABLE_HTTP2,
     KEY_HOST,
     KEY_TIMEOUT,
@@ -47,13 +52,13 @@ from ..configuration import (
     get_active_host,
     get_active_timeout,
     get_active_verify_ssl,
+    get_elab_version_mode,
     preventive_missing_warning,
 )
-from ..configuration.config import APIToken
+from ..configuration.config import ELAB_VERSION_MODE_DEFAULT_VAL, APIToken
 from ..loggers import Logger
 from ..styles import Missing
 from ..utils import (
-    detected_click_feedback,
     get_app_version,
     update_kwargs_with_defaults,
 )
@@ -462,7 +467,7 @@ class ElabFTWUnsupportedVersion(ElabFTWURLError): ...
 
 
 class ElabFTWURL:
-    force_endpoint_validation: bool = True
+    force_endpoint_validation: ElabVersionModes | None = None
 
     def __init__(
         self,
@@ -542,48 +547,51 @@ class ElabFTWURL:
     def get_valid_endpoints(cls) -> Optional[dict[str, list[str]]]:
         global _DEBUG_LOG_EMIT_ONCE
         elab_version = cls.get_elab_version()
-        if cls.force_endpoint_validation is True:
-            if elab_version not in ElabVersionDefaults.supported_versions:
-                if detected_click_feedback.commands not in (
-                    "get",
-                    "post",
-                    "patch",
-                    "delete",
-                ):
-                    raise ElabFTWUnsupportedVersion(
-                        f"{ELAB_BRAND_NAME} version {elab_version} is not supported by "
-                        f"{APP_BRAND_NAME} {get_app_version()}. "
-                        f"Update {APP_BRAND_NAME} for newer {ELAB_BRAND_NAME} version support. "
-                        f"Supported versions are: "
-                        f"{', '.join(ElabVersionDefaults.supported_versions)}. "
-                        f"You can skip this validation by passing the '--SV' global variable (or setting the class "
-                        f"{ElabFTWURL.__name__} attribute 'force_endpoint_validation' "
-                        f"to 'False')."
-                    )
-                else:
-                    if detected_click_feedback.commands is not None:
-                        if _DEBUG_LOG_EMIT_ONCE is False:
-                            logger.warning(
-                                f"{ELAB_BRAND_NAME} version {elab_version} is not supported by "
-                                f"{APP_BRAND_NAME} {get_app_version()}. "
-                                f"Update {APP_BRAND_NAME} for newer {ELAB_BRAND_NAME} version support. "
-                                f"Supported versions are: "
-                                f"{', '.join(ElabVersionDefaults.supported_versions)}. "
-                                f"However, since '{detected_click_feedback.commands}' is a raw API command, "
-                                f"endpoint validation will be skipped."
-                            )
-                            _DEBUG_LOG_EMIT_ONCE = True
-                        return None
+        if elab_version not in ElabVersionDefaults.supported_versions:
+            validation_message: str = (
+                f"{ELAB_BRAND_NAME} version {elab_version} is not supported by "
+                f"{APP_BRAND_NAME} {get_app_version()}. "
+                f"Update {APP_BRAND_NAME} for newer {ELAB_BRAND_NAME} version support. "
+                f"Supported versions are: "
+                f"{', '.join(ElabVersionDefaults.supported_versions)}. "
+                f"You can ignore this validation by setting configuration "
+                f"'{KEY_ELAB_VERSION_MODE.lower()}' "
+                f"value to '{ElabVersionModes.yolo}' (or by setting the class "
+                f"{ElabFTWURL.__name__} attribute 'force_endpoint_validation' "
+                f"to '{ElabVersionModes.yolo}'). Setting the value to "
+                f"'{ElabVersionModes.abort}' would raise an exception and "
+                f"abort {APP_BRAND_NAME}."
+            )
+            match cls.force_endpoint_validation or get_elab_version_mode(
+                skip_validation=True
+            ):
+                case ElabVersionModes.abort:
+                    raise ElabFTWUnsupportedVersion(validation_message)
+                case ElabVersionModes.warn:
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
                     return None
-            else:
-                version_file = (
-                    ElabVersionDefaults.versions_dir
-                    / f"{elab_version}.{ElabVersionDefaults.file_ext}"
-                )
-                valid_endpoints = json.loads(version_file.read_text(encoding="utf-8"))
-                return valid_endpoints
+                case ElabVersionModes.yolo:
+                    return None
+                case _:
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.warning(
+                            f"Invalid value for Elab version mode (force_endpoint_validation). "
+                            f"Valid values are: {', '.join(ElabVersionModes)}. Default value "
+                            f"'{ELAB_VERSION_MODE_DEFAULT_VAL}' will be considered."
+                        )
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
+                    return None
+
         else:
-            return None
+            version_file = (
+                ElabVersionDefaults.versions_dir
+                / f"{elab_version}.{ElabVersionDefaults.file_ext}"
+            )
+            valid_endpoints = json.loads(version_file.read_text(encoding="utf-8"))
+            return valid_endpoints
 
     @property
     def _host(self) -> str:

@@ -58,6 +58,7 @@ class ApplyConfigHistory:
             KEY_ASYNC_CAPACITY,
             KEY_ASYNC_RATE_LIMIT,
             KEY_DEVELOPMENT_MODE,
+            KEY_ELAB_VERSION_MODE,
             KEY_ENABLE_HTTP2,
             KEY_EXPORT_DIR,
             KEY_PLUGIN_KEY_NAME,
@@ -110,6 +111,7 @@ class ApplyConfigHistory:
                 KEY_ASYNC_CAPACITY,
                 KEY_DEVELOPMENT_MODE,
                 KEY_PLUGIN_KEY_NAME,
+                KEY_ELAB_VERSION_MODE,
             ]:
                 self._modify_history(key_name, value)
 

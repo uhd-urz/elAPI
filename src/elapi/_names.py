@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar
 
@@ -58,6 +59,14 @@ KEY_TIMEOUT: str = "TIMEOUT"
 KEY_ASYNC_RATE_LIMIT: str = "ASYNC_RATE_LIMIT"
 KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
 KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
+KEY_ELAB_VERSION_MODE: str = "ELAB_VERSION_MODE"
+
+
+class ElabVersionModes(StrEnum):
+    abort = "abort"
+    warn = "warn"
+    yolo = "yolo"
+
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")

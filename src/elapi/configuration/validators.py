@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 
 from dynaconf.utils.boxing import DynaBox
 
-from .._names import APP_NAME
+from .._names import APP_NAME, ElabVersionModes
 from ..configuration.config import CANON_YAML_EXTENSION, CONFIG_FILE_NAME
 from ..core_validators import (
     CriticalValidationError,
@@ -26,11 +26,13 @@ from .config import (
     ASYNC_CAPACITY_DEFAULT_VAL,
     ASYNC_RATE_LIMIT_DEFAULT_VAL,
     DEVELOPMENT_MODE_DEFAULT_VAL,
+    ELAB_VERSION_MODE_DEFAULT_VAL,
     ENABLE_HTTP2_DEFAULT_VAL,
     FALLBACK_EXPORT_DIR,
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
+    KEY_ELAB_VERSION_MODE,
     KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     KEY_HOST,
@@ -297,6 +299,47 @@ class ModesWithFallbackConfigurationValidator(ConfigurationValidation, Validator
         return value
 
 
+class ElabVersionModeWithFallbackConfigurationValidator(
+    ConfigurationValidation, Validator
+):
+    ALREADY_VALIDATED: bool = False
+    __slots__ = ()
+
+    def __init__(self, *args, key_name: str, fallback_value: str):
+        super().__init__(*args)
+        self.key_name = key_name
+        self.fallback_value = fallback_value
+
+    def validate(self) -> str:
+        if isinstance(
+            value := self.active_configuration.get_value(self.key_name), Missing
+        ):
+            return self.fallback_value
+        if value is None:
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's null."
+            )
+            return self.fallback_value
+        if not isinstance(value, str):
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's value '{value}' is not valid. Valid values: "
+                f"{', '.join(ElabVersionModes)}. "
+                f"The default value '{self.fallback_value}' will be used instead."
+            )
+            return self.fallback_value
+        if value.lower() not in ElabVersionModes:
+            logger.warning(
+                f"'{self.key_name.lower()}' is detected in configuration file, "
+                f"but it's value '{value}' is not valid. Valid values: "
+                f"{', '.join(ElabVersionModes)}. "
+                f"The default value '{self.fallback_value}' will be used instead."
+            )
+            return self.fallback_value
+        return value
+
+
 class TimeWithFallbackConfigurationValidator(ConfigurationValidation, Validator):
     ALREADY_VALIDATED: bool = False
     __slots__ = ()
@@ -429,6 +472,7 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
         TimeWithFallbackConfigurationValidator,
         DiscreteWithFallbackConfigurationValidator,
         PluginConfigurationValidator,
+        ElabVersionModeWithFallbackConfigurationValidator,
     ]
     ESSENTIAL_VALIDATORS: list = [
         HostConfigurationValidator,
@@ -440,6 +484,7 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
         TimeWithFallbackConfigurationValidator,
         DiscreteWithFallbackConfigurationValidator,
         PluginConfigurationValidator,
+        ElabVersionModeWithFallbackConfigurationValidator,
     ]
     __slots__ = ()
 
@@ -562,4 +607,16 @@ class MainConfigurationValidator(ConfigurationValidation, Validator):
             ).get()
             # Update validated_fields after validation
             validated_fields.append(FieldValueWithKey(KEY_PLUGIN_KEY_NAME, plugin))
+        if ElabVersionModeWithFallbackConfigurationValidator in self.limited_to:
+            version_mode = Validate(
+                ElabVersionModeWithFallbackConfigurationValidator(
+                    self.active_configuration,
+                    key_name=KEY_ELAB_VERSION_MODE,
+                    fallback_value=ELAB_VERSION_MODE_DEFAULT_VAL,
+                )
+            ).get()
+            # Update validated_fields after validation
+            validated_fields.append(
+                FieldValueWithKey(KEY_ELAB_VERSION_MODE, version_mode)
+            )
         return validated_fields

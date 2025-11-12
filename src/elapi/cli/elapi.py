@@ -27,8 +27,8 @@ from rich import pretty
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
-from .._names import APP_NAME, ELAB_BRAND_NAME
-from ..api import ElabFTWURL, ElabScopes, ElabUserGroups
+from .._names import APP_NAME
+from ..api import ElabFTWURLError, ElabScopes, ElabUserGroups
 from ..configuration import (
     FALLBACK_EXPORT_DIR,
     get_active_export_dir,
@@ -89,7 +89,7 @@ if get_development_mode(skip_validation=True) is True:
         handler.setLevel(DefaultLogLevels.DEBUG)
 
 
-def result_callback_wrapper(_, override_config, skip_endpoint_validation):
+def result_callback_wrapper(_, override_config):
     if (
         calling_sub_command_name := (
             ctx := click.get_current_context()
@@ -155,17 +155,6 @@ def cli_startup(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = "{}",
-    skip_endpoint_validation: Annotated[
-        bool,
-        typer.Option(
-            "--skip-end-val",
-            "--SV",
-            help=f"{APP_NAME} checks if your endpoint names are valid against "
-            f"{ELAB_BRAND_NAME} server version. Pass this flag to skip this validation.",
-            show_default=False,
-            rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
-        ),
-    ] = False,
 ) -> None:
     from ..configuration import reinitiate_config
     from ..configuration.config import (
@@ -210,8 +199,6 @@ def cli_startup(
     except ValueError:
         raise Exit(1)
     else:
-        if skip_endpoint_validation is True:
-            ElabFTWURL.force_endpoint_validation = False
         OVERRIDABLE_FIELDS_SOURCE: str = "CLI"
         for key, value in override_config.items():
             if key.lower() == KEY_DEVELOPMENT_MODE.lower():
@@ -335,22 +322,11 @@ def cli_startup_for_plugins(
             rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
         ),
     ] = None,
-    skip_endpoint_validation: Annotated[
-        bool,
-        typer.Option(
-            "--skip-end-val",
-            "--SV",
-            help=f"{APP_NAME} checks if your endpoint names are valid against "
-            f"{ELAB_BRAND_NAME} server version. Pass this flag to skip this validation.",
-            show_default=False,
-            rich_help_panel=CLI_STARTUP_CALLBACK_PANEL_NAME,
-        ),
-    ] = None,
 ) -> None:
     from ..styles import print_typer_error
 
     cli_switch_venv_state(True)
-    if override_config is not None or skip_endpoint_validation is not None:
+    if override_config is not None:
         print_typer_error(
             f"Global options can only be passed after "
             f"the main program name '{APP_NAME}', and not after a plugin name."
@@ -364,7 +340,7 @@ def cli_startup_for_plugins(
     cli_startup()
 
 
-def cli_cleanup_for_third_party_plugins(*args, override_config=None):
+def cli_cleanup_for_third_party_plugins(*args, **kwargs):
     cli_switch_venv_state(False)
 
 
@@ -585,6 +561,7 @@ def init(
                     _configuration_yaml_text = f"""host: {host_url}
 api_token: {api_token}
 export_dir: {export_directory}
+elab_version_mode: "warn"
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
@@ -1452,8 +1429,12 @@ def whoami() -> None:
             UnexpectedAPIResponseType,
         ) as mult_exc:
             status.stop()
-            logger.error(f"{mult_exc!r}")
+            logger.error(mult_exc)
             raise Exit(1) from mult_exc
+        except ElabFTWURLError as url_exc:
+            status.stop()
+            logger.error(url_exc)
+            raise Exit(1) from url_exc
 
         formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
             ColorText(whoami_info["host_url"]).colorize(LIGHTBLUE)
