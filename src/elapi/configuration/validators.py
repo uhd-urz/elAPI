@@ -329,7 +329,8 @@ class ElabVersionModeWithFallbackConfigurationValidator(
                 f"The default value '{self.fallback_value}' will be used instead."
             )
             return self.fallback_value
-        if value.lower() not in ElabStrictVersionMatchModes:
+        if value.lower() not in ElabStrictVersionMatchModes.__members__.values():
+            # Python 3.11.2 doesn't support "v in ElabStrictVersionMatchModes"
             logger.warning(
                 f"'{self.key_name.lower()}' is detected in configuration file, "
                 f"but it's value '{value}' is not valid. Valid values: "
