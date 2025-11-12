@@ -1387,7 +1387,11 @@ def clear_cache() -> None:
     """
     from .._names import CACHE_PATH
 
-    ProperPath(CACHE_PATH).remove()
+    try:
+        ProperPath(CACHE_PATH).remove()
+    except FileNotFoundError as file_404_exc:
+        logger.error(f"Cache is already empty. Exception: {file_404_exc}")
+        raise Exit(1) from file_404_exc
     logger.info(f"{APP_NAME} cache in {CACHE_PATH} is cleared.")
 
 
