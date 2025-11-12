@@ -35,6 +35,7 @@ dependencies = [
     "click>=8.1.8,<8.2",
     "httpx-limiter>=0.3.0,<0.4.0",
     "httpx-aiohttp>=0.1.8,<0.2",
+    "pydantic>=2.12.3",
 ]
 license-files = [
     "LICENSE",
@@ -68,6 +69,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.2",
     "pip>=25.1.1", # vendy requires pip
     "ptpython>=3.0.23,<4",
     "vendy>=0.0.3",

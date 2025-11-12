@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Literal, Optional, Type, Union
 
@@ -12,20 +11,9 @@ from ...configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
-from ...utils import check_reserved_keyword
+from ...utils import check_reserved_keyword, detected_click_feedback
 
 logger = Logger()
-
-
-@dataclass
-class _DetectedClickFeedback:
-    context: Optional[typer.Context]
-    commands: Optional[str]
-
-
-detected_click_feedback: _DetectedClickFeedback = _DetectedClickFeedback(
-    context=None, commands=None
-)
 
 
 class CLIExport:

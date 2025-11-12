@@ -17,6 +17,7 @@ from .config import (
     CONFIG_FILE_NAME,
     DEFAULT_EXPORT_DATA_FORMAT,
     DEVELOPMENT_MODE,
+    ELAB_STRICT_VERSION_MATCH,
     ENABLE_HTTP2,
     EXPORT_DIR,
     EXTERNAL_LOCAL_PLUGIN_DIR,
@@ -38,6 +39,7 @@ from .config import (
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     KEY_HOST,
@@ -69,6 +71,7 @@ from .overridable_vars import (
     get_active_unsafe_token_warning,
     get_active_verify_ssl,
     get_development_mode,
+    get_elab_version_mode,
 )
 from .validators import ConfigurationValidation
 from .validators import PluginConfigurationValidator as _PluginConfigurationValidator
@@ -94,6 +97,7 @@ __all__ = [
     "CONFIG_FILE_EXTENSION",
     "CONFIG_FILE_NAME",
     "DEFAULT_EXPORT_DATA_FORMAT",
+    "ELAB_STRICT_VERSION_MATCH",
     "DEVELOPMENT_MODE",
     "ENABLE_HTTP2",
     "EXPORT_DIR",
@@ -121,6 +125,7 @@ __all__ = [
     "KEY_PLUGIN_KEY_NAME",
     "KEY_TIMEOUT",
     "KEY_UNSAFE_TOKEN_WARNING",
+    "KEY_ELAB_STRICT_VERSION_MATCH",
     "KEY_VERIFY_SSL",
     "KEY_ASYNC_CAPACITY",
     "LOCAL_CONFIG_LOC",
@@ -145,5 +150,6 @@ __all__ = [
     "get_active_async_capacity",
     "get_active_verify_ssl",
     "get_development_mode",
+    "get_elab_version_mode",
     "ConfigurationValidation",
 ]

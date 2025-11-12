@@ -16,11 +16,14 @@ __all__ = [
     "GlobalCLIGracefulCallback",
     "LogItemList",
     "PatternNotFoundError",
+    "get_cached_data",
+    "update_cache",
 ]
 import logging
 
 from .._vendor import haggis
 from .._vendor.haggis.logs import add_logging_level
+from ._cache import get_cached_data, update_cache
 from ._loggers import (
     BaseHandler,
     DefaultLogLevels,

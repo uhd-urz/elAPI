@@ -1,10 +1,12 @@
 import asyncio
+import json
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import cached_property
+from json import JSONDecodeError
 from types import NoneType, NotImplementedType
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Union
 
 # noinspection PyProtectedMember
 import httpx._client as httpx_private_client_module
@@ -13,6 +15,7 @@ from httpx import (
     AsyncClient,
     BaseTransport,
     Client,
+    HTTPError,
     Limits,
     Response,
 )
@@ -26,10 +29,16 @@ from httpx_aiohttp import AiohttpTransport
 from httpx_auth import HeaderApiKey
 from httpx_limiter import AsyncRateLimitedTransport, Rate
 
-from .. import APP_BRAND_NAME
+from .._core_init import get_cached_data, update_cache
+from .._names import (
+    APP_BRAND_NAME,
+    ELAB_BRAND_NAME,
+    ElabStrictVersionMatchModes,
+)
 from ..configuration import (
     KEY_API_TOKEN,
     KEY_ASYNC_RATE_LIMIT,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_HOST,
     KEY_TIMEOUT,
@@ -43,15 +52,17 @@ from ..configuration import (
     get_active_host,
     get_active_timeout,
     get_active_verify_ssl,
+    get_elab_version_mode,
     preventive_missing_warning,
 )
-from ..configuration.config import APIToken
+from ..configuration.config import ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL, APIToken
 from ..loggers import Logger
 from ..styles import Missing
 from ..utils import (
     get_app_version,
     update_kwargs_with_defaults,
 )
+from ._names import ElabVersionDefaults
 
 USER_AGENT: str = (
     f"{APP_BRAND_NAME}/{get_app_version()} {httpx_private_client_module.USER_AGENT}"
@@ -446,57 +457,17 @@ class APIRequest(ABC):
         return response
 
 
+_DEBUG_LOG_EMIT_ONCE: bool = False
+
+
 class ElabFTWURLError(Exception): ...
 
 
+class ElabFTWUnsupportedVersion(ElabFTWURLError): ...
+
+
 class ElabFTWURL:
-    VALID_ENDPOINTS: dict[str, Tuple[str, ...]] = {
-        "apikeys": (),
-        "config": (),
-        "experiments": (
-            "uploads",
-            "revisions",
-            "comments",
-            "items_links",
-            "experiments_links",
-            "steps",
-            "tags",
-        ),
-        "info": (),
-        "items": (
-            "uploads",
-            "revisions",
-            "comments",
-            "items_links",
-            "experiments_links",
-            "steps",
-            "tags",
-        ),
-        "experiments_templates": (
-            "revisions",
-            "steps",
-            "tags",
-        ),
-        "items_types": (
-            "steps",
-            "tags",
-        ),
-        "events": (),
-        "team_tags": (),
-        "teams": (
-            "experiments_categories",
-            "experiments_status",
-            "items_status",
-            "teamgroups",
-            "tags",
-        ),
-        "todolist": (),
-        "unfinished_steps": (),
-        "users": ("notifications", "uploads"),
-        "idps": (),
-        "import": (),
-        "exports": (),
-    }
+    force_endpoint_validation: ElabStrictVersionMatchModes | None = None
 
     def __init__(
         self,
@@ -512,17 +483,120 @@ class ElabFTWURL:
         self.sub_endpoint_id = sub_endpoint_id
         self.query = query
 
+    @classmethod
+    def get_latest_version_endpoints(cls) -> dict[str, list[str]]:
+        latest_version = cls.get_latest_elab_version()
+        version_file = (
+            ElabVersionDefaults.versions_dir
+            / f"{latest_version}.{ElabVersionDefaults.file_ext}"
+        )
+        valid_endpoints = json.loads(version_file.read_text(encoding="utf-8"))
+        return valid_endpoints
+
+    @staticmethod
+    def get_latest_elab_version() -> str:
+        return ElabVersionDefaults.supported_versions[0]
+
+    @staticmethod
+    def get_elab_version() -> str:
+        missing = Missing()
+        host, endpoint = get_active_host(skip_validation=True), "info"
+        if host in (None, missing) or get_active_api_token(skip_validation=True) in (
+            None,
+            missing,
+        ):
+            raise ElabFTWURLError(
+                f"Configuration file(s) is incomplete. "
+                f"{ELAB_BRAND_NAME} version cannot be retrieved."
+            )
+        cached_data = get_cached_data()
+        cached_elab_version = cached_data.elab_hosts.get(host)
+        if cached_elab_version is not None:
+            elab_version = cached_elab_version
+        else:
+            client = SimpleClient(is_async_client=False)
+            try:
+                elab_server_request = client.get(
+                    f"{host}/{endpoint}", headers={"Accept": "application/json"}
+                )
+            except HTTPError as e:
+                raise ElabFTWURLError(
+                    f"Failed to retrieve '{host}/{endpoint}' response. "
+                    f"Exception details: {e!r}."
+                ) from e
+            else:
+                try:
+                    elab_server_info = elab_server_request.json()
+                except JSONDecodeError as e:
+                    raise ElabFTWURLError(
+                        f"Failed to retrieve '{host}/{endpoint}' response. "
+                        f"Exception details: {e!r}. Response status: "
+                        f"{elab_server_request.status_code}"
+                    ) from e
+                else:
+                    elab_version = elab_server_info["elabftw_version"]
+                    cached_data.elab_hosts.update({host: elab_version})
+                    update_cache(cached_data)
+                    logger.debug(
+                        f"ElabFTW version '{elab_version}' retrieved from server '{host}' "
+                        f"has been cached."
+                    )
+        return elab_version
+
+    @classmethod
+    def get_valid_endpoints(cls) -> Optional[dict[str, list[str]]]:
+        global _DEBUG_LOG_EMIT_ONCE
+        elab_version = cls.get_elab_version()
+        if elab_version not in ElabVersionDefaults.supported_versions:
+            validation_message: str = (
+                f"{ELAB_BRAND_NAME} version {elab_version} is not supported by "
+                f"{APP_BRAND_NAME} {get_app_version()}. "
+                f"Update {APP_BRAND_NAME} for newer {ELAB_BRAND_NAME} version support. "
+                f"Supported versions are: "
+                f"{', '.join(ElabVersionDefaults.supported_versions)}. "
+                f"You can ignore this validation by setting configuration "
+                f"'{KEY_ELAB_STRICT_VERSION_MATCH.lower()}' "
+                f"value to '{ElabStrictVersionMatchModes.yolo}' (or by setting the class "
+                f"{ElabFTWURL.__name__} attribute 'force_endpoint_validation' "
+                f"to '{ElabStrictVersionMatchModes.yolo}'). Setting the value to "
+                f"'{ElabStrictVersionMatchModes.abort}' would raise an exception and "
+                f"abort {APP_BRAND_NAME}."
+            )
+            match cls.force_endpoint_validation or get_elab_version_mode(
+                skip_validation=True
+            ):
+                case ElabStrictVersionMatchModes.abort:
+                    raise ElabFTWUnsupportedVersion(validation_message)
+                case ElabStrictVersionMatchModes.warn:
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
+                    return None
+                case ElabStrictVersionMatchModes.yolo:
+                    return None
+                case _:
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.warning(
+                            f"Invalid value for Elab strict version match mode "
+                            f"(force_endpoint_validation). "
+                            f"Valid values are: {', '.join(ElabStrictVersionMatchModes)}. "
+                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' will be considered."
+                        )
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
+                    return None
+
+        else:
+            version_file = (
+                ElabVersionDefaults.versions_dir
+                / f"{elab_version}.{ElabVersionDefaults.file_ext}"
+            )
+            valid_endpoints = json.loads(version_file.read_text(encoding="utf-8"))
+            return valid_endpoints
+
     @property
-    def host(self) -> str:
+    def _host(self) -> str:
         return get_active_host()
-
-    @host.setter
-    def host(self, value):
-        raise AttributeError("Host value cannot be modified!")
-
-    @host.deleter
-    def host(self):
-        raise AttributeError("Host cannot be deleted!")
 
     @property
     def endpoint_name(self) -> str:
@@ -530,13 +604,17 @@ class ElabFTWURL:
 
     @endpoint_name.setter
     def endpoint_name(self, value: str):
+        valid_endpoints = self.get_valid_endpoints()
         if value is not None:
-            if value.lower() not in ElabFTWURL.VALID_ENDPOINTS.keys():
-                raise ElabFTWURLError(
-                    f"Endpoint must be one of valid eLabFTW endpoints: "
-                    f"{', '.join(ElabFTWURL.VALID_ENDPOINTS.keys())}."
-                )
-            self._endpoint_name = value
+            if valid_endpoints is None:
+                self._endpoint_name = value
+            else:
+                if value.lower() not in valid_endpoints.keys():
+                    raise ElabFTWURLError(
+                        f"Endpoint must be one of valid {ELAB_BRAND_NAME} ({self.get_elab_version()}) "
+                        f"endpoints: {', '.join(valid_endpoints.keys())}."
+                    )
+                self._endpoint_name = value
         else:
             self._endpoint_name = ""
 
@@ -546,23 +624,25 @@ class ElabFTWURL:
 
     @sub_endpoint_name.setter
     def sub_endpoint_name(self, value: Optional[str]):
+        valid_endpoints = self.get_valid_endpoints()
         if value is not None:
-            if value.lower() not in (
-                valid_sub_endpoint_name := ElabFTWURL.VALID_ENDPOINTS[
-                    self.endpoint_name
-                ]
-            ):
-                if not valid_sub_endpoint_name:
-                    raise ElabFTWURLError(
-                        f"Endpoint '{self._endpoint_name}' does not have any sub-endpoint!"
-                    )
+            if valid_endpoints is None:
+                self._sub_endpoint_name = value
+            else:
+                if value.lower() not in (
+                    valid_sub_endpoint_name := valid_endpoints[self.endpoint_name]
+                ):
+                    if not valid_sub_endpoint_name:
+                        raise ElabFTWURLError(
+                            f"Endpoint '{self._endpoint_name}' does not have any sub-endpoint!"
+                        )
 
-                raise ElabFTWURLError(
-                    f"A Sub-endpoint for endpoint '{self._endpoint_name}' must be "
-                    f"one of valid eLabFTW sub-endpoints: "
-                    f"{', '.join(valid_sub_endpoint_name)}."
-                )
-            self._sub_endpoint_name = value
+                    raise ElabFTWURLError(
+                        f"A Sub-endpoint for endpoint '{self._endpoint_name}' must be "
+                        f"one of valid {ELAB_BRAND_NAME} ({self.get_elab_version()}) sub-endpoints: "
+                        f"{', '.join(valid_sub_endpoint_name)}."
+                    )
+                self._sub_endpoint_name = value
         else:
             self._sub_endpoint_name = ""
 
@@ -611,7 +691,7 @@ class ElabFTWURL:
 
     def get(self) -> str:
         url = (
-            f"{self.host}/{self.endpoint_name}/{self.endpoint_id}/"
+            f"{self._host}/{self.endpoint_name}/{self.endpoint_id}/"
             f"{self.sub_endpoint_name}/{self.sub_endpoint_id}"
         ).rstrip("/")
         if self.query:

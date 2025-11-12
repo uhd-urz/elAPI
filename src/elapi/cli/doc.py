@@ -2,7 +2,8 @@
 This script includes docstring for elapi. The docstrings are mainly meant to be used with a CLI interface.
 """
 
-from .._names import CONFIG_FILE_NAME
+from .._names import CONFIG_FILE_NAME, ELAB_BRAND_NAME
+from ..api import ElabFTWURL, ElabFTWURLError
 from ..configuration import APP_NAME, DEFAULT_EXPORT_DATA_FORMAT, EXPORT_DIR
 from ..styles import BaseFormat, __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
@@ -10,11 +11,36 @@ supported_highlighting_formats = ", ".join(
     f"**{_.upper()}**"
     for _ in BaseFormat.supported_formatter_names(styles_package_identifier)
 )
-
+_USER_ELAB_VERSION: bool = True
+try:
+    valid_endpoints, version = (
+        ElabFTWURL.get_valid_endpoints(),
+        ElabFTWURL.get_elab_version(),
+    )
+except ElabFTWURLError:
+    valid_endpoints, version = (
+        ElabFTWURL.get_latest_version_endpoints(),
+        ElabFTWURL.get_latest_elab_version(),
+    )
+    _USER_ELAB_VERSION = False
+if valid_endpoints is None:
+    # it can't be None since the None case is already caught by get_elab_version
+    # that will throw ElabFTWURLError. But to make mypy happy, this case is here.
+    valid_endpoints, version = (
+        ElabFTWURL.get_latest_version_endpoints(),
+        ElabFTWURL.get_latest_elab_version(),
+    )
+    _USER_ELAB_VERSION = False
+valid_main_endpoints = ", ".join(valid_endpoints.keys())
+endpoint_names_message: str = (
+    f"Your actual {ELAB_BRAND_NAME} version will be reflected after you make "
+    "your first successful request."
+    if not _USER_ELAB_VERSION
+    else ""
+)
 __PARAMETERS__doc__ = {
-    "endpoint_name": "Name of an endpoint. Valid endpoints are: apikeys, config, experiments, info, "
-                     "items, experiments_templates, items_types, events, team_tags, teams, "
-                     "todolist, unfinished_steps, users, idps.",
+    "endpoint_name": f"Name of an endpoint. Valid endpoints are ({ELAB_BRAND_NAME} {version}): {valid_main_endpoints}. "
+                     f"{endpoint_names_message}",
     "endpoint_id_get": "ID for one of the preceding endpoints. If provided, only information associated with that "
                      "ID will be returned. E.g., user ID, team ID, experiments ID.",
     "endpoint_id_post": "ID for a preceding endpoint. If provided, `POST` request will be made against that "

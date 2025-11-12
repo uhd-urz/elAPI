@@ -15,8 +15,15 @@ __all__ = [
     "AsyncDELETERequest",
     "FixedEndpoint",
     "FixedAsyncEndpoint",
+    "handle_new_user_teams",
+    "ElabUserGroups",
+    "ElabScopes",
+    "ElabVersionDefaults",
+    "ElabFTWUnsupportedVersion"
 ]
 
+from ._handle_unexp_response import handle_new_user_teams
+from ._names import ElabScopes, ElabUserGroups, ElabVersionDefaults
 from .api import (
     APIRequest,
     AsyncDELETERequest,
@@ -24,6 +31,7 @@ from .api import (
     AsyncPATCHRequest,
     AsyncPOSTRequest,
     DELETERequest,
+    ElabFTWUnsupportedVersion,
     ElabFTWURL,
     ElabFTWURLError,
     GETRequest,

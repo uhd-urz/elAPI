@@ -7,7 +7,7 @@ from httpx import Response
 from rich.progress import Progress
 from rich.text import Text
 
-from ...api import GlobalSharedSession
+from ...api import AsyncGETRequest, GlobalSharedSession
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...styles import stdout_console
@@ -48,6 +48,36 @@ class Information:
             raise RuntimeError
         finally:
             session.close()
+
+
+class AsyncInformation:
+    __slots__ = "endpoint_name"
+
+    def __init__(self, endpoint_name: str):
+        self.endpoint_name = endpoint_name
+
+    async def items(self) -> list[dict]:
+        session = AsyncGETRequest()
+        try:
+            response = await session(endpoint_name=self.endpoint_name, endpoint_id=None)
+        except _RETRY_TRIGGER_ERRORS as e:
+            logger.error(
+                f"Request for '{self.endpoint_name}' information was not successful! "
+                f"Exception details: {e}"
+            )
+            raise InterruptedError from e
+        except KeyboardInterrupt as e:
+            raise Exit(1) from e
+        else:
+            if response.is_success:
+                return response.json()
+            logger.error(
+                f"Request for '{self.endpoint_name}' information was not successful! "
+                f"Returned response was: '{response.text}'"
+            )
+            raise RuntimeError
+        finally:
+            await session.aclose()
 
 
 class RecursiveInformation:
@@ -116,7 +146,7 @@ class RecursiveInformation:
             stdout_console.print()
             logger.warning(
                 f"Retrieving {self.endpoint_name} data was interrupted due to a network error. "
-                f"Response status: {response.status_code}. Exception details: '{error!r}'. "
+                f"Exception details: '{error!r}'. "
             )
             await self.cleanup_remaining(event_loop, endpoint)
             raise InterruptedError from error

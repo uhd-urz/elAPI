@@ -4,10 +4,10 @@ from typing import Union
 
 import yaml
 
-from ...core_validators import Exit, Validator, Validate, ValidationError
+from ...core_validators import Exit, Validate, ValidationError, Validator
 from ...loggers import FileLogger
 from ...path import ProperPath
-from ...styles import print_typer_error, stdout_console, NoteText
+from ...styles import NoteText, print_typer_error, stdout_console
 
 file_logger = FileLogger()
 

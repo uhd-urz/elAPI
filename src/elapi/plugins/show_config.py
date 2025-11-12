@@ -1,4 +1,4 @@
-from .._names import ENV_XDG_DOWNLOAD_DIR
+from .._names import CACHE_PATH, ELAB_BRAND_NAME, ENV_XDG_DOWNLOAD_DIR
 from ..configuration import (
     APP_BRAND_NAME,
     APP_DATA_DIR,
@@ -9,6 +9,7 @@ from ..configuration import (
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     KEY_HOST,
@@ -23,6 +24,7 @@ from ..configuration import (
     get_active_unsafe_token_warning,
     get_active_verify_ssl,
     get_development_mode,
+    get_elab_version_mode,
     inspect,
     minimal_active_configuration,
 )
@@ -142,6 +144,18 @@ except KeyError:
     export_dir_source = detected_config[KEY_EXPORT_DIR].source
 
 
+try:
+    elab_strict_version_match_source = detected_config[
+        KEY_ELAB_STRICT_VERSION_MATCH
+    ].source
+    elab_strict_version_match_source = detected_config_files[
+        elab_strict_version_match_source
+    ]
+except KeyError:
+    elab_strict_version_match_source = FALLBACK_SOURCE_NAME
+finally:
+    elab_strict_version_match_value = get_elab_version_mode(skip_validation=False)
+
 detected_config_files_formatted = "\n- " + "\n- ".join(
     f"`{v}`: {k}" for k, v in detected_config_files.items()
 )
@@ -201,8 +215,18 @@ The following information includes configuration values and their sources as det
             else ""
         )
         + f": {get_active_export_dir(skip_validation=True)} ← `{export_dir_source}`"
+        + "\n"
+        + f"- {ColorText(f'{ELAB_BRAND_NAME} strict version match').colorize(LIGHTCYAN)}"
+        + (
+            f" **[{ColorText(KEY_ELAB_STRICT_VERSION_MATCH.lower()).colorize(YELLOW)}]**"
+            if not no_keys
+            else ""
+        )
+        + f": {elab_strict_version_match_value} ← `{elab_strict_version_match_source}`"
+        + "\n"
         + f"""
 - {ColorText("App data directory").colorize(LIGHTGREEN)}: {APP_DATA_DIR}
+- {ColorText("Cache file path").colorize(LIGHTGREEN)}: {CACHE_PATH}
 - {ColorText("Third-party plugins directory").colorize(LIGHTCYAN)}: {
             EXTERNAL_LOCAL_PLUGIN_DIR
         }
@@ -283,6 +307,7 @@ The following information includes configuration values and their sources as det
                 async_capacity_source,
                 verify_ssl_source,
                 development_mode_source,
+                elab_strict_version_match_source,
             )
             else ""
         )

@@ -1,5 +1,11 @@
 import os
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
+from typing import ClassVar
+
+from pydantic import BaseModel
 
 # variables with leading underscores here indicate that they are to be overwritten by config.py
 # In which case, import their counterparts from src/config.py
@@ -53,6 +59,33 @@ KEY_TIMEOUT: str = "TIMEOUT"
 KEY_ASYNC_RATE_LIMIT: str = "ASYNC_RATE_LIMIT"
 KEY_DEVELOPMENT_MODE: str = "DEVELOPMENT_MODE"
 KEY_PLUGIN_KEY_NAME: str = "PLUGINS"
+KEY_ELAB_STRICT_VERSION_MATCH: str = "ELAB_STRICT_VERSION_MATCH"
+
+
+class ElabStrictVersionMatchModes(StrEnum):
+    abort = "abort"
+    warn = "warn"
+    yolo = "yolo"
+
 
 # Log data directory with root permission
 LOG_DIR_ROOT: Path = Path(f"/var/log/{APP_NAME}")
+
+
+class _ElabHostsCacheModel(BaseModel):
+    url: str
+
+
+class CacheModel(BaseModel):
+    date: datetime
+    elab_hosts: dict[str, str] = {}
+
+
+@dataclass(frozen=True)
+class CacheFileProperties:
+    expires_in_days: ClassVar[int] = 6 * 60 * 60
+    encoding: ClassVar[str] = "utf-8"
+    indent: ClassVar[int] = 4
+
+
+CACHE_PATH: Path = Path("~/.cache").expanduser() / APP_NAME / f"{APP_NAME}.json"

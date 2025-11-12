@@ -27,8 +27,8 @@ from rich import pretty
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
-from .. import APP_NAME
-from ..api.validators import ElabScopes, ElabUserGroups
+from .._names import APP_NAME
+from ..api import ElabFTWURLError, ElabScopes, ElabUserGroups
 from ..configuration import (
     FALLBACK_EXPORT_DIR,
     get_active_export_dir,
@@ -43,6 +43,7 @@ from ..loggers import (
     ResultCallbackHandler,
     SimpleLogger,
 )
+from ..path import ProperPath
 from ..plugins.commons.cli_helpers import Typer
 from ..plugins.commons.get_whoami import get_whoami
 from ..styles import (
@@ -55,12 +56,13 @@ from ..styles import (
     stderr_console,
     stdout_console,
 )
-from ..styles.colors import BLUE, CYAN, GREEN, MAGENTA, RED, LIGHTBLUE
+from ..styles.colors import CYAN, GREEN, LIGHTBLUE, MAGENTA, RED
 from ..utils import (
     GlobalCLIGracefulCallback,
     GlobalCLIResultCallback,
     GlobalCLISuperStartupCallback,
     PythonVersionCheckFailed,
+    UnexpectedAPIResponseType,
     get_external_python_version,
 )
 from ..utils.typer_patches import patch_typer_flag_value
@@ -287,7 +289,7 @@ def check_result_callback_log_container():
         and ResultCallbackHandler.get_client_count() == 0
     ):
         GlobalLogRecordContainer().data.clear()
-        ResultCallbackHandler.is_store_okay = False
+        ResultCallbackHandler.disable_store_okay()
 
 
 def cli_switch_venv_state(state: bool, /) -> None:
@@ -326,7 +328,7 @@ def cli_startup_for_plugins(
     cli_switch_venv_state(True)
     if override_config is not None:
         print_typer_error(
-            f"--override-config/--OC can only be passed after "
+            f"Global options can only be passed after "
             f"the main program name '{APP_NAME}', and not after a plugin name."
         )
         raise Exit(1)
@@ -338,7 +340,7 @@ def cli_startup_for_plugins(
     cli_startup()
 
 
-def cli_cleanup_for_third_party_plugins(*args, override_config=None):
+def cli_cleanup_for_third_party_plugins(*args, **kwargs):
     cli_switch_venv_state(False)
 
 
@@ -559,6 +561,7 @@ def init(
                     _configuration_yaml_text = f"""host: {host_url}
 api_token: {api_token}
 export_dir: {export_directory}
+elab_version_mode: "warn"
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
@@ -881,7 +884,7 @@ def post(
 
     from httpx import ConnectError
 
-    from .. import APP_NAME
+    from .._names import APP_NAME
     from ..api import ElabFTWURLError, GlobalSharedSession, POSTRequest
     from ..api.validators import HostIdentityValidator
     from ..configuration import get_active_host
@@ -1375,12 +1378,24 @@ def show_config(
     stdout_console.print(md)
 
 
+@app.command(name="clear-cache", short_help="Clear cache.")
+def clear_cache() -> None:
+    """
+    Clear elAPI cache file. Running this command will just remove the cache file.
+    Run this command if elAPI detected eLabFTW version is incorrect.
+    """
+    from .._names import CACHE_PATH
+
+    ProperPath(CACHE_PATH).remove()
+    logger.info(f"{APP_NAME} cache in {CACHE_PATH} is cleared.")
+
+
 @app.command()
 def version() -> str:
     """
     Show version number.
     """
-    from .. import APP_NAME
+    from .._names import APP_NAME
     from ..utils import get_app_version
 
     _version = get_app_version()
@@ -1399,7 +1414,7 @@ def whoami() -> None:
     newline = "\n"
     scopes_reversed: dict[int, str] = {v: k for k, v in ElabScopes.__members__.items()}
     for user_group in ElabUserGroups:
-        # noinspection PyTypeChecker
+        # noinspection PyTypeChecker,PyTypeHints
         formatted_groups[user_group.value] = ColorText(
             user_group.name.capitalize()
         ).colorize(_ElabUserGroupColors[user_group.name])
@@ -1407,10 +1422,19 @@ def whoami() -> None:
     with stdout_console.status("Contemplating...", refresh_per_second=15) as status:
         try:
             whoami_info = get_whoami()
-        except (RuntimeError, HTTPError, JSONDecodeError) as e:
+        except (
+            RuntimeError,
+            HTTPError,
+            JSONDecodeError,
+            UnexpectedAPIResponseType,
+        ) as mult_exc:
             status.stop()
-            logger.error(f"{e!r}")
-            raise Exit(1) from e
+            logger.error(mult_exc)
+            raise Exit(1) from mult_exc
+        except ElabFTWURLError as url_exc:
+            status.stop()
+            logger.error(url_exc)
+            raise Exit(1) from url_exc
 
         formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
             ColorText(whoami_info["host_url"]).colorize(LIGHTBLUE)
