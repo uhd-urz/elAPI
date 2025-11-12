@@ -8,6 +8,7 @@ from .config import (
     KEY_ASYNC_CAPACITY,
     KEY_ASYNC_RATE_LIMIT,
     KEY_DEVELOPMENT_MODE,
+    KEY_ELAB_STRICT_VERSION_MATCH,
     KEY_ENABLE_HTTP2,
     KEY_EXPORT_DIR,
     KEY_HOST,
@@ -90,3 +91,9 @@ def get_active_plugin_configs(*, skip_validation: bool = False) -> dict:
     if not skip_validation:
         _development_mode_validation_switch()
     return MinimalActiveConfiguration().get_value(KEY_PLUGIN_KEY_NAME)
+
+
+def get_elab_version_mode(*, skip_validation: bool = False) -> str:
+    if not skip_validation:
+        _development_mode_validation_switch()
+    return MinimalActiveConfiguration().get_value(KEY_ELAB_STRICT_VERSION_MATCH)

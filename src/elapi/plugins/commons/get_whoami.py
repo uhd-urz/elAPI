@@ -3,13 +3,22 @@ from json import JSONDecodeError
 
 from httpx import HTTPError
 
-from ...api import GETRequest, SimpleClient
-from ...api.validators import ElabScopes, ElabUserGroups
+from ...api import (
+    ElabScopes,
+    ElabUserGroups,
+    GETRequest,
+    SimpleClient,
+    handle_new_user_teams,
+)
 from ...configuration import get_active_api_token, get_active_host
 from ...configuration.config import APIToken
 from ...loggers import Logger
 from ...styles.colors import GREEN, MAGENTA, RED
-from ...utils import parse_api_id_from_api_token, parse_url_only_from_host
+from ...utils import (
+    UnexpectedAPIResponseType,
+    parse_api_id_from_api_token,
+    parse_url_only_from_host,
+)
 
 logger = Logger()
 
@@ -51,6 +60,7 @@ def get_whoami() -> dict[str, str | int | APIToken | dict[str, int]]:
     scope_items = user_info["scope_items"]
     scope_experiments_templates = user_info["scope_experiments_templates"]
     scope_teamgroups = user_info["scope_teamgroups"]
+    user_all_teams = handle_new_user_teams(user_all_teams)
     for user_team in user_all_teams:
         if user_team["id"] == user_team_id:
             user_team_name = user_team["name"]
@@ -101,7 +111,12 @@ def debug_log_whoami_message() -> None:
             user_group,
             scopes,
         ) = get_whoami().values()
-    except (RuntimeError, HTTPError, JSONDecodeError) as e:
+    except (
+        RuntimeError,
+        HTTPError,
+        JSONDecodeError,
+        UnexpectedAPIResponseType,
+    ) as e:
         logger.warning(
             f"Fetching '{get_whoami.__name__}' information has failed with "
             f"the following error: {e!r}"

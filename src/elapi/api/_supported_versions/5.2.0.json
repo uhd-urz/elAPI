@@ -1,0 +1,52 @@
+{
+    "apikeys": [],
+    "config": [],
+    "event": [],
+    "events": [],
+    "experiments": [
+        "comments",
+        "experiments_links",
+        "items_links",
+        "revisions",
+        "steps",
+        "tags",
+        "uploads"
+    ],
+    "experiments_templates": [
+        "revisions",
+        "steps",
+        "tags"
+    ],
+    "exports": [],
+    "extra_fields_keys": [],
+    "favtags": [],
+    "idps": [],
+    "import": [],
+    "info": [],
+    "items": [
+        "comments",
+        "experiments_links",
+        "items_links",
+        "revisions",
+        "steps",
+        "tags",
+        "uploads"
+    ],
+    "items_types": [
+        "steps",
+        "tags"
+    ],
+    "reports": [],
+    "teams": [
+        "experiments_categories",
+        "experiments_status",
+        "items_status",
+        "teamgroups"
+    ],
+    "todolist": [],
+    "unfinished_steps": [],
+    "users": [
+        "notifications",
+        "uploads"
+    ]
+}

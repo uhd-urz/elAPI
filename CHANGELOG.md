@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.5] - 2025-11-12
+
+This release mainly introduces a strict version matching of eLabFTW with a few bug fixes.
+
+### Added
+
+- Strict eLabFTW version matching. See [documentation](https://github.com/uhd-urz/elAPI#compatibility).
+- elAPI now shows valid endpoint names based on the detected eLabFTW version in `--help` page.
+  See [documentation](https://github.com/uhd-urz/elAPI#get-requests).
+- New configuration field `elab_strict_version_match` that controls strict version matching.
+  See [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#advanced-configuration)
+
+### Fixed
+
+- Fix new API response changes breaking `whoami` and `bill-teams` plugin (GH #168)
+- Fix #147 (thanks to strict version matching)
+
+### Changed
+
+- `bill-teams` is now much faster thanks to recent improvements in eLabFTW REST API response.
+
 ## [2.4.4] - 2025-09-23
 
 This is a bugfix release. See the **version 2.4.2 changelog below** for the main changes.

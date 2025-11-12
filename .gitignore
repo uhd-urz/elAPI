@@ -6,6 +6,7 @@ notes.md
 poetry.lock
 elapi.yml
 .ansible-lint
+elapi_configs/
 
 # Python .gitignore
 # Byte-compiled / optimized / DLL files

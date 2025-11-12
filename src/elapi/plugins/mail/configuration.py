@@ -5,7 +5,7 @@ from typing import Any
 
 from yagmail.validate import DOMAIN, LOCAL_PART
 
-from ... import APP_NAME
+from ..._names import APP_NAME
 from ...configuration import (
     get_active_plugin_configs,
 )
@@ -71,7 +71,7 @@ def get_mail_config() -> dict:
     if plugin_configs == Missing():
         return mail_config_default_values.plugin_name
     return (
-        get_active_plugin_configs().get(
+        plugin_configs.get(
             mail_config_keys.plugin_name,
             mail_config_default_values.plugin_name,
         )

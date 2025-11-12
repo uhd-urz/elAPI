@@ -1,8 +1,7 @@
 from .formats import BaseFormat, _CSVFormat
 from .specification import CLI_DATE_VALID_FORMAT, BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB, \
     BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB, REGISTRY_FILE_NAME
-from ... import APP_NAME
-from ..._names import LOG_FILE_NAME
+from ..._names import LOG_FILE_NAME, APP_NAME
 from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
 
 supported_format_values = ", ".join(

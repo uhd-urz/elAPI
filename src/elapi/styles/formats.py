@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Any, Optional, Self, Union
 
-from .. import APP_NAME
+from .._names import APP_NAME
 from .base import __PACKAGE_IDENTIFIER__ as styles_package_identifier
 
 
