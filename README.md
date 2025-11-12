@@ -96,6 +96,15 @@ the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with
 versions: `5.3.6`, `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
 `5.2.3`, `5.2.2`, `5.2.1`, `5.2.0`, `5.1.1`.
 
+### elAPI strict version support
+
+Starting from elAPI version **2.4.5**, elAPI maintains a [strict set of supported eLabFTW versions](#compatibility).
+elAPI will throw an error if the detected eLabFTW version is not supported. This is to prevent unexpected behavior when
+eLabFTW introduces breaking changes to the REST API. If your eLab version is supported, elAPI will cache it, and show
+the valid endpoint names for your server in `--help` page (e.g., `elapi get --help`). You can clear this cache with
+`elapi clear-cache`. You can also control what elAPI should do when an unsupported eLab version is used with
+`elab_strict_version_match` configuration field. See [advanced configuration](#advanced-configuration) for more details.
+
 ## Configuration
 
 elAPI needs to be configured first before you can do anything useful with it. Mainly, elAPI needs to know your eLabFTW
@@ -127,6 +136,7 @@ host: <host API url>
 api_token: <token with at least read-access>
 # "A.k.a API key". You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
+elab_strict_version_match: "warn"
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
@@ -140,6 +150,15 @@ development_mode: false
 - When `unsafe_api_token_warning` is `True`, elAPI will show a warning if you're storing `elapi.yml` in the current
   working directory, as it typically happens that developers accidentally commit and push configuration files with
   secrets.
+- `elab_strict_version_match` controls what elAPI should do if an unsupported eLabFTW version is detected. eLabFTW does
+  introduce breaking API change from time to time. Starting from elAPI 2.4.5, elAPI maintains [a strict set of eLabFTW
+  versions](#compatibility), i.e., elAPI and its plugins are expected to work for these versions. This is to prevent
+  unexpected behavior due to the breaking changes. If the detected eLabFTW server version is not supported, elAPI by
+  default (`elab_strict_version_match: warn`) will throw a warning
+  message and continue to run any command/plugin. When `elab_strict_version_match` is set to `abort`, elAPI will show an
+  `ERROR`
+  message and abort immediately. When `elab_strict_version_match` is set to `yolo`, elAPI will ignore any version
+  support conflict.
 - `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
   of [known issues](https://github.com/encode/httpx/discussions/2112) with HTTP/2 if you are making async requests with
   a heavy load.
@@ -236,6 +255,11 @@ of the team with team ID 1.
 ```shell
 $ elapi get -H teams --id 1
 ```
+
+elAPI runs a weak endpoint name validation against your eLabFTW API version. Run `elapi get --help` to see the
+supported endpoint names for your eLabFTW server:
+
+![elAPI endpoint names in --help](https://heibox.uni-heidelberg.de/f/067f5ec9f489493a8ec9/?dl=1)
 
 ### `POST` requests
 
