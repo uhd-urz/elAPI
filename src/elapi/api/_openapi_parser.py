@@ -89,7 +89,7 @@ if __name__ == "__main__":
     for version in ElabVersionDefaults.supported_versions:
         version_file = versions_dir / f"{version}.{ElabVersionDefaults.file_ext}"
         if version_file.exists():
-            logger.debug(f"Version '{version}' already exists in {versions_dir}.")
+            logger.info(f"Version '{version}' already exists in {versions_dir}.")
             continue
         loaded_spec = read_openapi_spec(
             f"https://raw.githubusercontent.com/elabftw/elabftw/refs/tags/{version}/apidoc/v2/openapi.yaml"
@@ -97,3 +97,4 @@ if __name__ == "__main__":
         version_file.write_text(
             json.dumps(parse_openapi_spec(loaded_spec), indent=4), encoding="utf-8"
         )
+        logger.info(f"Version '{version}' data has been stored in {versions_dir}.")
