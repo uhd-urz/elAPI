@@ -1,5 +1,6 @@
 import datetime
 import json
+from copy import copy
 from json import JSONDecodeError
 from pathlib import Path
 from types import NoneType
@@ -18,6 +19,7 @@ from .specification import (
     REGISTRY_KEY_OWNERS_INFO_DATE,
     REGISTRY_KEY_TEAMS_INFO_DATE,
     OwnersDataSpecification,
+    TeamGoneStatus,
 )
 
 logger = Logger()
@@ -30,7 +32,7 @@ class OwnersInformationContainer:
     def __init__(self, data: dict, /):
         self.data = data
 
-    def get(self, team_id: Union[str, int], column_name: str) -> Union[int, str]:
+    def get(self, team_id: Union[str, int], column_name: str) -> str:
         if not isinstance(team_id, int):
             try:
                 team_id = int(team_id)
@@ -201,7 +203,28 @@ class OwnersInformationValidator(Validator):
             # See: https://stackoverflow.com/a/48850520, https://stackoverflow.com/a/24999035
         except (SanitizationError, FormatError) as e:
             raise ValidationError(e)
-        if len(owner_ids) != 0:
+        # spec.TEAM_GONE is validated weakly
+        for owner_team_id in copy(owner_ids):
+            team_gone_status = self.owners.get(owner_team_id, spec.TEAM_GONE)
+            try:
+                formatter.format(
+                    owner_team_id,
+                    spec.TEAM_GONE,
+                    expected_pattern=TeamGoneStatus.pattern,
+                    function_to_apply=lambda x: str(x).lower(),
+                )
+                # format sets spec.TEAM_GONE to self.owners.data!
+            except (SanitizationError, FormatError):
+                logger.debug(
+                    f"Column '{spec.TEAM_GONE}' has value that is unexpected: "
+                    f"'{team_gone_status}'. While this column is not "
+                    f"really used for the final billing output table, this issue "
+                    f"should still be fixed."
+                )
+            # Regardless of the validation errors, we check for "deleted".
+            if self.owners.get(owner_team_id, spec.TEAM_GONE) == TeamGoneStatus.deleted:
+                owner_ids.discard(owner_team_id)
+        if owner_ids:
             logger.info(
                 f"The following team IDs '{', '.join(map(str, owner_ids))}' exist in the "
                 f"metadata ('{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}') "

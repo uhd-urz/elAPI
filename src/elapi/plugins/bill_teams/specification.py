@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
+from ...plugins.commons.export import Export
 from .names import (
     REGISTRY_SUB_PLUGIN_NAME,
     TARGET_GROUP_NAME,
-    TARGET_GROUP_OWNER_NAME,
     TARGET_GROUP_NAME_SINGULAR,
+    TARGET_GROUP_OWNER_NAME,
 )
-from ...configuration import DEFAULT_EXPORT_DATA_FORMAT
-from ...plugins.commons.export import Export
 
 BILLING_INFO_OUTPUT_EXTENSION: str = DEFAULT_EXPORT_DATA_FORMAT
 BILLING_INFO_OUTPUT_TEAMS_INFO_FILE_NAME_STUB: str = f"{TARGET_GROUP_NAME}_info"
@@ -59,10 +59,27 @@ class OwnersDataSpecification:
     TEAM_ACRONYM_EXT: str = "team_acronymext"
     TEAM_ACRONYM_INT: str = "team_acronymint"
     TEAM_GONE: str = "team_gone"
+    # Mostly extra column names for completeness's sake.
+    # We will likely not need to use them in bill-teams.
     TEAM_SPECIAL: str = "team_special"
     TEAM_LIME_SURVEY: str = "team_limesurvey"
     TEAM_SIGNED_CONTRACT: str = "team_signedcontract"
     TEAM_END_DATE: str = "team_enddate"
+    TEAM_CONTRACT_2_SECT: str = "team_contracttosecretary"
+    TEAM_DOUBLE_SIGNED: str = "team_doublesignedcontract"
+    TEAM_SENT_SIGNED_CONTRACT: str = "team_sentsignedcontract"
+    TEAM_CONTRACT_NAME: str = "team_contractname"
+    TEAM_SET_EXPIRATION: str = "team_setexpiration"
+    TEAM_SET_REMINDER: str = "team_setreminder"
+    TEAM_COMMENT: str = "team_comment"
+
+
+@dataclass
+class TeamGoneStatus:
+    not_gone: str = "0"
+    contract_expired: str = "1"
+    deleted: str = "deleted"  # team deleted from the eLabFTW server
+    pattern: str = rf"^[{not_gone}{contract_expired}]$|^{deleted}$"
 
 
 @dataclass

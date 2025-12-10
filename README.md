@@ -93,7 +93,7 @@ your configuration details.
 
 elAPI is compatible with the following Python versions: `3.11`, `3.12`, `3.13`, `3.14`. elAPI supports
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `5.3.6`, `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
+versions: `5.3.9`, `5.3.8`, `5.3.7`, ```5.3.6`, `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
 `5.2.3`, `5.2.2`, `5.2.1`, `5.2.0`, `5.1.1`.
 
 ### elAPI strict version support
