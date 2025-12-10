@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.6] - 2025-09-23
+## [2.4.7] - 2025-12-10
+
+This release adds support for eLabFTW micro versions `5.3.8`, `5.3.9` and some bug fixes.
+
+### Added
+
+- Add support for eLabFTW versions `5.3.8`, `5.3.9`
+
+### Fixed
+
+- Fix a bill-teams issue [GL 63](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/63).
+
+
+## [2.4.6] - 2025-11-12
 
 This is a hotpatch release. See the **version 2.4.5 changelog below** for the main changes.
 
