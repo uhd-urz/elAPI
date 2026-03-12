@@ -30,7 +30,7 @@ From [the API documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
 With elAPI you can do the following:
 
 ```sh
-$ elapi get experiments --format csv --export ~/Downloads/
+elapi get experiments --format csv --export ~/Downloads/
 ```
 
 Once the command is run, in the background, elAPI will read host (eLab server) address, API key and various other
@@ -46,7 +46,7 @@ install packages in isolated virtual environments, so elAPI installed as a CLI t
 installed inside other virtual environments.
 
 ```shell
-$ uv tool install elapi
+uv tool install elapi
 # elAPI can be updated to the latest version with 
 # uv tool upgrade elapi
 ```
@@ -79,7 +79,7 @@ Once you have elAPI [installed](#installation), to **quickly** get started, run 
 questions about your eLabFTW server with examples to help you fill in the answers. Here's a demo:
 
 ```shell
-$ elapi init
+elapi init
 ```
 
 <video src='https://github.com/user-attachments/assets/8d5f69ed-b644-4d75-b816-d06d4e937105'> </video>
@@ -184,7 +184,7 @@ You can get an overview of detected configuration with `elapi show-config`. `sho
 which configuration values are actually used by elAPI – especially if you are working with multiple configuration files.
 
 ```shell
-$ elapi show-config  # host username: "culdesac" 
+elapi show-config  # host username: "culdesac" 
 ```
 
 ![elAPI show-config output](https://heibox.uni-heidelberg.de/f/00a8dabbf2124087aae4/?dl=1)
@@ -207,7 +207,7 @@ juggling between multiple API keys can still lead to confusion as to which API k
 `2.4.1` adds the `whomai` command that shows the essential information about the requesting eLab user.
 
 ```shell
-$ elapi whoami
+elapi whoami
 ```
 
 ![elapi whoami output](https://heibox.uni-heidelberg.de/f/e3096d5659db45e58a94/?dl=1)
@@ -231,7 +231,7 @@ Check out the [examples directory](https://github.com/uhd-urz/elAPI/tree/main/ex
 examples with elAPI. elAPI CLI usage details can be displayed with:
 
 ```shell
-$ elapi --help
+elapi --help
 
 ```
 
@@ -240,21 +240,21 @@ $ elapi --help
 Request an overview of a running eLabFTW server:
 
 ```shell
-$ elapi get info -F yml
+elapi get info -F yml
 # Here -F (or --format) defines the output format
 ```
 
 You can request a list o all active experiments and export it to a `JSON` file.
 
 ```shell
-$ elapi get experiments --export ~/Downoads/experiments.json
+elapi get experiments --export ~/Downoads/experiments.json
 ```
 
 Enable built-in syntax highlighting with `--highlight` or `-H`. Here, the following command will fetch team information
 of the team with team ID 1.
 
 ```shell
-$ elapi get -H teams --id 1
+elapi get -H teams --id 1
 ```
 
 elAPI runs a weak endpoint name validation against your eLabFTW API version. Run `elapi get --help` to see the
@@ -267,7 +267,7 @@ supported endpoint names for your eLabFTW server:
 Create a new user by the name 'John Doe':
 
 ```shell
-$ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
+elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
 ```
 
 ### `PATCH` requests
@@ -275,20 +275,20 @@ $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "
 Update an existing user's email address:
 
 ```shell
-$ elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
+elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
 ```
 
 `patch` command allows us to make changes to eLabFTW server settings. E.g., you can update the time (in minutes)
 after which the authentication cookie will expire.
 
 ```shell
-$ elapi patch config -d '{"cookie_validity_time": 43200}'
+elapi patch config -d '{"cookie_validity_time": 43200}'
 ```
 
 You can publish an announcement to all the members.
 
 ```shell
-$ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
+elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
 ```
 
 ### `DELETE` requests
@@ -296,13 +296,13 @@ $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow 
 Delete all the tags associated with an experiment:
 
 ```shell
-$ elapi delete experiments -i <experiment ID> --sub tags
+elapi delete experiments -i <experiment ID> --sub tags
 ```
 
 You can reset the configuration to default values.
 
 ```shell
-$ elapi delete config
+elapi delete config
 ```
 
 ### `experiments` built-in plugin
@@ -311,19 +311,19 @@ $ elapi delete config
 to `~/Downloads` directory.
 
 ```shell
-$ elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
+elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
 ```
 
 Append text in Markdown to an existing experiment by its ID:
 
 ```shell
-$ elapi experiments append --id <experiment ID> -M -t "**New content.**"
+elapi experiments append --id <experiment ID> -M -t "**New content.**"
 ```
 
 You can also upload an attachment to an experiment.
 
 ```shell
-$ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
+elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
 ```
 
 ### `mail` built-in plugin
