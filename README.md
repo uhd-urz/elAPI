@@ -8,7 +8,7 @@
    </a>
 <a href="#compatibility">
    <img alt="Static Badge" src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-%230d7dbe">
-   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3+-%2323b3be">
+   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4+-%2323b3be">
 </a>
 </p>
 
@@ -93,7 +93,8 @@ your configuration details.
 
 elAPI is compatible with the following Python versions: `3.11`, `3.12`, `3.13`, `3.14`. elAPI supports
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `5.3.9`, `5.3.8`, `5.3.7`, ```5.3.6`, `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
+versions: `5.4.5`, `5.4.4`, `5.4.3`, `5.4.2`, `5.4.1`, `5.4.0`, `5.3.11`, `5.3.10`, `5.3.9`, `5.3.8`, `5.3.7`, `5.3.6`,
+`5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
 `5.2.3`, `5.2.2`, `5.2.1`, `5.2.0`, `5.1.1`.
 
 ### elAPI strict version support
@@ -329,7 +330,8 @@ $ elapi experiments upload-attachment --id <experiment ID> --path <path to attac
 
 Sometimes when a script has finished, you and your team would want to receive an email about its success/failure. elAPI
 offers a no-code solution for this: the `mail` plugin. The `mail` plugin is not enabled by default. To enable it,
-install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. [__See the wiki__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin) 
+install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. [__See the wiki
+__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin)
 to read more about how to configure the `mail` plugin with your
 mail server configuration and trigger conditions. In a
 nutshell, the `mail` plugin will scan the logs when a script/plugin is done to look for pre-configured trigger
