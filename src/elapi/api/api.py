@@ -534,6 +534,13 @@ class ElabFTWURL:
                         f"{elab_server_request.status_code}"
                     ) from e
                 else:
+                    if not elab_server_request.is_success:
+                        # Can happen when API Key is missing
+                        raise ElabFTWURLError(
+                            f"Failed to retrieve '{host}/{endpoint}' response. "
+                            f"Response status: {elab_server_request.status_code}. "
+                            f"Response body: {elab_server_info}."
+                        )
                     elab_version = elab_server_info["elabftw_version"]
                     cached_data.elab_hosts.update({host: elab_version})
                     update_cache(cached_data)
