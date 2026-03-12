@@ -32,6 +32,14 @@ class ElabScopes(IntEnum):
 
 class ElabVersionDefaults:
     supported_versions: tuple[str, ...] = (
+        "5.4.5",
+        "5.4.4",
+        "5.4.3",
+        "5.4.2",
+        "5.4.1",
+        "5.4.0",
+        "5.3.11",
+        "5.3.10",
         "5.3.9",
         "5.3.8",
         "5.3.7",
