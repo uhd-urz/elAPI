@@ -68,3 +68,13 @@ class ElabVersionDefaults:
     )
     versions_dir: Path = Path(__file__).parent / "_supported_versions"
     file_ext: str = "json"
+
+    @classmethod
+    def get_minor_versions(cls) -> tuple[str, ...]:
+        unique_versions = []
+        for version in cls.supported_versions:
+            major, minor, *_ = version.split(".")
+            minor_version = f"{major}.{minor}"
+            if minor_version not in unique_versions:
+                unique_versions.append(minor_version)
+        return tuple(unique_versions)

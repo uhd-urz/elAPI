@@ -550,6 +550,14 @@ class ElabFTWURL:
                     )
         return elab_version
 
+    @staticmethod
+    def _is_elab_minor_version_supported(elab_version: str) -> bool:
+        major, minor, *_ = elab_version.split(".")
+        sup_minor_versions = ElabVersionDefaults.get_minor_versions()
+        if f"{major}.{minor}" in sup_minor_versions:
+            return True
+        return False
+
     @classmethod
     def get_valid_endpoints(cls) -> Optional[dict[str, list[str]]]:
         global _DEBUG_LOG_EMIT_ONCE
@@ -572,8 +580,15 @@ class ElabFTWURL:
             strict_version_match = (
                 cls.elab_strict_version_match
                 or get_elab_version_mode(skip_validation=True)
+                or ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL
+                # If get_elab_version_mode returns Missing,
+                # it will be evaluated as False.
             )
             match strict_version_match:
+                case ElabStrictVersionMatchModes.minor_only:
+                    if cls._is_elab_minor_version_supported(elab_version) is True:
+                        return None
+                    raise ElabFTWUnsupportedVersion(validation_message)
                 case ElabStrictVersionMatchModes.abort:
                     raise ElabFTWUnsupportedVersion(validation_message)
                 case ElabStrictVersionMatchModes.warn:
@@ -583,28 +598,19 @@ class ElabFTWURL:
                     return None
                 case ElabStrictVersionMatchModes.yolo:
                     return None
-                case Missing():
-                    if _DEBUG_LOG_EMIT_ONCE is False:
-                        logger.debug(
-                            f"{ELAB_BRAND_NAME} elab_strict_version_match is missing."
-                            f"Valid values are: {', '.join(ElabStrictVersionMatchModes)}. "
-                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' "
-                            f"will be considered."
-                        )
-                        logger.warning(validation_message)
-                        _DEBUG_LOG_EMIT_ONCE = True
                 case _:
                     if _DEBUG_LOG_EMIT_ONCE is False:
                         logger.warning(
-                            f"Invalid value '{strict_version_match}' for {ELAB_BRAND_NAME} "
+                            f"Invalid value '{strict_version_match}' for "
                             f"elab_strict_version_match. Valid values are: "
                             f"{', '.join(ElabStrictVersionMatchModes)}. "
                             f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' "
                             f"will be considered."
                         )
-                        logger.warning(validation_message)
                         _DEBUG_LOG_EMIT_ONCE = True
-                    return None
+                    if cls._is_elab_minor_version_supported(elab_version) is True:
+                        return None
+                    raise ElabFTWUnsupportedVersion(validation_message)
 
         else:
             version_file = (
