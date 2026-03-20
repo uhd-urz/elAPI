@@ -467,7 +467,7 @@ class ElabFTWUnsupportedVersion(ElabFTWURLError): ...
 
 
 class ElabFTWURL:
-    force_endpoint_validation: ElabStrictVersionMatchModes | None = None
+    elab_strict_version_match: ElabStrictVersionMatchModes | None = None
 
     def __init__(
         self,
@@ -564,14 +564,16 @@ class ElabFTWURL:
                 f"You can ignore this validation by setting configuration "
                 f"'{KEY_ELAB_STRICT_VERSION_MATCH.lower()}' "
                 f"value to '{ElabStrictVersionMatchModes.yolo}' (or by setting the class "
-                f"{ElabFTWURL.__name__} attribute 'force_endpoint_validation' "
+                f"{ElabFTWURL.__name__} attribute 'elab_strict_version_match' "
                 f"to '{ElabStrictVersionMatchModes.yolo}'). Setting the value to "
                 f"'{ElabStrictVersionMatchModes.abort}' would raise an exception and "
                 f"abort {APP_BRAND_NAME}."
             )
-            match cls.force_endpoint_validation or get_elab_version_mode(
-                skip_validation=True
-            ):
+            strict_version_match = (
+                cls.elab_strict_version_match
+                or get_elab_version_mode(skip_validation=True)
+            )
+            match strict_version_match:
                 case ElabStrictVersionMatchModes.abort:
                     raise ElabFTWUnsupportedVersion(validation_message)
                 case ElabStrictVersionMatchModes.warn:
@@ -581,13 +583,24 @@ class ElabFTWURL:
                     return None
                 case ElabStrictVersionMatchModes.yolo:
                     return None
+                case Missing():
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.debug(
+                            f"{ELAB_BRAND_NAME} elab_strict_version_match is missing."
+                            f"Valid values are: {', '.join(ElabStrictVersionMatchModes)}. "
+                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' "
+                            f"will be considered."
+                        )
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
                 case _:
                     if _DEBUG_LOG_EMIT_ONCE is False:
                         logger.warning(
-                            f"Invalid value for Elab strict version match mode "
-                            f"(force_endpoint_validation). "
-                            f"Valid values are: {', '.join(ElabStrictVersionMatchModes)}. "
-                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' will be considered."
+                            f"Invalid value '{strict_version_match}' for {ELAB_BRAND_NAME} "
+                            f"elab_strict_version_match. Valid values are: "
+                            f"{', '.join(ElabStrictVersionMatchModes)}. "
+                            f"Default value '{ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL}' "
+                            f"will be considered."
                         )
                         logger.warning(validation_message)
                         _DEBUG_LOG_EMIT_ONCE = True
