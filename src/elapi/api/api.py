@@ -591,6 +591,13 @@ class ElabFTWURL:
                     raise ElabFTWUnsupportedVersion(validation_message)
                 case ElabStrictVersionMatchModes.abort:
                     raise ElabFTWUnsupportedVersion(validation_message)
+                case ElabStrictVersionMatchModes.warn_minor_only:
+                    if cls._is_elab_minor_version_supported(elab_version) is True:
+                        return None
+                    if _DEBUG_LOG_EMIT_ONCE is False:
+                        logger.warning(validation_message)
+                        _DEBUG_LOG_EMIT_ONCE = True
+                    return None
                 case ElabStrictVersionMatchModes.warn:
                     if _DEBUG_LOG_EMIT_ONCE is False:
                         logger.warning(validation_message)

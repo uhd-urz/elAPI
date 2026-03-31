@@ -279,7 +279,7 @@ PLUGIN_DEFAULT_VALUE: dict = {}
 # Elab version mode
 ELAB_STRICT_VERSION_MATCH = settings.get(KEY_ELAB_STRICT_VERSION_MATCH, None)
 ELAB_STRICT_VERSION_MATCH_DEFAULT_VAL: ElabStrictVersionMatchModes | str = (
-    ElabStrictVersionMatchModes.abort_minor_only
+    ElabStrictVersionMatchModes.warn_minor_only
 )
 
 for key_name, key_val in [
