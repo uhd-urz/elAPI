@@ -585,7 +585,7 @@ class ElabFTWURL:
                 # it will be evaluated as False.
             )
             match strict_version_match:
-                case ElabStrictVersionMatchModes.minor_only:
+                case ElabStrictVersionMatchModes.abort_minor_only:
                     if cls._is_elab_minor_version_supported(elab_version) is True:
                         return None
                     raise ElabFTWUnsupportedVersion(validation_message)
