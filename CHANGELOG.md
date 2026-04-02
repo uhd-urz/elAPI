@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.9] - 2026-04-02
+
+This release contains package version updates to `uv.lock`. See `v2.4.8` changelog below for the main updates.
+
+### Fixed
+
+- Update vulnerable package versions in `uv.lock` as reported by GitHub dependobot
+- Update `uvloop`
+
 ## [2.4.8] - 2026-04-02
 
 This release adds for version-enforcing by eLabFTW micro versions, bug fixes and some minor improvements.
