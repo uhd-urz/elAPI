@@ -36,7 +36,10 @@ dependencies = [
     "httpx-limiter>=0.3.0,<0.4.0",
     "httpx-aiohttp>=0.1.12,<0.2",
     "pydantic>=2.12.3",
-    "urllib3>=2.6.3"
+    "urllib3>=2.6.3",
+    # Used by yagmail, but added explicitly here to get an important security update
+    "aiohttp>=3.13.5",
+    # Used by httpx-aiohttp, but added explicitly here to get an important security update
 ]
 license-files = [
     "LICENSE",
