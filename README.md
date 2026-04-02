@@ -430,7 +430,7 @@ elAPI was presented/discussed in the following talks and workshops at various co
    and [paper](https://books.ub.uni-heidelberg.de/heibooks/catalog/book/1652/chapter/23952)
    at [E-Science-Tage 2025](https://e-science-tage.de/en/programme-2025) by Heidelberg University, Germany
 
-## Third-party plugins/apps
+## Community plugins/apps
 
 1. [elAPI Plugins](https://github.com/sfb1638/elAPI_Plugins): elAPI Plugins is a desktop application for bulk importing
    and exporting resources and experiments in eLabFTW instances. The project is developed as part of the INF Project of
