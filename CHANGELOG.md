@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.8] - 2026-04-02
+
+This release adds for version-enforcing by eLabFTW micro versions, bug fixes and some minor improvements.
+
+### Added
+
+- Add support for eLabFTW versions `5.3.10`-`5.5.5`
+- Add `abort_minor_only` and `warn_minor_only` to `elab_strict_version_match` configuration field.
+  See [documentation](https://github.com/uhd-urz/elAPI?tab=readme-ov-file#advanced-configuration)
+- Add ["Talks"](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#talks-workshops-and-publications) section
+  to `README.md`
+- Add [elAPI Plugins](https://github.com/sfb1638/elAPI_Plugins) by [SFB1638](https://github.com/sfb1638)
+  to [Third-party plugins/apps](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#third-party-pluginsapps)
+
+### Fixed
+
+- Fixed a bug where the whoami command wouldn't work with old-style API tokens (GH #175, reported by @Cs137)
+
 ## [2.4.7] - 2025-12-10
 
 This release adds support for eLabFTW micro versions `5.3.8`, `5.3.9` and some bug fixes.
@@ -16,7 +34,6 @@ This release adds support for eLabFTW micro versions `5.3.8`, `5.3.9` and some b
 ### Fixed
 
 - Fix a bill-teams issue [GL 63](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/63).
-
 
 ## [2.4.6] - 2025-11-12
 
