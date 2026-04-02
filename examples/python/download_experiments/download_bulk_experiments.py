@@ -48,6 +48,7 @@
 # For date information to create folders
 import calendar
 from datetime import datetime
+
 # To catch JSONDecodeError when parsing experiment metadata
 from json import JSONDecodeError
 from pathlib import Path
@@ -58,18 +59,21 @@ from httpx import HTTPError
 
 # For handling HTTP connections
 from elapi.api import FixedEndpoint
+
 # For logging
 from elapi.loggers import Logger
+
 # For handling paths (An extension of Python pathlib's Path)
 from elapi.path import ProperPath
+
 # For terminating the program
-from elapi.validators import Exit
 # For making sure we have the appropriate permission
 from elapi.validators import (
-    Validate,
-    ValidationError,
+    Exit,
     HostIdentityValidator,
     PathValidator,
+    Validate,
+    ValidationError,
 )
 
 # First we create a FixedEndpoint instance with the endpoint of our interest "experiments" as its only argument.
@@ -113,7 +117,7 @@ def get_all_experiments_data() -> List[dict]:
         )
         raise Exit(1)
     expected_limit = offset = len(all_experiments_data)
-    continuous_batch = []
+    continuous_batch: list[dict] = []
     while len(continuous_batch) != 0:
         continuous_batch_response = experiment_endpoint.get(
             endpoint_id=None, query={"offset": offset, **default_query}

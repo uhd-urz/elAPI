@@ -30,14 +30,13 @@
 # 3. We iterate over each user data and check if the user "teams" field contains the target team ID
 # we want to expire. If it does, that indicates the user does belong to the target team.
 # 4. We PATCH the user with the new expiry date
+from json import JSONDecodeError
 
-import asyncio
-
-from elapi.api import PATCHRequest, GlobalSharedSession
+from elapi.api import GETRequest, GlobalSharedSession, PATCHRequest
 from elapi.loggers import Logger
-from elapi.plugins.commons import RecursiveInformation
+
 # commons is a plugin with some helpful CLI functions, but commons plugin itself does not come with a CLI
-from elapi.validators import Validate, PermissionValidator, HostIdentityValidator
+from elapi.validators import HostIdentityValidator, PermissionValidator, Validate
 
 logger = Logger()  # Handles logging to elAPI log file and to STDERR
 
@@ -55,21 +54,13 @@ validate = Validate(
 validate()
 
 with GlobalSharedSession():
-    patch = PATCHRequest()  # the connection is not open yet!
+    get, patch = GETRequest(), PATCHRequest()  # the connection is not open yet!
     TARGET_TEAM_ID = "95"  # ID of the team to expire.
     EXPIRY_DATE = "3001-01-01"  # the new expiry date to set for target users.
     try:
-        users_information = asyncio.run(
-            RecursiveInformation(
-                endpoint_name="users", endpoint_id_key_name="userid"
-            ).items()  # verbose=False will disable the progress bar
-            # RecursiveInformation().items() method asynchronously fetches a list of dictionaries,
-            # where each dictionary correspondents to a single user data.
-        )
-    except (RuntimeError, InterruptedError) as e:
-        raise InterruptedError(
-            "Getting users data was not successful."
-        ) from e  # elAPI handles most of the cleanup already.
+        users_information = get("users").json()
+    except JSONDecodeError as e:
+        raise RuntimeError("Getting users data was not successful.") from e
 
     for user in users_information:
         if len(user["teams"]) > 1:
@@ -87,5 +78,6 @@ with GlobalSharedSession():
                 data={"valid_until": EXPIRY_DATE},
             )  # the connection opens here
             logger.info(
-                f"An expiration date for the user with user ID {user['userid']} has been successfully set."
+                f"An expiration date for the user with user ID {user['userid']} "
+                f"has been successfully set."
             )

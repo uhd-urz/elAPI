@@ -63,8 +63,10 @@ KEY_ELAB_STRICT_VERSION_MATCH: str = "ELAB_STRICT_VERSION_MATCH"
 
 
 class ElabStrictVersionMatchModes(StrEnum):
+    abort_minor_only = "abort_minor_only"
     abort = "abort"
     warn = "warn"
+    warn_minor_only = "warn_minor_only"
     yolo = "yolo"
 
 

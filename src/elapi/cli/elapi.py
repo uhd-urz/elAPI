@@ -27,7 +27,7 @@ from rich import pretty
 from rich.markdown import Markdown
 from typing_extensions import Annotated
 
-from .._names import APP_NAME
+from .._names import APP_NAME, ELAB_BRAND_NAME
 from ..api import ElabFTWURLError, ElabScopes, ElabUserGroups
 from ..configuration import (
     FALLBACK_EXPORT_DIR,
@@ -1440,16 +1440,22 @@ def whoami() -> None:
             status.stop()
             logger.error(url_exc)
             raise Exit(1) from url_exc
-
+        can_api_key_write = (
+            ColorText(" (Read/Write)").colorize(RED)
+            if whoami_info["can_api_key_write"] == 1
+            else ColorText(" (Read-only)").colorize(GREEN)
+            if whoami_info["can_api_key_write"] == 0
+            else ""
+        )
         formatted_whoami_info = f"""- __{ColorText("Server:").colorize(GREEN)}__ {
             ColorText(whoami_info["host_url"]).colorize(LIGHTBLUE)
         }
-- __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]} ({
-            ColorText("Read/Write").colorize(RED)
-            if whoami_info["can_api_key_write"]
-            else ColorText("Read-only").colorize(GREEN)
-        })
-- __{ColorText("eLabFTW version:").colorize(GREEN)}__ {whoami_info["elabftw_version"]}
+- __{ColorText("API Key/Token:").colorize(GREEN)}__ {whoami_info["api_token"]}{
+            can_api_key_write
+        }
+- __{ColorText(f"{ELAB_BRAND_NAME} version:").colorize(GREEN)}__ {
+            whoami_info["elabftw_version"]
+        }
 - __{ColorText("Name:").colorize(GREEN)}__ {whoami_info["name"]} ({
             ColorText("ID:").colorize(GREEN)
         } {whoami_info["user_id"]})
