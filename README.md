@@ -10,6 +10,9 @@
    <img alt="Static Badge" src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-%230d7dbe">
    <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4%20%7C%205.5+-%2323b3be">
 </a>
+<a href="#talks-workshops-and-publications">
+   <img alt="Static Badge" src="https://img.shields.io/badge/DOI-10.11588%2FDATA%2FE4XHXZ-blue?style=plastic&link=https%3A%2F%2Fdoi.org%2F10.11588%2FDATA%2FE4XHXZ">
+</a>
 </p>
 
 elAPI is a powerful, extensible API client for [eLabFTW](https://www.elabftw.net/) developed at
@@ -33,7 +36,7 @@ With elAPI you can do the following:
 elapi get experiments --format csv --export ~/Downloads/
 ```
 
-Once the command is run, in the background, elAPI will read host (eLab server) address, API key and various other
+Once the command is run, in the background, elAPI will read host (eLab server) address, API key, and various other
 settings (see [configuration](#configuration)) from the configuration file `elapi.yml`, perform validation (e.g.,
 whether the server address is valid), fetch all _experiments_ list, convert them to `CSV`, and export them to your
 local `~/Downloads/` folder.
@@ -164,7 +167,8 @@ development_mode: false
       e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
       supported, elAPI will abort immediately.
     - `warn`: elAPI will show an `WARNING` message and continue normally.
-    - `warn_minor_only`: The **default**. elAPI will ignore the eLabFTW version patch number in _major.minor.patch_ version (
+    - `warn_minor_only`: The **default**. elAPI will ignore the eLabFTW version patch number in _major.minor.patch_
+      version (
       e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
       supported, elAPI will show a warning and continue normally.
     - `yolo`: elAPI will ignore any version support conflict.
@@ -338,10 +342,9 @@ elapi experiments upload-attachment --id <experiment ID> --path <path to attachm
 
 Sometimes when a script has finished, you and your team would want to receive an email about its success/failure. elAPI
 offers a no-code solution for this: the `mail` plugin. The `mail` plugin is not enabled by default. To enable it,
-install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. [__See the wiki
-__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin)
-to read more about how to configure the `mail` plugin with your
-mail server configuration and trigger conditions. In a
+install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`.
+[__See the wiki__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin) to read more about how to configure the `mail`
+plugin with your mail server configuration and trigger conditions. In a
 nutshell, the `mail` plugin will scan the logs when a script/plugin is done to look for pre-configured trigger
 conditions, and if found, it will send an email. The trigger conditions can be atomic and scope-based, i.e., an email
 can be sent only when a specific plugin task/command is finished, and/or when a matching log state and/or a matching log
@@ -409,3 +412,27 @@ project_dir: ~/awesome  # Path to the project root directory where the plugin is
 This metadata file of plugin `awesome` must be placed inside `~/.local/share/elapi/plugins/awesome`. Notice, the plugin
 name must also match the parent directory name of `elapi_plugin_metadata.yml`. This way we ensure a plugin name remains
 unique.
+
+## Talks, workshops, and publications
+
+elAPI was presented/discussed in the following talks and workshops at various conferences and meetups:
+
+1. [Automation in eLabFTW](https://www.fdm.nrw/wp-content/uploads/2025/06/Program_FDMWerkstatt_2024.pdf) at
+   FDM-Werkstatt 2024, RWTH Aachen University by [fdm.nrw](https://www.fdm.nrw/)
+2. [elAPI 2.0 (Third-party plugins)](https://www.uni-muenster.de/Forschungsdaten/en/angebote/veranstaltungen/#top) at
+   eLab training 2024, University of Münster by [fdm.nrw](https://www.fdm.nrw/)
+3. [Boost your productivity: Exploring eLabFTW's API live](https://web.archive.org/web/20240712155250/https://www.uni-marburg.de/en/hefdi/hefdi-data-event/hefdi-data-week-2024#hefdi-data-week-programme-overview)
+   at HeFDI Data Week 2024, Online
+4. [elAPI](https://www.youtube.com/watch?v=UrX7a-IgGnI)
+   at [eLabFTW Community Meeting III](https://www.deltablot.com/posts/community-meeting-3/)
+   by [eLabFTW](https://github.com/elabftw/elabftw)
+5. elAPI [poster](https://archiv.ub.uni-heidelberg.de/volltextserver/36226/3/elAPI_Poster_E-Science-Tage_2025.pdf)
+   and [paper](https://books.ub.uni-heidelberg.de/heibooks/catalog/book/1652/chapter/23952)
+   at [E-Science-Tage 2025](https://e-science-tage.de/en/programme-2025) by Heidelberg University, Germany
+
+## Third-party plugins/apps
+
+1. [elAPI Plugins](https://github.com/sfb1638/elAPI_Plugins): elAPI Plugins is a desktop application for bulk importing
+   and exporting resources and experiments in eLabFTW instances. The project is developed as part of the INF Project of
+   [CRC 1638](https://www.sfb1638.de/) at
+   the [Heidelberg University Biochemistry Center (BZH)](https://bzh.db-engine.de/).
