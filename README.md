@@ -93,8 +93,8 @@ your configuration details.
 
 elAPI is compatible with the following Python versions: `3.11`, `3.12`, `3.13`, `3.14`. elAPI supports
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `5.5.5`, `5.5.4`, `5.5.3`, `5.5.2`, `5.5.1`, `5.5.0`, `5.4.6`, `5.4.5`, `5.4.4`, `5.4.3`, `5.4.2`, `5.4.1`, `5.4.0`,
-`5.3.11`, `5.3.10`, `5.3.9`, `5.3.8`, `5.3.7`, `5.3.6`,
+versions: `5.5.5`, `5.5.4`, `5.5.3`, `5.5.2`, `5.5.1`, `5.5.0`, `5.4.6`, `5.4.5`, `5.4.4`, `5.4.3`, `5.4.2`, `5.4.1`,
+`5.4.0`, `5.3.11`, `5.3.10`, `5.3.9`, `5.3.8`, `5.3.7`, `5.3.6`,
 `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
 `5.2.3`, `5.2.2`, `5.2.1`, `5.2.0`, `5.1.1`.
 
@@ -138,7 +138,7 @@ host: <host API url>
 api_token: <token with at least read-access>
 # "A.k.a API key". You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
-elab_strict_version_match: "warn"
+elab_strict_version_match: "warn_minor_only"
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
@@ -155,12 +155,19 @@ development_mode: false
 - `elab_strict_version_match` controls what elAPI should do if an unsupported eLabFTW version is detected. eLabFTW does
   introduce breaking API change from time to time. Starting from elAPI 2.4.5, elAPI maintains [a strict set of eLabFTW
   versions](#compatibility), i.e., elAPI and its plugins are expected to work for these versions. This is to prevent
-  unexpected behavior due to the breaking changes. If the detected eLabFTW server version is not supported, elAPI by
-  default (`elab_strict_version_match: warn`) will throw a warning
-  message and continue to run any command/plugin. When `elab_strict_version_match` is set to `abort`, elAPI will show an
-  `ERROR`
-  message and abort immediately. When `elab_strict_version_match` is set to `yolo`, elAPI will ignore any version
-  support conflict.
+  unexpected behavior due to the breaking changes. If the detected eLabFTW server majo.minor version is not supported,
+  elAPI by default (`elab_strict_version_match: warn_minor_only`) will throw a warning
+  message and continue normally. `elab_strict_version_match` currently accepts the following
+  modes/values:
+    - `abort`: elAPI will show an `ERROR` message and abort immediately.
+    - `abort_minor_only`: elAPI will ignore the eLabFTW version patch number in _major.minor.patch_ version (
+      e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
+      supported, elAPI will abort immediately.
+    - `warn`: elAPI will show an `WARNING` message and continue normally.
+    - `warn_minor_only`: The **default**. elAPI will ignore the eLabFTW version patch number in _major.minor.patch_ version (
+      e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
+      supported, elAPI will show a warning and continue normally.
+    - `yolo`: elAPI will ignore any version support conflict.
 - `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
   of [known issues](https://github.com/encode/httpx/discussions/2112) with HTTP/2 if you are making async requests with
   a heavy load.
