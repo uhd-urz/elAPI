@@ -12,7 +12,7 @@ printf "Downloading vendor packages with vendy..."
 printf "\n"
 printf "_________________________________________"
 printf "\n\n"
-/Users/culdesac/Workshop/elapi/.venv/bin/python -m vendy
+.venv/bin/python -m vendy
 printf "\n"
 printf "Removing unnecessary haggis files/folder..."
 printf "\n"
