@@ -8,7 +8,10 @@
    </a>
 <a href="#compatibility">
    <img alt="Static Badge" src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-%230d7dbe">
-   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3+-%2323b3be">
+   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4%20%7C%205.5+-%2323b3be">
+</a>
+<a href="#talks-workshops-and-publications">
+   <img alt="Static Badge" src="https://img.shields.io/badge/DOI-10.11588%2FDATA%2FE4XHXZ-blue?style=plastic&link=https%3A%2F%2Fdoi.org%2F10.11588%2FDATA%2FE4XHXZ">
 </a>
 </p>
 
@@ -30,10 +33,10 @@ From [the API documentation](https://doc.elabftw.net/api/v2/#/Users/read-user):
 With elAPI you can do the following:
 
 ```sh
-$ elapi get experiments --format csv --export ~/Downloads/
+elapi get experiments --format csv --export ~/Downloads/
 ```
 
-Once the command is run, in the background, elAPI will read host (eLab server) address, API key and various other
+Once the command is run, in the background, elAPI will read host (eLab server) address, API key, and various other
 settings (see [configuration](#configuration)) from the configuration file `elapi.yml`, perform validation (e.g.,
 whether the server address is valid), fetch all _experiments_ list, convert them to `CSV`, and export them to your
 local `~/Downloads/` folder.
@@ -46,7 +49,7 @@ install packages in isolated virtual environments, so elAPI installed as a CLI t
 installed inside other virtual environments.
 
 ```shell
-$ uv tool install elapi
+uv tool install elapi
 # elAPI can be updated to the latest version with 
 # uv tool upgrade elapi
 ```
@@ -79,7 +82,7 @@ Once you have elAPI [installed](#installation), to **quickly** get started, run 
 questions about your eLabFTW server with examples to help you fill in the answers. Here's a demo:
 
 ```shell
-$ elapi init
+elapi init
 ```
 
 <video src='https://github.com/user-attachments/assets/8d5f69ed-b644-4d75-b816-d06d4e937105'> </video>
@@ -93,7 +96,9 @@ your configuration details.
 
 elAPI is compatible with the following Python versions: `3.11`, `3.12`, `3.13`, `3.14`. elAPI supports
 the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `5.3.9`, `5.3.8`, `5.3.7`, ```5.3.6`, `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
+versions: `5.5.5`, `5.5.4`, `5.5.3`, `5.5.2`, `5.5.1`, `5.5.0`, `5.4.6`, `5.4.5`, `5.4.4`, `5.4.3`, `5.4.2`, `5.4.1`,
+`5.4.0`, `5.3.11`, `5.3.10`, `5.3.9`, `5.3.8`, `5.3.7`, `5.3.6`,
+`5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
 `5.2.3`, `5.2.2`, `5.2.1`, `5.2.0`, `5.1.1`.
 
 ### elAPI strict version support
@@ -136,7 +141,7 @@ host: <host API url>
 api_token: <token with at least read-access>
 # "A.k.a API key". You can generate an API token from eLabFTW user panel -> API keys tab.
 export_dir: ~/Downloads/elAPI
-elab_strict_version_match: "warn"
+elab_strict_version_match: "warn_minor_only"
 unsafe_api_token_warning: true
 enable_http2: false
 verify_ssl: true
@@ -153,12 +158,20 @@ development_mode: false
 - `elab_strict_version_match` controls what elAPI should do if an unsupported eLabFTW version is detected. eLabFTW does
   introduce breaking API change from time to time. Starting from elAPI 2.4.5, elAPI maintains [a strict set of eLabFTW
   versions](#compatibility), i.e., elAPI and its plugins are expected to work for these versions. This is to prevent
-  unexpected behavior due to the breaking changes. If the detected eLabFTW server version is not supported, elAPI by
-  default (`elab_strict_version_match: warn`) will throw a warning
-  message and continue to run any command/plugin. When `elab_strict_version_match` is set to `abort`, elAPI will show an
-  `ERROR`
-  message and abort immediately. When `elab_strict_version_match` is set to `yolo`, elAPI will ignore any version
-  support conflict.
+  unexpected behavior due to the breaking changes. If the detected eLabFTW server majo.minor version is not supported,
+  elAPI by default (`elab_strict_version_match: warn_minor_only`) will throw a warning
+  message and continue normally. `elab_strict_version_match` currently accepts the following
+  modes/values:
+    - `abort`: elAPI will show an `ERROR` message and abort immediately.
+    - `abort_minor_only`: elAPI will ignore the eLabFTW version patch number in _major.minor.patch_ version (
+      e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
+      supported, elAPI will abort immediately.
+    - `warn`: elAPI will show an `WARNING` message and continue normally.
+    - `warn_minor_only`: The **default**. elAPI will ignore the eLabFTW version patch number in _major.minor.patch_
+      version (
+      e.g., `1` is the patch number in version `5.5.1`). If the _major.minor_ version isn't
+      supported, elAPI will show a warning and continue normally.
+    - `yolo`: elAPI will ignore any version support conflict.
 - `enable_http2` enables HTTP/2 protocol support which by default is turned off. Be aware
   of [known issues](https://github.com/encode/httpx/discussions/2112) with HTTP/2 if you are making async requests with
   a heavy load.
@@ -183,7 +196,7 @@ You can get an overview of detected configuration with `elapi show-config`. `sho
 which configuration values are actually used by elAPI – especially if you are working with multiple configuration files.
 
 ```shell
-$ elapi show-config  # host username: "culdesac" 
+elapi show-config  # host username: "culdesac" 
 ```
 
 ![elAPI show-config output](https://heibox.uni-heidelberg.de/f/00a8dabbf2124087aae4/?dl=1)
@@ -206,7 +219,7 @@ juggling between multiple API keys can still lead to confusion as to which API k
 `2.4.1` adds the `whomai` command that shows the essential information about the requesting eLab user.
 
 ```shell
-$ elapi whoami
+elapi whoami
 ```
 
 ![elapi whoami output](https://heibox.uni-heidelberg.de/f/e3096d5659db45e58a94/?dl=1)
@@ -230,7 +243,7 @@ Check out the [examples directory](https://github.com/uhd-urz/elAPI/tree/main/ex
 examples with elAPI. elAPI CLI usage details can be displayed with:
 
 ```shell
-$ elapi --help
+elapi --help
 
 ```
 
@@ -239,21 +252,21 @@ $ elapi --help
 Request an overview of a running eLabFTW server:
 
 ```shell
-$ elapi get info -F yml
+elapi get info -F yml
 # Here -F (or --format) defines the output format
 ```
 
 You can request a list o all active experiments and export it to a `JSON` file.
 
 ```shell
-$ elapi get experiments --export ~/Downoads/experiments.json
+elapi get experiments --export ~/Downoads/experiments.json
 ```
 
 Enable built-in syntax highlighting with `--highlight` or `-H`. Here, the following command will fetch team information
 of the team with team ID 1.
 
 ```shell
-$ elapi get -H teams --id 1
+elapi get -H teams --id 1
 ```
 
 elAPI runs a weak endpoint name validation against your eLabFTW API version. Run `elapi get --help` to see the
@@ -266,7 +279,7 @@ supported endpoint names for your eLabFTW server:
 Create a new user by the name 'John Doe':
 
 ```shell
-$ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
+elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "email": "test_test@itnerd.de"}'
 ```
 
 ### `PATCH` requests
@@ -274,20 +287,20 @@ $ elapi post users --id <user id> -d '{"firstname": "John", "lastname": "Doe", "
 Update an existing user's email address:
 
 ```shell
-$ elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
+elapi patch users --id <user id> -d '{"email": "new_email@itnerd.de"}'
 ```
 
 `patch` command allows us to make changes to eLabFTW server settings. E.g., you can update the time (in minutes)
 after which the authentication cookie will expire.
 
 ```shell
-$ elapi patch config -d '{"cookie_validity_time": 43200}'
+elapi patch config -d '{"cookie_validity_time": 43200}'
 ```
 
 You can publish an announcement to all the members.
 
 ```shell
-$ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
+elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow at midnight due to scheduled maintenance."}'
 ```
 
 ### `DELETE` requests
@@ -295,13 +308,13 @@ $ elapi patch config -d '{"announcement": "Notice: Server will be down tomorrow 
 Delete all the tags associated with an experiment:
 
 ```shell
-$ elapi delete experiments -i <experiment ID> --sub tags
+elapi delete experiments -i <experiment ID> --sub tags
 ```
 
 You can reset the configuration to default values.
 
 ```shell
-$ elapi delete config
+elapi delete config
 ```
 
 ### `experiments` built-in plugin
@@ -310,28 +323,28 @@ $ elapi delete config
 to `~/Downloads` directory.
 
 ```shell
-$ elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
+elapi experiments get -i <experiment unique elabid> -F pdf --export ~/Downloads/
 ```
 
 Append text in Markdown to an existing experiment by its ID:
 
 ```shell
-$ elapi experiments append --id <experiment ID> -M -t "**New content.**"
+elapi experiments append --id <experiment ID> -M -t "**New content.**"
 ```
 
 You can also upload an attachment to an experiment.
 
 ```shell
-$ elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
+elapi experiments upload-attachment --id <experiment ID> --path <path to attachment file> --comment <comment for your attachment>
 ```
 
 ### `mail` built-in plugin
 
 Sometimes when a script has finished, you and your team would want to receive an email about its success/failure. elAPI
 offers a no-code solution for this: the `mail` plugin. The `mail` plugin is not enabled by default. To enable it,
-install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`. [__See the wiki__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin) 
-to read more about how to configure the `mail` plugin with your
-mail server configuration and trigger conditions. In a
+install elAPI with the optional dependency `mail`: `pip install elapi[mail]` or `uv add elapi[mail]`.
+[__See the wiki__](https://github.com/uhd-urz/elAPI/wiki/mail-plugin) to read more about how to configure the `mail`
+plugin with your mail server configuration and trigger conditions. In a
 nutshell, the `mail` plugin will scan the logs when a script/plugin is done to look for pre-configured trigger
 conditions, and if found, it will send an email. The trigger conditions can be atomic and scope-based, i.e., an email
 can be sent only when a specific plugin task/command is finished, and/or when a matching log state and/or a matching log
@@ -399,3 +412,27 @@ project_dir: ~/awesome  # Path to the project root directory where the plugin is
 This metadata file of plugin `awesome` must be placed inside `~/.local/share/elapi/plugins/awesome`. Notice, the plugin
 name must also match the parent directory name of `elapi_plugin_metadata.yml`. This way we ensure a plugin name remains
 unique.
+
+## Talks, workshops, and publications
+
+elAPI was presented/discussed in the following talks and workshops at various conferences and meetups:
+
+1. [Automation in eLabFTW](https://www.fdm.nrw/wp-content/uploads/2025/06/Program_FDMWerkstatt_2024.pdf) at
+   FDM-Werkstatt 2024, RWTH Aachen University by [fdm.nrw](https://www.fdm.nrw/)
+2. [elAPI 2.0 (Third-party plugins)](https://www.uni-muenster.de/Forschungsdaten/en/angebote/veranstaltungen/#top) at
+   eLab training 2024, University of Münster by [fdm.nrw](https://www.fdm.nrw/)
+3. [Boost your productivity: Exploring eLabFTW's API live](https://web.archive.org/web/20240712155250/https://www.uni-marburg.de/en/hefdi/hefdi-data-event/hefdi-data-week-2024#hefdi-data-week-programme-overview)
+   at HeFDI Data Week 2024, Online
+4. [elAPI](https://www.youtube.com/watch?v=UrX7a-IgGnI)
+   at [eLabFTW Community Meeting III](https://www.deltablot.com/posts/community-meeting-3/)
+   by [eLabFTW](https://github.com/elabftw/elabftw)
+5. elAPI [poster](https://archiv.ub.uni-heidelberg.de/volltextserver/36226/3/elAPI_Poster_E-Science-Tage_2025.pdf)
+   and [paper](https://books.ub.uni-heidelberg.de/heibooks/catalog/book/1652/chapter/23952)
+   at [E-Science-Tage 2025](https://e-science-tage.de/en/programme-2025) by Heidelberg University, Germany
+
+## Third-party plugins/apps
+
+1. [elAPI Plugins](https://github.com/sfb1638/elAPI_Plugins): elAPI Plugins is a desktop application for bulk importing
+   and exporting resources and experiments in eLabFTW instances. The project is developed as part of the INF Project of
+   [CRC 1638](https://www.sfb1638.de/) at
+   the [Heidelberg University Biochemistry Center (BZH)](https://bzh.db-engine.de/).

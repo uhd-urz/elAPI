@@ -3,6 +3,7 @@ from json import JSONDecodeError
 
 from httpx import HTTPError
 
+from ..._core_init import PatternNotFoundError
 from ...api import (
     ElabScopes,
     ElabUserGroups,
@@ -69,8 +70,13 @@ def get_whoami() -> dict[str, str | int | APIToken | dict[str, int]]:
     else:
         raise RuntimeError("User team was not found. This is an unexpected error!")
     for api_key in api_keys_info:
-        if api_key["id"] == int(user_api_token_id):
-            can_api_key_write = api_key["can_write"]
+        try:
+            if api_key["id"] == int(parse_api_id_from_api_token(user_api_token.token)):
+                can_api_key_write = api_key["can_write"]
+                break
+        except PatternNotFoundError as pat_exc:
+            logger.debug(pat_exc)
+            can_api_key_write = -1
             break
     else:
         raise RuntimeError("API key read/write permission could not be determined!")
