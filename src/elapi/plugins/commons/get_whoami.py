@@ -53,7 +53,6 @@ def get_whoami() -> dict[str, str | int | APIToken | dict[str, int]]:
     user_full_name: str = user_info["fullname"]
     user_id: int = user_info["userid"]
     user_api_token: APIToken = get_active_api_token()
-    user_api_token_id: str = parse_api_id_from_api_token(user_api_token.token)
     user_team_id: str = user_info["team"]
     user_email: str = user_info["email"]
     is_user_sysadmin: int = user_info["is_sysadmin"]
