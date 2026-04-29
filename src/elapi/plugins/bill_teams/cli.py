@@ -9,6 +9,7 @@ from types import NoneType
 
 import typer
 
+from ...path import ProperPath
 from ...utils import UnexpectedAPIResponseType
 from .generate_table import is_team_on_trial
 from .names import PLUGIN_NAME, REGISTRY_SUB_PLUGIN_NAME, TARGET_GROUP_NAME
@@ -135,6 +136,17 @@ else:
         # meant to suppress raising the final exception once all attempts have been made
     )
     def get_teams(
+        users_data_path: Annotated[
+            Optional[str],
+            typer.Option(
+                "--users-data-path",
+                "-U",
+                help="File path to users JSON data. If passed, "
+                "this will be considered as the source of user data truth. The JSON structure "
+                "must match the API response of 'elapi get users'",
+                show_default=False,
+            ),
+        ] = None,
         admins_only: Annotated[
             bool,
             typer.Option(
@@ -183,6 +195,16 @@ else:
         from ...api.validators import HostIdentityValidator, PermissionValidator
         from ...core_validators import Validate
 
+        if users_data_path is not None:
+            try:
+                users_data_path_ = ProperPath(users_data_path)
+            except (ValueError, TypeError):
+                print_typer_error(
+                    f"--users-data '{users_data_path}' must be a valid file path."
+                )
+                raise Exit(1)
+        else:
+            users_data_path_ = None
         global_session = GlobalSharedSession(
             async_rate_limit=(
                 async_rate_limit := _retry_init_handler.get_updated_rate_limit(
@@ -237,11 +259,16 @@ else:
             UsersInformation,
         )
 
-        users_info, teams_info = UsersInformation(), TeamsInformation()
+        teams_info = TeamsInformation()
 
         async def gather_teams_list() -> TeamsList:
+            if users_data_path_ is not None:
+                with users_data_path_.open("r", encoding="utf-8") as users_data_file:
+                    users_info = json.load(users_data_file)
+            else:
+                users_info = await UsersInformation().items()
             try:
-                tl = TeamsList(await users_info.items(), await teams_info.aitems())
+                tl = TeamsList(users_info, await teams_info.aitems())
             except (RuntimeError, InterruptedError) as error:
                 logger.error(
                     f"Retrieving users/teams data has failed. Exception details: {error}"

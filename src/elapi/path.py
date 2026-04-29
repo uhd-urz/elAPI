@@ -240,7 +240,7 @@ class ProperPath:
                 f"Could not open file {self._error_helper_compare_path_source(self.name, file)}. "
                 f"Exception: {e!r}"
             )
-            self.PathException = e
+            self.PathException = e.__class__
             raise e
         except (os_exception := OSError) as e:
             self.err_logger.debug(

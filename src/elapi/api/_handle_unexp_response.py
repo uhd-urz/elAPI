@@ -1,11 +1,23 @@
 import json
+from typing import TypedDict
 
 from ..loggers import Logger
 from ..utils import UnexpectedAPIResponseType
 from ._names import ElabUserGroups
 
 logger = Logger()
-NewUserTeamsType = list[dict[str, int | bool | str]]
+
+
+class _ElabUserTeamsDict(TypedDict, total=False):
+    id: int
+    name: str
+    usergroup: int
+    is_admin: bool
+    is_owner: bool
+    is_archived: bool
+
+
+NewUserTeamsType = list[_ElabUserTeamsDict]
 
 _DEBUG_LOG_EMIT_ONCE: bool = False
 
@@ -13,7 +25,7 @@ _DEBUG_LOG_EMIT_ONCE: bool = False
 def handle_new_user_teams(user_teams: str | NewUserTeamsType) -> NewUserTeamsType:
     global _DEBUG_LOG_EMIT_ONCE
 
-    struct_user_teams: list[dict[str, int | bool | str]] = []
+    struct_user_teams: list[_ElabUserTeamsDict] = []
     match user_teams:
         case list():
             struct_user_teams = user_teams
