@@ -1,6 +1,8 @@
+from collections import defaultdict
 from datetime import datetime
+from functools import cached_property
 from pathlib import Path
-from typing import Union
+from typing import TypedDict, Union
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
@@ -12,6 +14,30 @@ from ...path import ProperPath
 from ..commons import AsyncInformation, Information, RecursiveInformation
 
 logger = Logger()
+
+
+class TeamMembersDict(TypedDict):
+    firstname: str
+    lastname: str
+    email: str
+    usergroup: str
+    is_archived: bool
+    is_expired: bool
+
+
+class TeamsDict(TypedDict, total=False):
+    active_member_count: int
+    admins: dict[str, TeamMembersDict]
+    members: dict[str, TeamMembersDict]
+    on_trial: bool
+    team_created_at: str
+    team_id: int
+    team_name: str
+    total_archived_member_count: int
+    total_expired_member_count: int
+    total_member_count: int
+    total_unarchived_member_count: int
+    trial_ends_at: str
 
 
 class UsersInformation:
@@ -27,6 +53,7 @@ class UsersInformation:
         )
         for user in all_users:
             if (user_teams := user.get("teams")) is not None:
+                # noinspection PyTypeChecker
                 if handle_new_user_teams(user_teams) is not None:
                     return all_users
                 return await fallback_all_users.items()
@@ -102,7 +129,7 @@ class OwnersInformation:
 
 
 class TeamsList:
-    __slots__ = "users", "teams", "contract"
+    __slots__ = "users", "teams", "contract", "__dict__"
 
     def __init__(
         self,
@@ -112,15 +139,11 @@ class TeamsList:
         self.users = users_information
         self.teams = teams_information
 
-    @property
+    @cached_property
     def BILL_RUN_DATE(self) -> datetime:
+        # cached_property is used to make sure that the same
+        # current datetime is used for all comparisons
         return datetime.now()
-
-    @BILL_RUN_DATE.setter
-    def BILL_RUN_DATE(self, value):
-        raise AttributeError(
-            "BILL_RUN_DATE is always the current date. It cannot be modified!"
-        )
 
     @property
     def LAUNCH_DATE(self) -> datetime:
@@ -141,62 +164,44 @@ class TeamsList:
                 return True
         return False
 
-    def _get_owners(self, admins_only: bool = False) -> dict:
+    def _get_teams(self, admins_only: bool = False) -> dict:
         # Generate teams information with team owners
-        team_members: dict[str, dict[str, dict[str, str | bool | int]]] = {}
-        admins: dict[str, dict[str, dict[str, str | bool | int]]] = {}
-        teams: dict[str, dict[str, str | int | dict]] = {}
+        # noinspection PyTypeChecker
+        team_members: defaultdict[str, dict[str, TeamMembersDict]] = defaultdict(dict)
+        # noinspection PyTypeChecker
+        admins: defaultdict[str, dict[str, TeamMembersDict]] = defaultdict(dict)
+        teams: dict[str, TeamsDict] = {}
         for u in self.users:
             user_teams = handle_new_user_teams(u["teams"])
-            for team in user_teams:  # O(n^2): user_teams is again an iterable!
+            for team in user_teams:  # O(n^2): we iterate over the "teams" field
                 uid = u["userid"]
                 # Get teams user count
                 team_id = str(team["id"])
-                if not team_members.get(team_id):
-                    team_members[team_id] = {
+                team_members[team_id].update(
+                    {
                         uid: {
                             "firstname": u["firstname"],
                             "lastname": u["lastname"],
                             "email": u["email"],
                             "usergroup": team["usergroup"],
-                            "expired": self.is_user_expired(user_data=u),
+                            "is_archived": bool(team["is_archived"]),
+                            "is_expired": self.is_user_expired(user_data=u),
                         }
                     }
-                else:
-                    team_members[team_id].update(
+                )
+                if team["usergroup"] == ElabUserGroups.admin:
+                    admins[team_id].update(
                         {
                             uid: {
                                 "firstname": u["firstname"],
                                 "lastname": u["lastname"],
                                 "email": u["email"],
                                 "usergroup": team["usergroup"],
-                                "expired": self.is_user_expired(user_data=u),
+                                "is_archived": bool(team["is_archived"]),
+                                "is_expired": self.is_user_expired(user_data=u),
                             }
                         }
                     )
-                if team["usergroup"] == ElabUserGroups.admin:
-                    if not admins.get(team_id):
-                        admins[team_id] = {
-                            uid: {
-                                "firstname": u["firstname"],
-                                "lastname": u["lastname"],
-                                "email": u["email"],
-                                "usergroup": team["usergroup"],
-                                "expired": self.is_user_expired(user_data=u),
-                            }
-                        }
-                    else:
-                        admins[team_id].update(
-                            {
-                                uid: {
-                                    "firstname": u["firstname"],
-                                    "lastname": u["lastname"],
-                                    "email": u["email"],
-                                    "usergroup": team["usergroup"],
-                                    "expired": self.is_user_expired(user_data=u),
-                                }
-                            }
-                        )
                 # Get team basic information
                 teams[team_id] = {}
                 teams[team_id]["team_name"] = team["name"]
@@ -214,10 +219,22 @@ class TeamsList:
                 teams[team_id]["members"] = {}
                 teams[team_id]["members"] = team_members[team_id]
             teams[team_id]["admins"] = admins.get(team_id, {})
-            teams[team_id]["total_unarchived_member_count"] = len(team_members[team_id])
-            teams[team_id]["active_member_count"]: int = 0
+            teams[team_id]["total_member_count"] = len(team_members[team_id])
+            teams[team_id]["total_unarchived_member_count"] = 0
+            teams[team_id]["total_archived_member_count"] = 0
+            teams[team_id]["total_expired_member_count"] = 0
+            teams[team_id]["active_member_count"] = 0
             for k in team_members[team_id]:
-                if team_members[team_id][k]["expired"] is False:
+                if not team_members[team_id][k]["is_archived"]:
+                    teams[team_id]["total_unarchived_member_count"] += 1
+                if team_members[team_id][k]["is_archived"]:
+                    teams[team_id]["total_archived_member_count"] += 1
+                if team_members[team_id][k]["is_expired"]:
+                    teams[team_id]["total_expired_member_count"] += 1
+                if not (
+                    team_members[team_id][k]["is_expired"]
+                    or team_members[team_id][k]["is_archived"]
+                ):
                     teams[team_id]["active_member_count"] += 1
             # Add trial information
             trial_starts_at = self.team_trial_start_date(
@@ -225,12 +242,12 @@ class TeamsList:
             )
             trial_ends_at = trial_starts_at + self.TRIAL_PERIOD
             teams[team_id]["trial_ends_at"] = str(trial_ends_at)
-            teams[team_id]["on_trial"] = trial_ends_at > datetime.now()
+            teams[team_id]["on_trial"] = trial_ends_at > self.BILL_RUN_DATE
 
         return teams
 
     def items(self, admins_only: bool = False) -> dict:
-        return self._get_owners(admins_only)
+        return self._get_teams(admins_only)
 
 
 class OwnersList:

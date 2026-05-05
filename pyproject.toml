@@ -1,6 +1,6 @@
 [project]
 name = "elapi"
-version = "2.4.11"
+version = "2.4.12"
 description = "elAPI is a powerful, extensible API client for eLabFTW."
 authors = [{ name = "Alexander Haller, Mahadi Xion", email = "elabftw@uni-heidelberg.de" }]
 requires-python = ">=3.11.0,<4"
@@ -40,6 +40,7 @@ dependencies = [
     # Used by yagmail, but added explicitly here to get an important security update
     "aiohttp>=3.13.5",
     # Used by httpx-aiohttp, but added explicitly here to get an important security update
+    "lxml>=6.1.0",
 ]
 license-files = [
     "LICENSE",
@@ -74,7 +75,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "mypy>=1.18.2",
-    "pip>=25.1.1", # vendy requires pip
+    "pip>26.0.1", # vendy requires pip
     "ptpython>=3.0.23,<4",
     "vendy>=0.0.3",
 ]
