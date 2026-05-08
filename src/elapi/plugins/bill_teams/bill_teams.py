@@ -1,43 +1,23 @@
-from collections import defaultdict
 from datetime import datetime
 from functools import cached_property
 from pathlib import Path
-from typing import TypedDict, Union
+from typing import Union
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
 
-from ...api import ElabUserGroups, handle_new_user_teams
+from ...api import handle_new_user_teams
 from ...core_validators import Exit
 from ...loggers import Logger
 from ...path import ProperPath
-from ..commons import AsyncInformation, Information, RecursiveInformation
+from ..commons import (
+    AsyncInformation,
+    Information,
+    RecursiveInformation,
+    get_team_members,
+)
 
 logger = Logger()
-
-
-class TeamMembersDict(TypedDict):
-    firstname: str
-    lastname: str
-    email: str
-    usergroup: str
-    is_archived: bool
-    is_expired: bool
-
-
-class TeamsDict(TypedDict, total=False):
-    active_member_count: int
-    admins: dict[str, TeamMembersDict]
-    members: dict[str, TeamMembersDict]
-    on_trial: bool
-    team_created_at: str
-    team_id: int
-    team_name: str
-    total_archived_member_count: int
-    total_expired_member_count: int
-    total_member_count: int
-    total_unarchived_member_count: int
-    trial_ends_at: str
 
 
 class UsersInformation:
@@ -158,84 +138,26 @@ class TeamsList:
             return self.LAUNCH_DATE
         return creation_date
 
-    def is_user_expired(self, user_data: dict) -> bool:
-        if (user_expiration_date := user_data["valid_until"]) is not None:
-            if parser.isoparse(user_expiration_date) < self.BILL_RUN_DATE:
-                return True
-        return False
-
     def _get_teams(self, admins_only: bool = False) -> dict:
-        # Generate teams information with team owners
-        # noinspection PyTypeChecker
-        team_members: defaultdict[str, dict[str, TeamMembersDict]] = defaultdict(dict)
-        # noinspection PyTypeChecker
-        admins: defaultdict[str, dict[str, TeamMembersDict]] = defaultdict(dict)
-        teams: dict[str, TeamsDict] = {}
-        for u in self.users:
-            user_teams = handle_new_user_teams(u["teams"])
-            for team in user_teams:  # O(n^2): we iterate over the "teams" field
-                uid = u["userid"]
-                # Get teams user count
-                team_id = str(team["id"])
-                team_members[team_id].update(
-                    {
-                        uid: {
-                            "firstname": u["firstname"],
-                            "lastname": u["lastname"],
-                            "email": u["email"],
-                            "usergroup": team["usergroup"],
-                            "is_archived": bool(team["is_archived"]),
-                            "is_expired": self.is_user_expired(user_data=u),
-                        }
-                    }
-                )
-                if team["usergroup"] == ElabUserGroups.admin:
-                    admins[team_id].update(
-                        {
-                            uid: {
-                                "firstname": u["firstname"],
-                                "lastname": u["lastname"],
-                                "email": u["email"],
-                                "usergroup": team["usergroup"],
-                                "is_archived": bool(team["is_archived"]),
-                                "is_expired": self.is_user_expired(user_data=u),
-                            }
-                        }
-                    )
-                # Get team basic information
-                teams[team_id] = {}
-                teams[team_id]["team_name"] = team["name"]
-                teams[team_id]["team_id"] = team["id"]
-
-        # Add team creation date to teams
-        for team in self.teams:
-            team_id = str(team["id"])
-            if team_id in teams.keys():
-                teams[team_id]["team_created_at"] = team["created_at"]
-
+        teams = get_team_members(
+            users_data=self.users,
+            teams_data=self.teams,
+            admins_only=admins_only,
+            current_date=self.BILL_RUN_DATE,
+        )
         # Add member count to teams
         for team_id in teams:
-            if not admins_only:
-                teams[team_id]["members"] = {}
-                teams[team_id]["members"] = team_members[team_id]
-            teams[team_id]["admins"] = admins.get(team_id, {})
-            teams[team_id]["total_member_count"] = len(team_members[team_id])
+            team_members = teams[team_id]["members"]
             teams[team_id]["total_unarchived_member_count"] = 0
-            teams[team_id]["total_archived_member_count"] = 0
-            teams[team_id]["total_expired_member_count"] = 0
             teams[team_id]["active_member_count"] = 0
-            for k in team_members[team_id]:
-                if not team_members[team_id][k]["is_archived"]:
+            for k in team_members:
+                if not team_members[k]["is_archived"]:
                     teams[team_id]["total_unarchived_member_count"] += 1
-                if team_members[team_id][k]["is_archived"]:
-                    teams[team_id]["total_archived_member_count"] += 1
-                if team_members[team_id][k]["is_expired"]:
-                    teams[team_id]["total_expired_member_count"] += 1
                 if not (
-                    team_members[team_id][k]["is_expired"]
-                    or team_members[team_id][k]["is_archived"]
+                    team_members[k]["is_expired"] or team_members[k]["is_archived"]
                 ):
                     teams[team_id]["active_member_count"] += 1
+
             # Add trial information
             trial_starts_at = self.team_trial_start_date(
                 parser.isoparse(teams[team_id]["team_created_at"])
@@ -243,7 +165,6 @@ class TeamsList:
             trial_ends_at = trial_starts_at + self.TRIAL_PERIOD
             teams[team_id]["trial_ends_at"] = str(trial_ends_at)
             teams[team_id]["on_trial"] = trial_ends_at > self.BILL_RUN_DATE
-
         return teams
 
     def items(self, admins_only: bool = False) -> dict:

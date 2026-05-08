@@ -63,16 +63,6 @@ class ElabVersionDefaults:
         "5.3.2",
         "5.3.1",
         "5.3.0",
-        "5.2.8",
-        "5.2.7",
-        "5.2.6",
-        "5.2.5",
-        "5.2.4",
-        "5.2.3",
-        "5.2.2",
-        "5.2.1",
-        "5.2.0",
-        "5.1.15",
     )
     versions_dir: Path = Path(__file__).parent / "_supported_versions"
     file_ext: str = "json"
