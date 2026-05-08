@@ -228,7 +228,7 @@ class OwnersInformationValidator(Validator):
             logger.info(
                 f"The following team IDs '{', '.join(map(str, owner_ids))}' exist in the "
                 f"metadata ('{BILLING_INFO_OUTPUT_OWNERS_INFO_FILE_NAME_STUB}') "
-                f"that do not exist in {ELAB_BRAND_NAME} teams database."
+                f"but do not exist in {ELAB_BRAND_NAME} teams database."
             )
         return self.owners.items()
 
