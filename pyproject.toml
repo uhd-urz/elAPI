@@ -41,6 +41,7 @@ dependencies = [
     "aiohttp>=3.13.5",
     # Used by httpx-aiohttp, but added explicitly here to get an important security update
     "lxml>=6.1.0",
+    "python-dateutil>=2.9.0.post0,<3",
 ]
 license-files = [
     "LICENSE",
@@ -49,7 +50,6 @@ license-files = [
 
 [project.optional-dependencies]
 uhd-urz = [
-    "python-dateutil>=2.9.0.post0,<3",
     "tenacity>=9.1.2,<10",
 ]
 mail = [

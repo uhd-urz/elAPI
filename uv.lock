@@ -390,6 +390,7 @@ dependencies = [
     { name = "lxml" },
     { name = "mistune" },
     { name = "pydantic" },
+    { name = "python-dateutil" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "typer", extra = ["all"] },
@@ -403,7 +404,6 @@ mail = [
     { name = "yagmail" },
 ]
 uhd-urz = [
-    { name = "python-dateutil" },
     { name = "tenacity" },
 ]
 
@@ -429,7 +429,7 @@ requires-dist = [
     { name = "mistune", specifier = "==3.1.3" },
     { name = "nameparser", marker = "extra == 'mail'", specifier = ">=1.1.3" },
     { name = "pydantic", specifier = ">=2.12.3" },
-    { name = "python-dateutil", marker = "extra == 'uhd-urz'", specifier = ">=2.9.0.post0,<3" },
+    { name = "python-dateutil", specifier = ">=2.9.0.post0,<3" },
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "rich", specifier = ">=13.8.0,<14" },
     { name = "tenacity", marker = "extra == 'uhd-urz'", specifier = ">=9.1.2,<10" },
