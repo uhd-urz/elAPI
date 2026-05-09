@@ -6,10 +6,16 @@ import typer
 from dateutil import parser
 
 from ...api import FixedEndpoint
-from ...core_validators import Exit
+from ...api.validators import (
+    APITokenRWValidator,
+    HostIdentityValidator,
+    PermissionValidator,
+)
+from ...core_validators import Exit, RuntimeValidationError, Validate
 from ...loggers import Logger
 from ...plugins.commons.cli_helpers import Typer
-from ...styles import print_typer_error, stdout_console
+from ...styles import print_typer_error, stderr_console, stdout_console
+from ...utils import UnexpectedAPIResponseType
 from ...utils.typer_patches import patch_typer_flag_value
 from ..commons import get_team_members
 from .expire import (
@@ -27,23 +33,43 @@ app = Typer(name="users", help="Manage users.")
 @app.command("expire", short_help="Expire a team.")
 def expire(
     date: Annotated[
-        str, typer.Option("--date", "-d", help="New expiry date.", show_default=False)
+        str,
+        typer.Option(
+            "--date",
+            "-d",
+            help="New expiration date for all members.",
+            show_default=False,
+        ),
     ],
     team_id: Annotated[
         Optional[str],
-        typer.Option("--team-id", "-i", help="Team ID.", show_default=False),
+        typer.Option(
+            "--team-id",
+            "-i",
+            help="Target team ID. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
     ] = None,
     team_name: Annotated[
         Optional[str],
-        typer.Option("--team-name", "-n", help="Team Name.", show_default=False),
+        typer.Option(
+            "--team-name",
+            "-n",
+            help="Target team name to expire. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
     ] = None,
     silent: Annotated[
         bool,
-        typer.Option("--silent", help="Skip confirmation.", show_default=False),
+        typer.Option("--silent", help="Skip user confirmation.", show_default=False),
     ] = False,
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run", help="Simulate expiring.", show_default=False),
+        typer.Option(
+            "--dry-run",
+            help="Simulate the expiration process. --dry-run will still validate the host, API token read/write access etc.",
+            show_default=False,
+        ),
     ] = False,
 ):
     if team_id is None and team_name is None:
@@ -61,6 +87,23 @@ def expire(
                 "in 'YYYY-MM-DD' format."
             )
             raise Exit(1)
+        with stderr_console.status(
+            "Validating...\n", refresh_per_second=15
+        ) as validation_status:
+            validate = Validate(
+                HostIdentityValidator(),
+                PermissionValidator("sysadmin"),
+                APITokenRWValidator(),
+            )
+            try:
+                validate()
+            except RuntimeValidationError as e:
+                validation_status.stop()
+                raise e
+            except UnexpectedAPIResponseType as unex_exc:
+                validation_status.stop()
+                logger.critical(f"Unexpected API response: {unex_exc}")
+                raise Exit(1) from unex_exc
         with stdout_console.status("Fetching teams and users data..."):
             teams2users_data = get_team_members(
                 (users_endpoint := FixedEndpoint("users")).get().json(),
