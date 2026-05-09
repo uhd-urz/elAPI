@@ -14,13 +14,13 @@ from ...utils import UnexpectedAPIResponseType
 from .generate_table import is_team_on_trial
 from .names import PLUGIN_NAME, REGISTRY_SUB_PLUGIN_NAME, TARGET_GROUP_NAME
 
-if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop")):
+if not (find_spec("tenacity") and find_spec("dateutil")):
     ...
 else:
+    import asyncio
     import re
     from typing import Annotated, Generator, Optional, Tuple, Union
 
-    import uvloop
     from dateutil import parser
     from dateutil.relativedelta import relativedelta
     from tenacity import (
@@ -287,7 +287,7 @@ else:
                 global_session.close()
             return tl
 
-        teams_list = uvloop.run(gather_teams_list())
+        teams_list = asyncio.run(gather_teams_list())
         formatted_teams = format(teams := teams_list.items(admins_only))
         if export is not None:
             export_teams = Export(
