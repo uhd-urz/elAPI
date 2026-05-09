@@ -64,7 +64,7 @@ def expire(
         with stdout_console.status("Fetching teams and users data..."):
             teams2users_data = get_team_members(
                 (users_endpoint := FixedEndpoint("users")).get().json(),
-                (teams_endpoint := FixedEndpoint("teams")).get().json(),
+                FixedEndpoint("teams").get().json(),
             )
         try:
             with stdout_console.status("Validating team..."):
@@ -122,6 +122,9 @@ def expire(
                             f"(ID: {member_id}) has been expired."
                         )
                     else:
+                        # noinspection PyUnboundLocalVariable
+                        # This condition will never be reached if --dry-run is passed,
+                        # hence the noinspection.
                         logger.error(
                             f"Could not expire member '{member_info['firstname']} "
                             f"{member_info['lastname']}' (ID: {member_id}). Response status "
@@ -134,7 +137,7 @@ def expire(
                         f"{target_team_info['team_id']}) have been expired."
                     )
                 else:
-                    logger.info("Dry running is complete.")
+                    logger.info("Dry running team expiration process is complete.")
             else:
                 logger.info("User aborted the expiration process.")
                 raise Exit(0)
