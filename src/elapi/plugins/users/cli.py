@@ -37,6 +37,14 @@ def expire(
         Optional[str],
         typer.Option("--team-name", "-n", help="Team Name.", show_default=False),
     ] = None,
+    silent: Annotated[
+        bool,
+        typer.Option("--silent", help="Skip confirmation.", show_default=False),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Simulate expiring.", show_default=False),
+    ] = False,
 ):
     if team_id is None and team_name is None:
         print_typer_error("Either --team_id or --team_name must be provided.")
@@ -77,7 +85,7 @@ def expire(
                     f"{admin_info['firstname']} {admin_info['lastname']} (user ID: {admin_id})"
                 )
             logger.info(
-                f"Team '{target_team_info['team_name']}' ({target_team_info['team_id']}) has "
+                f"Team '{target_team_info['team_name']}' (team ID: {target_team_info['team_id']}) has "
                 f"been validated for expiration to date {target_date_}."
             )
             stdout_console.print(f"""
@@ -89,19 +97,26 @@ def expire(
 [b yellow]Total expired member count (so far):[/b yellow] {target_team_info["total_expired_member_count"]}
 [b green]Admin(s):[/b green] {", ".join(admins_to_expire)}
 """)
-            stdout_console.print(
-                "Are you sure you want to expire team "
-                f"'{target_team_info['team_name']}' (team ID: {target_team_info['team_id']}) "
-                f"to date {target_date_}?"
-            )
-            can_expire_team = typer.confirm("")
+            if not silent:
+                stdout_console.print(
+                    "Are you sure you want to expire team "
+                    f"'{target_team_info['team_name']}' (team ID: {target_team_info['team_id']}) "
+                    f"to date {target_date_}?"
+                )
+                can_expire_team = typer.confirm("")
+            else:
+                can_expire_team = True
             if can_expire_team:
                 for member_id, member_info in target_team_info["members"].items():
-                    request = users_endpoint.patch(
-                        sub_endpoint_id=member_id,
-                        data={"valid_until": target_date_},
-                    )
-                    if request.is_success:
+                    if not dry_run:
+                        request = users_endpoint.patch(
+                            sub_endpoint_id=member_id,
+                            data={"valid_until": target_date_},
+                        )
+                        is_request_successful = request.is_success
+                    else:
+                        is_request_successful = True
+                    if is_request_successful:
                         logger.info(
                             f"Member '{member_info['firstname']} {member_info['lastname']}' "
                             f"(ID: {member_id}) has been expired."
@@ -113,7 +128,13 @@ def expire(
                             f"code: {request.status_code}. Response body: {request.text}."
                         )
                         raise Exit(1)
-
+                if not dry_run:
+                    logger.success(
+                        f"All team members of team '{target_team_info['team_name']} (team ID: "
+                        f"{target_team_info['team_id']}) have been expired."
+                    )
+                else:
+                    logger.info("Dry running is complete.")
             else:
                 logger.info("User aborted the expiration process.")
                 raise Exit(0)

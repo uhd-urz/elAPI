@@ -3,8 +3,15 @@ from typing import Literal, TypedDict
 import yaml
 from pydantic import BaseModel, field_validator
 
-from ...api import FixedEndpoint
+from ..._vendor.haggis.logs import add_logging_level
 from ..commons import TeamsDict
+
+add_logging_level(
+    "SUCCESS",
+    25,
+    method_name="success",
+    if_exists="KEEP",
+)
 
 
 class NonUniqueTeamMembersDict(TypedDict):
@@ -92,15 +99,3 @@ def _validate_team_for_expiry(
                 f"{yaml.dump(non_unique_members, indent=4, allow_unicode=True)}"
             )
         return team_info
-
-
-def expire_team_members(
-    users_endpoint: FixedEndpoint,
-    members: dict[str, TeamsDict],
-    date: str,
-):
-    for member_id in members:
-        users_endpoint.patch(
-            sub_endpoint_id=member_id,
-            data={"valid_until": date},
-        )
