@@ -351,6 +351,47 @@ pattern is found.
 
 <img alt="elAPI email trigger screenshot" src="https://github.com/user-attachments/assets/2dc0df3e-0d91-41f3-af28-4040da641a70" />
 
+### `users` built-in plugin
+
+The `users` plugin offers commands that help faciliate general user and team management operations for admins and
+sysadmins. We currently only have the `expire` command.
+
+#### `expire` command
+
+The `expire` command modifies the validity date of all users in a given team; that is, it can be used to set an
+expiration date. Note: This expiration date is global for each user and will
+affect a user regardless of how many teams the user is part of. A team can be expired by its ID or name:
+
+```shell
+elapi users expire --date 2026-01-01 --name Tammymouth
+```
+
+If more than one team exists with the same name, an error will be thrown. In which case, team ID should be used instead.
+The `--date` should follow the `YYYY-MM-DD` format. If the `-DD` segment is not included, then the first day of the
+month will be assumed. `expire` will show a brief overview of the team and ask for confirmation before proceeding with
+the
+expiration:
+
+```shell
+$ elapi users expire -d 2026-01 -n Tammymouth
+INFO     Team 'Tammymouth' (46) has been validated for expiration to date 2026-01-01.
+
+Team name: Tammymouth
+Team ID: 46
+Team creation date: 2023-08-30 21:31:51
+Total member count: 53
+Total archived member count: 0
+Total expired member count (so far): 0
+Admin(s): Kristie Barber (user ID: 1868), Melissa Brown (user ID: 1828)
+
+Are you sure you want to expire team 'Tammymouth' (team ID: 46) to date 2026-01-01?
+ [y/N]:
+```
+
+This confirmation can be bypassed with the `--silent` flag. `expire` will not expire a team that has members that are
+also part of other teams. In this case, `expire` will show a list of these non-unique members and abort. The flag
+`--dry-run` can be passed to simulate the expiration process without actually making any changes to the eLab server.
+
 ## Creating a plugin
 
 elAPI has seamless support with tight integration for third-party plugins. A simple third-party plugin can be created in
