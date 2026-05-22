@@ -388,9 +388,10 @@ Are you sure you want to expire team 'Tammymouth' (team ID: 46) to date 2026-01-
  [y/N]:
 ```
 
-This confirmation can be bypassed with the `--silent` flag. `expire` will not expire a team that has members that are
-also part of other teams. In this case, `expire` will show a list of these non-unique members and abort. The flag
-`--dry-run` can be passed to simulate the expiration process without actually making any changes to the eLab server.
+This confirmation can be bypassed with the `--silent` flag. By default, `expire` will not expire a team that has members
+that are also part of other teams. In this case, `expire` will show a list of these non-unique members and abort. The
+`--force-multi-team` flag can be passed to bypass this validation. The flag `--dry-run` can be passed to simulate the 
+expiration process without actually making any changes to the eLab server.
 
 ## Creating a plugin
 
