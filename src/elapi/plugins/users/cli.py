@@ -21,7 +21,9 @@ from ..commons import get_team_members
 from .expire import (
     ExpiringTeamWithInvalidConditionException,
     TeamIdentity,
+    TeamMemberNotUniqueException,
     _validate_team_for_expiry,
+    _validate_teams_with_non_unique_members,
 )
 
 logger = Logger()
@@ -59,6 +61,14 @@ def expire(
             show_default=False,
         ),
     ] = None,
+    force_multi_team: Annotated[
+        bool,
+        typer.Option(
+            "--force-multi-team",
+            help="Force expiration of users that belong to more than one team.",
+            show_default=False,
+        ),
+    ] = False,
     silent: Annotated[
         bool,
         typer.Option("--silent", help="Skip user confirmation.", show_default=False),
@@ -122,6 +132,15 @@ def expire(
             logger.error(inv_team_exc)
             raise Exit(1)
         else:
+            try:
+                _validate_teams_with_non_unique_members(
+                    teams2users_data, team_info=target_team_info
+                )
+            except TeamMemberNotUniqueException as non_unique_exc:
+                if not force_multi_team:
+                    logger.error(non_unique_exc)
+                    raise Exit(1)
+                logger.warning(non_unique_exc)
             admins_to_expire: list[str] = []
             for admin_id, admin_info in target_team_info["admins"].items():
                 admins_to_expire.append(

@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Literal, Optional, TypedDict
 
 import yaml
 from pydantic import BaseModel, field_validator
@@ -14,10 +14,15 @@ add_logging_level(
 )
 
 
-class NonUniqueTeamMembersDict(TypedDict):
-    fullname: str
-    email: str
-    teams: str
+NonUniqueTeamMembersDict = TypedDict(
+    "NonUniqueTeamMembersDict",
+    {
+        "Fullname": str,
+        "Email": str,
+        "Expires on": Optional[str],
+        "Teams": str,
+    },
+)
 
 
 class TeamIdentity(BaseModel):
@@ -39,7 +44,7 @@ class DuplicateTeamNameFoundException(ExpiringTeamWithInvalidConditionException)
 class TeamNotFoundException(ExpiringTeamWithInvalidConditionException): ...
 
 
-class TeamMemberNotUniqueException(ExpiringTeamWithInvalidConditionException): ...
+class TeamMemberNotUniqueException(Exception): ...
 
 
 def _get_team_names_from_ids(
@@ -79,23 +84,32 @@ def _validate_team_for_expiry(
             f"No team with the ID '{target_team_id}' is found."
         ) from e
     else:
-        target_team_name = team_info["team_name"]
-        non_unique_members: dict[str, NonUniqueTeamMembersDict] = {}
-        for member_id, member_info in team_info["members"].items():
-            if len(member_info["team_member_of"]) > 1:
-                non_unique_members[f"User {member_id}"] = {
-                    "fullname": f"{member_info['firstname']} {member_info['lastname']}",
-                    "email": member_info["email"],
-                    "teams": ", ".join(
+        return team_info
+
+
+def _validate_teams_with_non_unique_members(
+    teams2users_data: dict[str, TeamsDict], *, team_info: TeamsDict
+) -> None:
+    target_team_name = team_info["team_name"]
+    non_unique_members: dict[str, NonUniqueTeamMembersDict] = {}
+    for member_id, member_info in team_info["members"].items():
+        if len(member_info["team_member_of"]) > 1:
+            non_unique_members[f"User {member_id}"] = {
+                "Fullname": f"{member_info['firstname']} {member_info['lastname']}",
+                "Email": member_info["email"],
+                "Expires on": member_info["valid_until"],
+                "Teams": (
+                    ", ".join(
                         _get_team_names_from_ids(
                             teams2users_data, member_info["team_member_of"]
                         )
-                    ),
-                }
-        if non_unique_members:
-            raise TeamMemberNotUniqueException(
-                f"Team '{target_team_name}' (team ID: {target_team_id}) has the "
-                f"following members that belong to more than one team: \n"
-                f"{yaml.dump(non_unique_members, indent=4, allow_unicode=True)}"
-            )
-        return team_info
+                    )
+                ),
+            }
+    if non_unique_members:
+        raise TeamMemberNotUniqueException(
+            f"Team '{target_team_name}' (team ID: {team_info['team_id']}) has the "
+            f"following members that belong to more than one team: \n"
+            f"{yaml.dump(non_unique_members, indent=4, allow_unicode=True, sort_keys=False)}"
+        )
+    return
