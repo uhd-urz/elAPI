@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.13] - 2026-06-04
+
+This is a minor update to elAPI.
+
+### Added
+
+- Add support for eLabFTW versions `5.5.12`-`5.5.13`
+
+### Fixed
+
+- Bumped vulnerable dependencies as reported by GitHub dependabot: `mistune`, `idna`, `urllib3`, `aiohttp`. 
+
 ## [2.4.12] - 2026-05-05
 
 ### Fixed
