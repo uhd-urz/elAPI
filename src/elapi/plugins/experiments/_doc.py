@@ -13,11 +13,11 @@ __PARAMETERS__doc__ = {
                      "unique eLabIDs aren't persistent across different eLabFTW instances.",
     "append_content_text": "Raw text to append to an experiment body. Text must be UTF-8 encoded.",
     "append_content_path": "Path to a file whose content to append to an experiment. File content must be UTF-8 encoded. "
-                           "If both --path and --text are passed, the expected outcome can be ambiguous, "
-                           "so experiments plugin will shown an error and quit.",
+                           "Either --path or --text must be passed. If both are passed, the expected outcome becomes ambiguous, "
+                           "and so the plugin will abort immediately. ",
     "append_markdown_to_html": "If this flag is passed, then experiments plugin will attempt to convert any markdown "
                                "text given with --text or --path to HTML. If given content isn't in markdown "
-                               "then the text content is just wrapped with <p> tag. E.g., "
+                               "then the text content is just wrapped with the '\\<p\\>' tag. E.g., "
                                f"{APP_NAME} `--id <experiment ID> -M -t \"**New content.**\"`",
     "upload_attachment_path": "Path to the file to attach.",
     "upload_attachment_rename": "Rename file given with --path before attaching. "
