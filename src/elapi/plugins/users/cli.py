@@ -5,6 +5,13 @@ from typing import Annotated, Optional
 import typer
 from dateutil import parser
 
+from .exceptions import (
+    TeamLookupException,
+    TeamMemberNotUniqueException,
+)
+from .expire import _validate_teams_with_non_unique_members
+from .utils import TeamIdentity, _validate_team
+from ..commons import get_team_members
 from ...api import FixedEndpoint
 from ...api.validators import (
     APITokenRWValidator,
@@ -17,14 +24,6 @@ from ...plugins.commons.cli_helpers import Typer
 from ...styles import print_typer_error, stderr_console, stdout_console
 from ...utils import UnexpectedAPIResponseType
 from ...utils.typer_patches import patch_typer_flag_value
-from ..commons import get_team_members
-from .expire import (
-    ExpiringTeamWithInvalidConditionException,
-    TeamIdentity,
-    TeamMemberNotUniqueException,
-    _validate_team_for_expiry,
-    _validate_teams_with_non_unique_members,
-)
 
 logger = Logger()
 
@@ -32,7 +31,7 @@ patch_typer_flag_value()
 app = Typer(name="users", help="Manage users.")
 
 
-@app.command("expire", short_help="Expire a team.")
+@app.command("expire", help="Expire a team.")
 def expire(
     date: Annotated[
         str,
@@ -121,14 +120,14 @@ def expire(
             )
         try:
             with stdout_console.status("Validating team..."):
-                target_team_info = _validate_team_for_expiry(
+                target_team_info = _validate_team(
                     teams2users_data,
                     target_team=TeamIdentity(
                         target=team_id or team_name,  # type: ignore[arg-type]
                         kind="id" if team_id is not None else "name",
                     ),
                 )
-        except ExpiringTeamWithInvalidConditionException as inv_team_exc:
+        except TeamLookupException as inv_team_exc:
             logger.error(inv_team_exc)
             raise Exit(1)
         else:
@@ -172,7 +171,7 @@ def expire(
                 for member_id, member_info in target_team_info["members"].items():
                     if not dry_run:
                         request = users_endpoint.patch(
-                            sub_endpoint_id=member_id,
+                            endpoint_id=member_id,
                             data={"valid_until": target_date_},
                         )
                         is_request_successful = request.is_success
@@ -203,3 +202,291 @@ def expire(
             else:
                 logger.info("User aborted the expiration process.")
                 raise Exit(0)
+
+
+@app.command("archive", short_help="Archive a team.")
+def archive(
+    team_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--team-id",
+            "-i",
+            help="Target team ID. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
+    ] = None,
+    team_name: Annotated[
+        Optional[str],
+        typer.Option(
+            "--team-name",
+            "-n",
+            help="Target team name to archive. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
+    ] = None,
+    silent: Annotated[
+        bool,
+        typer.Option("--silent", help="Skip user confirmation.", show_default=False),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Simulate the archival process. --dry-run will still validate the host, API token read/write access etc.",
+            show_default=False,
+        ),
+    ] = False,
+):
+    """
+    Archive all team members. The "archive" status is not global and only applies team-wide.
+    I.e., a user archived in one team might be unarchived in another and
+    will still retain access to the platform.
+    """
+    if team_id is None and team_name is None:
+        print_typer_error("Either --team_id or --team_name must be provided.")
+        raise Exit(1)
+    with stderr_console.status(
+        "Validating...\n", refresh_per_second=15
+    ) as validation_status:
+        validate = Validate(
+            HostIdentityValidator(),
+            PermissionValidator("sysadmin"),
+            APITokenRWValidator(),
+        )
+        try:
+            validate()
+        except RuntimeValidationError as e:
+            validation_status.stop()
+            raise e
+        except UnexpectedAPIResponseType as unex_exc:
+            validation_status.stop()
+            logger.critical(f"Unexpected API response: {unex_exc}")
+            raise Exit(1) from unex_exc
+    with stdout_console.status("Fetching teams and users data..."):
+        teams2users_data = get_team_members(
+            (users_endpoint := FixedEndpoint("users")).get().json(),
+            FixedEndpoint("teams").get().json(),
+        )
+    try:
+        with stdout_console.status("Validating team..."):
+            target_team_info = _validate_team(
+                teams2users_data,
+                target_team=TeamIdentity(
+                    target=team_id or team_name,  # type: ignore[arg-type]
+                    kind="id" if team_id is not None else "name",
+                ),
+            )
+    except TeamLookupException as inv_team_exc:
+        logger.error(inv_team_exc)
+        raise Exit(1)
+    else:
+        admins_to_archive: list[str] = []
+        for admin_id, admin_info in target_team_info["admins"].items():
+            admins_to_archive.append(
+                f"{admin_info['firstname']} {admin_info['lastname']} (user ID: {admin_id})"
+            )
+        logger.info(
+            f"Team '{target_team_info['team_name']}' (team ID: {target_team_info['team_id']}) has "
+            f"been validated for archival."
+        )
+        stdout_console.print(f"""
+[b yellow]Team name:[/b yellow] {target_team_info["team_name"]}
+[b yellow]Team ID:[/b yellow] {target_team_info["team_id"]}
+[b yellow]Team creation date:[/b yellow] {target_team_info["team_created_at"]}
+[b yellow]Total member count:[/b yellow] {target_team_info["total_member_count"]}
+[b yellow]Total archived member count:[/b yellow] {target_team_info["total_archived_member_count"]}
+[b yellow]Total expired member count (so far):[/b yellow] {target_team_info["total_expired_member_count"]}
+[b green]Admin(s):[/b green] {", ".join(admins_to_archive)}
+""")
+        if not silent:
+            stdout_console.print(
+                "Are you sure you want to archive team "
+                f"'{target_team_info['team_name']}' (team ID: {target_team_info['team_id']})?"
+            )
+            can_archive_team = typer.confirm("")
+        else:
+            can_archive_team = True
+        if can_archive_team:
+            for member_id, member_info in target_team_info["members"].items():
+                if not dry_run:
+                    request = users_endpoint.patch(
+                        endpoint_id=member_id,
+                        data={
+                            "action": "patchuser2team",
+                            "team": target_team_info["team_id"],
+                            "target": "is_archived",
+                            "content": 1,
+                        },
+                    )
+                    is_request_successful = request.is_success
+                else:
+                    is_request_successful = True
+                if is_request_successful:
+                    logger.info(
+                        f"Member '{member_info['firstname']} {member_info['lastname']}' "
+                        f"(ID: {member_id}) has been archived."
+                    )
+                else:
+                    # noinspection PyUnboundLocalVariable
+                    # This condition will never be reached if --dry-run is passed,
+                    # hence the noinspection.
+                    logger.error(
+                        f"Could not archive member '{member_info['firstname']} "
+                        f"{member_info['lastname']}' (ID: {member_id}). Response status "
+                        f"code: {request.status_code}. Response body: {request.text}."
+                    )
+                    raise Exit(1)
+            if not dry_run:
+                logger.success(
+                    f"All team members of team '{target_team_info['team_name']} (team ID: "
+                    f"{target_team_info['team_id']}) have been archived."
+                )
+            else:
+                logger.info("Dry running team archival process is complete.")
+        else:
+            logger.info("User aborted the archival process.")
+            raise Exit(0)
+
+
+@app.command("unarchive", short_help="Unarchive a team.")
+def unarchive(
+    team_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--team-id",
+            "-i",
+            help="Target team ID. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
+    ] = None,
+    team_name: Annotated[
+        Optional[str],
+        typer.Option(
+            "--team-name",
+            "-n",
+            help="Target team name to unarchive. Either team ID or team name must be passed.",
+            show_default=False,
+        ),
+    ] = None,
+    silent: Annotated[
+        bool,
+        typer.Option("--silent", help="Skip user confirmation.", show_default=False),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Simulate the unarchiving process. --dry-run will still validate the host, API token read/write access etc.",
+            show_default=False,
+        ),
+    ] = False,
+):
+    """
+    Unarchive all team members. The "archive" status is not global and only applies team-wide.
+    I.e., a user archived in one team might be unarchived in another and
+    will still retain access to the platform.
+    """
+    if team_id is None and team_name is None:
+        print_typer_error("Either --team_id or --team_name must be provided.")
+        raise Exit(1)
+    with stderr_console.status(
+        "Validating...\n", refresh_per_second=15
+    ) as validation_status:
+        validate = Validate(
+            HostIdentityValidator(),
+            PermissionValidator("sysadmin"),
+            APITokenRWValidator(),
+        )
+        try:
+            validate()
+        except RuntimeValidationError as e:
+            validation_status.stop()
+            raise e
+        except UnexpectedAPIResponseType as unex_exc:
+            validation_status.stop()
+            logger.critical(f"Unexpected API response: {unex_exc}")
+            raise Exit(1) from unex_exc
+    with stdout_console.status("Fetching teams and users data..."):
+        teams2users_data = get_team_members(
+            (users_endpoint := FixedEndpoint("users")).get().json(),
+            FixedEndpoint("teams").get().json(),
+        )
+    try:
+        with stdout_console.status("Validating team..."):
+            target_team_info = _validate_team(
+                teams2users_data,
+                target_team=TeamIdentity(
+                    target=team_id or team_name,  # type: ignore[arg-type]
+                    kind="id" if team_id is not None else "name",
+                ),
+            )
+    except TeamLookupException as inv_team_exc:
+        logger.error(inv_team_exc)
+        raise Exit(1)
+    else:
+        admins_to_unarchive: list[str] = []
+        for admin_id, admin_info in target_team_info["admins"].items():
+            admins_to_unarchive.append(
+                f"{admin_info['firstname']} {admin_info['lastname']} (user ID: {admin_id})"
+            )
+        logger.info(
+            f"Team '{target_team_info['team_name']}' (team ID: {target_team_info['team_id']}) has "
+            f"been validated for unarchiving."
+        )
+        stdout_console.print(f"""
+[b yellow]Team name:[/b yellow] {target_team_info["team_name"]}
+[b yellow]Team ID:[/b yellow] {target_team_info["team_id"]}
+[b yellow]Team creation date:[/b yellow] {target_team_info["team_created_at"]}
+[b yellow]Total member count:[/b yellow] {target_team_info["total_member_count"]}
+[b yellow]Total archived member count:[/b yellow] {target_team_info["total_archived_member_count"]}
+[b yellow]Total expired member count (so far):[/b yellow] {target_team_info["total_expired_member_count"]}
+[b green]Admin(s):[/b green] {", ".join(admins_to_unarchive)}
+""")
+        if not silent:
+            stdout_console.print(
+                "Are you sure you want to archive team "
+                f"'{target_team_info['team_name']}' (team ID: {target_team_info['team_id']})?"
+            )
+            can_unarchive_team = typer.confirm("")
+        else:
+            can_unarchive_team = True
+        if can_unarchive_team:
+            for member_id, member_info in target_team_info["members"].items():
+                if not dry_run:
+                    request = users_endpoint.patch(
+                        endpoint_id=member_id,
+                        data={
+                            "action": "patchuser2team",
+                            "team": target_team_info["team_id"],
+                            "target": "is_archived",
+                            "content": 0,
+                        },
+                    )
+                    is_request_successful = request.is_success
+                else:
+                    is_request_successful = True
+                if is_request_successful:
+                    logger.info(
+                        f"Member '{member_info['firstname']} {member_info['lastname']}' "
+                        f"(ID: {member_id}) has been unarchived."
+                    )
+                else:
+                    # noinspection PyUnboundLocalVariable
+                    # This condition will never be reached if --dry-run is passed,
+                    # hence the noinspection.
+                    logger.error(
+                        f"Could not archive member '{member_info['firstname']} "
+                        f"{member_info['lastname']}' (ID: {member_id}). Response status "
+                        f"code: {request.status_code}. Response body: {request.text}."
+                    )
+                    raise Exit(1)
+            if not dry_run:
+                logger.success(
+                    f"All team members of team '{target_team_info['team_name']} (team ID: "
+                    f"{target_team_info['team_id']}) have been unarchived."
+                )
+            else:
+                logger.info("Dry running team archiving process is complete.")
+        else:
+            logger.info("User aborted the archiving process.")
+            raise Exit(0)
