@@ -13,29 +13,28 @@
 # ┌────────────────┐
 # │  Requirements  │
 # └────────────────┘
-# - The minimum Python version required is 3.9. It's recommended that we create a
+# - The minimum Python version required is 3.11. It's recommended that we create a
 # Python virtual environment, and we run/edit the script from inside the environment.
 # - We need to install elAPI from inside the activated virtual environment.
 # Simple `uv add elapi` or `pip install elapi` will work.
-# Note: The elAPI we installed using `uv tool` or pipx remains isolated and is meant to work as
+# Note: The elAPI we installed using `uv tool` remains isolated and is meant to work as
 # a user-friendly CLI tool. Here, we want to use elAPI as a library.
 # ┌─────────────────┐
 # │  Code overview  │
 # └─────────────────┘
 # We explain in comments around each significant line of code what the code does.
 # Here we will give a short overview:
-# We define append_to_experiment that accepts an experiment ID or unique eLabID
-# We validate the experiment ID/unique eLabID
-# We store the existing experiment body
-# We send a PATCH request with the existing experiment body + new content
-
-from typing import Union, Optional
+# - We define append_to_experiment that accepts an experiment ID or unique eLabID
+# - We validate the experiment ID/unique eLabID
+# - We store the existing experiment body
+# - We send a PATCH request with the existing experiment body + new content
 
 from elapi.api import FixedEndpoint
 from elapi.core_validators import Exit
 from elapi.loggers import Logger
 from elapi.plugins.experiments import ExperimentIDValidator
 from elapi.validators import Validate, HostIdentityValidator, ValidationError
+from typing import Union, Optional
 
 logger = Logger()
 
@@ -64,7 +63,12 @@ def append_to_experiment(
     session = FixedEndpoint("experiments")
     # The experiment body is stored in "body" in the response data.
     # We want to make sure first, we don't overwrite the existing experiment body.
-    current_body: Optional[str] = session.get(experiment_id).json()["body"]
+    current_body: Optional[str] = session.get(
+        experiment_id,
+        query={"full": 1},
+    ).json()["body"]
+    # query full is necessary from eLabFTW v5.6. See: https://github.com/uhd-urz/elAPI/issues/197
+    # Doesn't affect earlier versions.
     if current_body is None:
         current_body: str = ""
     # The PATCH request is sent with the stored existing

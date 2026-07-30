@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.14] - 2026-07-30
+
+This update fixes breaking changes introduced in eLabFTW v5.6.
+
+### Added
+
+- Add support for eLabFTW versions `5.6.0`-`5.6.10`
+
+### Fixed
+
+- Fixed #197 (GH https://github.com/uhd-urz/elAPI/issues/197)
+- Fixed examples affected by #197
+- Bumped vulnerable dependencies as reported by GitHub dependabot
+
 ## [2.4.13] - 2026-06-04
 
 This is a minor update to elAPI.
