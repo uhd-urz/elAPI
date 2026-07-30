@@ -64,7 +64,12 @@ def append_to_experiment(
     session = FixedEndpoint("experiments")
     # The experiment body is stored in "body" in the response data.
     # We want to make sure first, we don't overwrite the existing experiment body.
-    current_body: Optional[str] = session.get(experiment_id).json()["body"]
+    current_body: Optional[str] = session.get(
+        experiment_id,
+        query={"full": 1},
+    ).json()["body"]
+    # query full is necessary from eLabFTW v5.6. See: https://github.com/uhd-urz/elAPI/issues/197
+    # Doesn't affect earlier versions.
     if current_body is None:
         current_body: str = ""
     # The PATCH request is sent with the stored existing
