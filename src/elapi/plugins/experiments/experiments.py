@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Union, Optional, Tuple
 
 from ...api.endpoint import FixedEndpoint
-from ...path import ProperPath
 from ...core_validators import ValidationError, Validator
+from ...path import ProperPath
 
 
 class FixedExperimentEndpoint:
@@ -81,7 +81,11 @@ def append_to_experiment(
 ) -> None:
     session = FixedExperimentEndpoint()
     current_body: Optional[str] = (
-        experiment_metadata := (_response := session.get(experiment_id)).json()
+        experiment_metadata := (
+            _response := session.get(experiment_id, query={"full": 1})
+            # query full is necessary from eLabFTW v5.6. See: https://github.com/uhd-urz/elAPI/issues/197
+            # Doesn't affect earlier versions.
+        ).json()
     )["body"]
     if current_body is None:
         current_body: str = ""

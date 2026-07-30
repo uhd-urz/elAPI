@@ -8,7 +8,7 @@
    </a>
 <a href="#compatibility">
    <img alt="Static Badge" src="https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-%230d7dbe">
-   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4%20%7C%205.5+-%2323b3be">
+   <img alt="Static Badge" src="https://img.shields.io/badge/eLabFTW%20support-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4%20%7C%205.5%20%7C%205.6+-%2323b3be">
 </a>
 <a href="#talks-workshops-and-publications">
    <img alt="Static Badge" src="https://img.shields.io/badge/DOI-10.11588%2FDATA%2FE4XHXZ-blue?style=plastic&link=https%3A%2F%2Fdoi.org%2F10.11588%2FDATA%2FE4XHXZ">
@@ -95,8 +95,9 @@ your configuration details.
 ## Compatibility
 
 elAPI is compatible with the following Python versions: `3.11`, `3.12`, `3.13`, `3.14`. elAPI supports
-the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW
-versions: `5.5.13`, `5.5.12`, `5.5.11`, `5.5.10`, `5.5.9`, `5.5.8`, `5.5.7`, `5.5.6`, `5.5.5`, `5.5.4`, `5.5.3`, `5.5.2`, `5.5.1`, `5.5.0`,
+the [eLabFTW REST API v2](https://doc.elabftw.net/api/v2/), and can be used with the following eLabFTW versions:
+`5.6.10`, `5.6.9`, `5.6.8`, `5.6.7`, `5.6.6`, `5.6.5`, `5.6.4`, `5.6.3`, `5.6.2`, `5.6.1`, `5.6.0`, `5.5.13`, `5.5.12`,
+`5.5.11`, `5.5.10`, `5.5.9`, `5.5.8`, `5.5.7`, `5.5.6`, `5.5.5`, `5.5.4`, `5.5.3`, `5.5.2`, `5.5.1`, `5.5.0`,
 `5.4.6`, `5.4.5`, `5.4.4`, `5.4.3`, `5.4.2`, `5.4.1`,
 `5.4.0`, `5.3.11`, `5.3.10`, `5.3.9`, `5.3.8`, `5.3.7`, `5.3.6`,
 `5.3.5`, `5.3.4`, `5.3.3`, `5.3.2`, `5.3.1`, `5.3.0`, `5.2.8`, `5.2.7`, `5.2.6`, `5.2.5`, `5.2.4`,
