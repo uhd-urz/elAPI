@@ -608,7 +608,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = ">=3.13.5" },
+    { name = "aiohttp", specifier = ">=3.14.4" },
     { name = "click", specifier = ">=8.1.8,<8.2" },
     { name = "dynaconf", specifier = ">=3.2.13,<4" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.28.1,<0.29" },
@@ -625,7 +625,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.8.0,<14" },
     { name = "tenacity", marker = "extra == 'uhd-urz'", specifier = ">=9.1.2,<10" },
     { name = "typer", extras = ["all"], specifier = ">=0.9.0,<0.10" },
-    { name = "urllib3", specifier = ">=2.6.3" },
+    { name = "urllib3", specifier = ">=2.8.0" },
     { name = "uvloop", marker = "extra == 'uhd-urz'", specifier = ">=0.22.1,<0.23" },
     { name = "yagmail", marker = "extra == 'mail'", specifier = ">=0.15.293,<0.16" },
 ]
