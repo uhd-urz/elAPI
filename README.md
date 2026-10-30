@@ -57,6 +57,10 @@ uv tool install elapi
 After installation with `uv` is complete, you would also be able to run elAPI just by entering the `elapi` command on
 the terminal. You can move on to ["Getting started"](#getting-started).
 
+> [!TIP]
+> If you are managing multiple instances of eLabFTW, we recommend clearing elAPI cache by running 
+> `elapi clear-cache` once after updating eLabFTW to a newer version to avoid issues like [#200](https://github.com/uhd-urz/elAPI/issues/200).
+
 ### Advanced installation
 
 elAPI can be used both as a CLI tool and as a Python library. If you are interested in simply using elAPI's
