@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed #200 (GH https://github.com/uhd-urz/elAPI/issues/200): each host's
+  cached eLabFTW version now has its own expiry date, so re-fetching one
+  host no longer makes the other hosts' cached versions look fresh; the
+  file-level reset now also detects caches older than 24 hours
+
 ## [2.4.14] - 2026-07-30
 
 This update fixes breaking changes introduced in eLabFTW v5.6.

@@ -3,6 +3,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime
 from functools import cached_property
 from json import JSONDecodeError
 from types import NoneType, NotImplementedType
@@ -29,7 +30,7 @@ from httpx_aiohttp import AiohttpTransport
 from httpx_auth import HeaderApiKey
 from httpx_limiter import AsyncRateLimitedTransport, Rate
 
-from .._core_init import get_cached_data, update_cache
+from .._core_init import get_cached_data, host_is_stale, update_cache
 from .._names import (
     APP_BRAND_NAME,
     ELAB_BRAND_NAME,
@@ -511,7 +512,9 @@ class ElabFTWURL:
             )
         cached_data = get_cached_data()
         cached_elab_version = cached_data.elab_hosts.get(host)
-        if cached_elab_version is not None:
+        if cached_elab_version is not None and not host_is_stale(
+            cached_data, host
+        ):
             elab_version = cached_elab_version
         else:
             client = SimpleClient(is_async_client=False)
@@ -543,6 +546,9 @@ class ElabFTWURL:
                         )
                     elab_version = elab_server_info["elabftw_version"]
                     cached_data.elab_hosts.update({host: elab_version})
+                    cached_data.elab_hosts_updated.update(
+                        {host: datetime.now()}
+                    )
                     update_cache(cached_data)
                     logger.debug(
                         f"ElabFTW version '{elab_version}' retrieved from server '{host}' "

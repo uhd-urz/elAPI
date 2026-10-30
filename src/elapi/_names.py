@@ -5,7 +5,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 # variables with leading underscores here indicate that they are to be overwritten by config.py
 # In which case, import their counterparts from src/config.py
@@ -81,6 +81,21 @@ class _ElabHostsCacheModel(BaseModel):
 class CacheModel(BaseModel):
     date: datetime
     elab_hosts: dict[str, str] = {}
+    # When each host's version was last fetched. Hosts written by older elAPI
+    # versions have no entry here and fall back to the global ``date``.
+    elab_hosts_updated: dict[str, datetime] = {}
+
+    @model_validator(mode="after")
+    def _migrate_legacy_host_entries(self) -> "CacheModel":
+        # Older versions wrote ``elab_hosts`` values as plain strings. If such
+        # entries are still present after type coercion, give them the cache
+        # file's global date so they age exactly as before.
+        for host, entry in self.elab_hosts.items():
+            if isinstance(entry, str):
+                if host not in self.elab_hosts_updated:
+                    self.elab_hosts_updated[host] = self.date
+                self.elab_hosts[host] = entry
+        return self
 
 
 @dataclass(frozen=True)
