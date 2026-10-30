@@ -1,12 +1,31 @@
-from typing import Tuple, Union, Literal
+from typing import Literal, Self, Tuple, Union
+
+from pydantic import BaseModel, model_validator
 
 from .registry import _update_registry_team_bill_generation_metadata
 from .specification import (
+    ignore_billing_spec,
     ot_header_spec,
     owners_spec,
-    ignore_billing_spec,
     registry_spec,
 )
+
+
+class _BillingManagementInfo(BaseModel):
+    is_billing_management_limited: bool
+    is_billing_management_exceeded: bool
+
+    @model_validator(mode="after")
+    def validate_combination(self) -> Self:
+        if (
+            not self.is_billing_management_limited
+            and self.is_billing_management_exceeded
+        ):
+            raise ValueError(
+                "Billing management cannot exceed the total sum when "
+                "the billing management limit parameter is not applied!"
+            )
+        return self
 
 
 def get_ot_template() -> dict:
@@ -22,12 +41,12 @@ def can_exempt_team(team_registry_data: dict) -> Tuple[bool, str]:
     ):
         return (
             True,
-            f"'{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}."
+            f"'{registry_spec.TEAM_BILL_GENERATION_METADATA}."
             f"{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}' is False",
         )
     return (
         False,
-        f"'{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}."
+        f"'{registry_spec.TEAM_BILL_GENERATION_METADATA}."
         f"{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}' is True",
     )
 
@@ -74,7 +93,7 @@ def can_ignore_team(team_registry_data: dict) -> Tuple[bool, str]:
 
 def is_team_on_trial(team_registry_data: dict) -> Tuple[bool, str]:
     if team_registry_data["on_trial"] is ignore_billing_spec.ON_TRIAL:
-        return True, f"team is on trial"
+        return True, "team is on trial"
     return False, "team is not on trial"
 
 
@@ -86,8 +105,22 @@ def is_billing_management_limited(team_registry_data: dict) -> Tuple[bool, float
     return False, -1
 
 
-def get_text_1(billing_management_limited: bool, /, team_name: str):
-    if billing_management_limited is True:
+def get_text_1(
+    billing_management_info: _BillingManagementInfo,
+    /,
+    team_name: str,
+):
+    _is_billing_management_limited, _is_billing_management_exceeded = (
+        billing_management_info.model_dump().values()
+    )
+    if _is_billing_management_limited is True:
+        if not _is_billing_management_exceeded:
+            return (
+                f'Für die Nutzung des Dienstes “eLabFTW” im Team "{team_name}" '
+                "sind die aufgeführten Kosten entstanden. Die einzelnen Positionen "
+                "entsprechen den aktiven Accounts im Team im jeweiligen Monat "
+                "(Stichtag 15.)."
+            )
         return (
             f'Für die Nutzung des Dienstes “eLabFTW” im Team "{team_name}" '
             "sind die aufgeführten Kosten entstanden. Die einzelnen Positionen "

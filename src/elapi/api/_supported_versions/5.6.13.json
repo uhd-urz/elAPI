@@ -1,0 +1,63 @@
+{
+    "apikeys": [],
+    "compounds": [],
+    "config": [],
+    "dspace": [],
+    "event": [],
+    "events": [],
+    "experiments": [
+        "comments",
+        "compounds_links",
+        "experiments_links",
+        "items_links",
+        "revisions",
+        "steps",
+        "tags",
+        "uploads"
+    ],
+    "experiments_templates": [
+        "revisions",
+        "steps",
+        "tags"
+    ],
+    "exports": [],
+    "extra_fields_keys": [],
+    "favtags": [],
+    "idps": [
+        "certs",
+        "endpoints"
+    ],
+    "idps_sources": [],
+    "import": [],
+    "info": [],
+    "instance": [],
+    "items": [
+        "comments",
+        "compounds_links",
+        "experiments_links",
+        "items_links",
+        "revisions",
+        "steps",
+        "tags",
+        "uploads"
+    ],
+    "items_types": [
+        "steps",
+        "tags"
+    ],
+    "reports": [],
+    "storage_units": [],
+    "teams": [
+        "experiments_categories",
+        "experiments_status",
+        "items_status",
+        "resources_categories",
+        "teamgroups"
+    ],
+    "todolist": [],
+    "unfinished_steps": [],
+    "users": [
+        "notifications",
+        "uploads"
+    ]
+}

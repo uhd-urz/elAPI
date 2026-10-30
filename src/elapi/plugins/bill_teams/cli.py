@@ -11,7 +11,7 @@ import typer
 
 from ...path import ProperPath
 from ...utils import UnexpectedAPIResponseType
-from .generate_table import is_team_on_trial
+from .generate_table import _BillingManagementInfo, is_team_on_trial
 from .names import PLUGIN_NAME, REGISTRY_SUB_PLUGIN_NAME, TARGET_GROUP_NAME
 
 if not (find_spec("tenacity") and find_spec("dateutil") and find_spec("uvloop")):
@@ -1209,15 +1209,31 @@ else:
                             )
                         ] = ""
                     OT_CONTAINER[team_id][ot_header_spec.TEXT_1] = get_text_1(
-                        True,
+                        _BillingManagementInfo(
+                            is_billing_management_limited=True,
+                            is_billing_management_exceeded=True,
+                        ),
                         latest_registry_data[TARGET_GROUP_NAME][team_id][
                             registry_spec.TEAM_NAME
                         ],
                     )
                     OT_CONTAINER[team_id][ot_header_spec.GRAND_TOTAL] = management_limit
+                else:
+                    OT_CONTAINER[team_id][ot_header_spec.TEXT_1] = get_text_1(
+                        _BillingManagementInfo(
+                            is_billing_management_limited=True,
+                            is_billing_management_exceeded=False,
+                        ),
+                        latest_registry_data[TARGET_GROUP_NAME][team_id][
+                            registry_spec.TEAM_NAME
+                        ],
+                    )
             else:
                 OT_CONTAINER[team_id][ot_header_spec.TEXT_1] = get_text_1(
-                    False,
+                    _BillingManagementInfo(
+                        is_billing_management_limited=False,
+                        is_billing_management_exceeded=False,
+                    ),
                     latest_registry_data[TARGET_GROUP_NAME][team_id][
                         registry_spec.TEAM_NAME
                     ],
