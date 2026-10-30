@@ -1,6 +1,6 @@
 from typing import Literal, Self, Tuple, Union
 
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import BaseModel, model_validator
 
 from .registry import _update_registry_team_bill_generation_metadata
 from .specification import (
@@ -21,7 +21,7 @@ class _BillingManagementInfo(BaseModel):
             not self.is_billing_management_limited
             and self.is_billing_management_exceeded
         ):
-            raise ValidationError(
+            raise ValueError(
                 "Billing management cannot exceed the total sum when "
                 "the billing management limit parameter is not applied!"
             )
@@ -41,12 +41,12 @@ def can_exempt_team(team_registry_data: dict) -> Tuple[bool, str]:
     ):
         return (
             True,
-            f"'{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}."
+            f"'{registry_spec.TEAM_BILL_GENERATION_METADATA}."
             f"{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}' is False",
         )
     return (
         False,
-        f"'{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}."
+        f"'{registry_spec.TEAM_BILL_GENERATION_METADATA}."
         f"{registry_spec.BILL_GENERATION_METADATA_INCLUDE_IN_OUTPUT_TABLE}' is True",
     )
 
@@ -93,7 +93,7 @@ def can_ignore_team(team_registry_data: dict) -> Tuple[bool, str]:
 
 def is_team_on_trial(team_registry_data: dict) -> Tuple[bool, str]:
     if team_registry_data["on_trial"] is ignore_billing_spec.ON_TRIAL:
-        return True, f"team is on trial"
+        return True, "team is on trial"
     return False, "team is not on trial"
 
 
