@@ -134,7 +134,13 @@ def debug_log_whoami_message() -> None:
     logger.debug(
         f"Based on the detected configuration, the requests will be made to the server {host_url} "
         f"(eLabFTW version: {elabftw_version}), "
-        f"with API token '{api_token}' ({'Read/Write' if can_api_key_write else 'Read-only'}), "
+        f"with API token '{api_token}'{
+            ' (Read/Write)'
+            if can_api_key_write == 1
+            else ' (Read-only)'
+            if can_api_key_write == 0
+            else ''
+        }, "
         f"by user '{name}' (ID: {user_id}), "
         f"from team '{team}' (ID: {team_id}), in user group "
         f"'{user_groups_reversed[user_group].capitalize()}', "
