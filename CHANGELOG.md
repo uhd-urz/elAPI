@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.16] - 2026-11-11
+
+This update applies a hotfix that fixes f-string multi-line expression not working in Python 3.11
+(`SyntaxError: unterminated string literal`).
+
 ## [2.4.15] - 2026-10-30
 
 This update fixes internal `bill-teams` plugin issue and adds support for eLabFTW versions `5.5.11`-`5.6.09`.
@@ -42,13 +47,14 @@ This is a minor update to elAPI.
 
 ### Fixed
 
-- Bumped vulnerable dependencies as reported by GitHub dependabot: `mistune`, `idna`, `urllib3`, `aiohttp`. 
+- Bumped vulnerable dependencies as reported by GitHub dependabot: `mistune`, `idna`, `urllib3`, `aiohttp`.
 
 ## [2.4.12] - 2026-05-05
 
 ### Fixed
 
-- Fix a critical `bill-teams` plugin bug (GL [#64](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/work_items/64))
+- Fix a critical `bill-teams` plugin bug
+  (GL [#64](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/work_items/64))
 - Fixes GH dependabot [security warnings](https://github.com/uhd-urz/elAPI/security/dependabot/24): `lxml`, `pip`
 
 ### Added
@@ -65,11 +71,9 @@ This is a minor update to elAPI.
 
 - Add support for eLabFTW versions `5.5.6`-`5.5.8`
 
-
 ## [2.4.10] - 2026-04-02
 
 A hotfix release. Thanks a lot @alexander-haller.
-
 
 ## [2.4.9] - 2026-04-02
 
@@ -157,10 +161,10 @@ This release brings some minor bug fixes and improvements.
 
 ### Added
 
-- elAPI `whoami` that shows information about the eLab user (
-  see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#elapi-whoami))
-- New configuration field `async_capacity` that lets you the maximum number of in-flight requests (
-  see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
+- elAPI `whoami` that shows information about the eLab user
+  (see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#elapi-whoami))
+- New configuration field `async_capacity` that lets you the maximum number of in-flight requests
+  (see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
 - Improved `bill-teams` retry strategy that uses `async_capacity`
 
 ### Fixed
@@ -193,13 +197,13 @@ This release brings general bug fixes and a few major improvements.
 
 ### Added
 
-- The `mail` built-in plugin that is able to scan logs and send emails based on pre-configured trigger conditions (
-  see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#mail-built-in-plugin))
-- New configuration field `async_rate_limit` that lets you control requests per second (
-  see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
+- The `mail` built-in plugin that is able to scan logs and send emails based on pre-configured trigger conditions
+  (see [documentation](https://github.com/uhd-urz/elAPI/tree/main?tab=readme-ov-file#mail-built-in-plugin))
+- New configuration field `async_rate_limit` that lets you control requests per second
+  (see [documentation](https://github.com/uhd-urz/elAPI/tree/dev?tab=readme-ov-file#configuration))
 - Global callback mechanisms (GH https://github.com/uhd-urz/elAPI/pull/156/; see "Callback classes")
-- `add_logging_level` to add new logging levels (
-  see [documentation](https://haggis.readthedocs.io/en/stable/api.html#haggis.logs.add_logging_level))
+- `add_logging_level` to add new logging levels
+  (see [documentation](https://haggis.readthedocs.io/en/stable/api.html#haggis.logs.add_logging_level))
 
 ### Fixed
 
@@ -227,8 +231,7 @@ This is a hotfix release.
 
 ### Fixed
 
-- Newly installed elAPI, without `elapi.yml` configuration file aborts (
-  GH https://github.com/uhd-urz/elAPI/issues/151)
+- Newly installed elAPI, without `elapi.yml` configuration file aborts (GH https://github.com/uhd-urz/elAPI/issues/151)
 
 ## [2.3.1] - 2025-05-23
 
@@ -241,8 +244,8 @@ This release brings some minor bug fixes and improvements.
 
 ### Fixed
 
-- elAPI re-installations (or new installation) would break `--help` due to breaking click update (
-  GH https://github.com/fastapi/typer/discussions/1215)
+- elAPI re-installations (or new installation) would break `--help` due to breaking click update
+  (GH https://github.com/fastapi/typer/discussions/1215)
 
 ### Changes
 
@@ -516,7 +519,8 @@ Development release. This release adds a tons of new changes and improvements.
 
 - Fix installation command line ([#5](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/5)).
 - Hot-fixed initial Python 3.9 compatibility
-  issues ([#3](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/3), [#4](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/4)).
+  issues
+  ([#3](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/3), [#4](https://gitlab.urz.uni-heidelberg.de/urz-elabftw/elapi/-/issues/4)).
 
 ### Deprecated
 
